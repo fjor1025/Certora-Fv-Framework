@@ -669,7 +669,7 @@ A valid spec must end with:
 
 ---
 
-## FRAMEWORK INTEGRATION
+## 📚 FRAMEWORK INTEGRATION
 
 This document is part of a three-document framework:
 

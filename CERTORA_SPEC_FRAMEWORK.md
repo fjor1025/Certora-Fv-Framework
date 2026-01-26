@@ -1,5 +1,6 @@
 # Certora Specification Framework — Execution-Closed & Causally-Closed Universe
- 
+
+> **Version:** 2.0  
 > **CVL Syntax Reference:** CVL 2.0 (Certora Prover)  
 > **Philosophy:** You are not verifying a contract. You are verifying a *closed EVM universe* with that contract inside it.
 
@@ -182,6 +183,7 @@ function _.callGetResumeSinceTimestamp(address sealable) internal
 🚫 If a read is not paired with modeled writes → **STOP and model first**.
 
 ---
+
 ## Spec Header Template
 
 ```cvl

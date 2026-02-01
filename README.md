@@ -57,7 +57,7 @@ touch "certora/confs/${TARGET_CONTRACT}.conf"
 Phase 0   → Contract Analysis (entry points, storage, external calls)
 Phase -1  → Execution Closure (external contracts, modeling decisions)
 Phase 2   → Property Discovery (DUAL MINDSET: should always + should never)
-            └── NEW: Mine tests for invariants, threats, blind spots
+            └── Mine tests for invariants, threats, blind spots
 Phase 2.5 → Classification (INVARIANT vs RULE)
 Phase 3.5 → Causal Validation ← RUN VALIDATION SPEC FIRST
 Phase 4-6 → Modeling & Sanity Gate

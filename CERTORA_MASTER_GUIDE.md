@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 1.0  
+> **Version:** 1.3 (Tutorial-Enhanced)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---
@@ -36,6 +36,7 @@
 | **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax & templates | Writing actual CVL |
 | **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** | Counterexample debugging | When rules fail |
 | **CERTORA_WORKFLOW.md** | Phase overview | Quick reference |
+| **BEST_PRACTICES_FROM_CERTORA.md** | Official tutorial techniques | ← **NEW in v1.3** |
 
 ## 1.2 The Golden Rule
 
@@ -707,9 +708,23 @@ For EACH external contract called:
 
 > **Goal:** List all security properties in plain English
 
-## 5.1 Use Categorizing_Properties.md
+## 5.1 Use Categorizing_Properties.md + Best Practices
 
 Follow the template in `Categorizing_Properties.md` to discover properties.
+
+**NEW in v1.3:** Also reference `BEST_PRACTICES_FROM_CERTORA.md` Section 1 for:
+- Property discovery techniques
+- The 4 fatal mistakes to avoid
+- Anti-pattern: mimicking implementation
+- Iterative discovery process
+
+**Property Prioritization (v1.3):**
+After discovering properties, assign priority levels using `Categorizing_Properties.md` Section 7:
+- **HIGH**: Loss of funds, DoS, privilege escalation
+- **MEDIUM**: Accounting integrity, solvency
+- **LOW**: Single function correctness
+
+Prioritization guides verification order and time allocation.
 
 ## 5.2 Fill in `{contract}_candidate_properties.md`
 
@@ -728,6 +743,7 @@ Follow the template in `Categorizing_Properties.md` to discover properties.
 **Plain English:** [One sentence]
 **Impact if Violated:** [Theft / Insolvency / Loss of Funds]
 **Category:** Valid State
+**Priority:** [HIGH / MEDIUM / LOW]  ← NEW v1.3
 **Variables Involved:**
   - `[variable]` (owned by [contract])
 **External Truths Needed:** [None / List them]
@@ -801,14 +817,14 @@ Follow the template in `Categorizing_Properties.md` to discover properties.
 
 ## Summary
 
-| ID | Name | Category | Type (TBD) | Ghost Needed? |
-|----|------|----------|------------|---------------|
-| A1 | | Valid State | ? | No |
-| A2 | | Valid State | ? | No |
-| B1 | | Transition | ? | No |
-| C1 | | System-Level | ? | Yes |
-| D1 | | Transition | ? | No |
-| E1 | | Transition | ? | No |
+| ID | Name | Category | Priority | Type (TBD) | Ghost Needed? |
+|----|------|----------|----------|------------|---------------|
+| A1 | | Valid State | HIGH | ? | No |
+| A2 | | Valid State | MEDIUM | ? | No |
+| B1 | | Transition | HIGH | ? | No |
+| C1 | | System-Level | MEDIUM | ? | Yes |
+| D1 | | Transition | HIGH | ? | No |
+| E1 | | Transition | LOW | ? | No |
 ```
 
 ---
@@ -1475,7 +1491,16 @@ certoraRun certora/confs/YourContract.conf 2>&1 | tee prover_output.log
 
 ## 10.3 Counterexample Debugging
 
-When a rule FAILS, use `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md`:
+When a rule FAILS, use `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` (enhanced with Tutorial Lesson 02 workflow):
+
+**5-Step Investigation Process (from BEST_PRACTICES Section 2):**
+1. Run entire spec first (get overview of failures)
+2. Focus on one rule (`--rule rule_name`)
+3. Analyze call trace (storage, arguments, returns)
+4. Identify deviation (spec bug vs real bug)
+5. Fix and document
+
+**Call Trace Analysis:**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -1638,6 +1663,8 @@ Before running prover, verify:
 | Invariant fails on all | Ghost not synced | Check hooks |
 | Rule fails unexpectedly | Missing validState() | Add requireInvariant |
 
+**NEW:** See `BEST_PRACTICES_FROM_CERTORA.md` Section 6 for common pitfalls and anti-patterns.
+
 ---
 
 # FINAL CHECKLIST
@@ -1716,6 +1743,12 @@ Based on the Phase 0/-1 analysis, help me discover security properties using Cat
 - State Transitions (function effects)
 - System-Level (aggregates, sums)
 - Access Control (who can do what)
+
+**NEW v1.3:** Also apply:
+- Property prioritization (HIGH/MEDIUM/LOW) - Categorizing_Properties.md Section 7
+- Dual mindset (Should Always / Should Never) - Section 5
+- Test mining (extract from existing tests) - Section 6
+- Avoid the 4 fatal mistakes - BEST_PRACTICES Section 1
 
 Output should go into: spec_authoring/{target}_candidate_properties.md
 ```

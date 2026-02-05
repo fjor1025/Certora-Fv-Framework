@@ -620,3 +620,258 @@ Before leaving Phase 2:
 - [ ] Threat assumptions documented
 - [ ] Blind spots identified
 - [ ] Coverage gaps noted
+---
+
+# 7. PROPERTY PRIORITIZATION
+
+> **Source:** Certora Tutorial - Auction Demonstration
+
+After discovering and categorizing properties, **prioritize them by impact** to focus verification effort.
+
+## 7.1 Priority Levels
+
+| Priority | Criteria | Impact | Example Properties |
+|----------|----------|--------|-------------------|
+| **HIGH** | Loss of funds | Direct financial loss | "Winner cannot claim prize" |
+| **HIGH** | Value creation | Mint without backing | "Mint without collateral" |
+| **HIGH** | Privilege escalation | Critical access control | "Non-admin can pause system" |
+| **HIGH** | DoS / Griefing | System unavailability | "Auction cannot be resolved" |
+| **MEDIUM** | Solvency (when no withdrawal) | Accounting integrity | "Total supply tracking" |
+| **MEDIUM** | Temporary inconsistency | Eventually consistent | "Stale price oracle" |
+| **LOW** | Single function correctness | Local behavior | "mint() increases balance" |
+| **LOW** | Easy to manually verify | Simple arithmetic | "1 + 1 = 2 checks" |
+
+## 7.2 Prioritization Template
+
+For each property, document:
+
+```markdown
+### [Priority Level] - [Property ID]: [Property Name]
+
+**Impact:** [Loss of funds / DoS / Manipulation / Accounting / Local behavior]
+
+**Attack Vector:** [How would an attacker exploit the violation?]
+
+**Reasoning:** [Why this priority level?]
+
+**Dependencies:** [Which other properties must hold for this to matter?]
+
+**Verification Cost:** [Simple / Medium / Complex - affects ordering within priority tier]
+```
+
+### Example: HIGH Priority
+
+```markdown
+### HIGH - VS2: Winner Can Always Claim Prize
+
+**Impact:** Loss of funds
+
+**Attack Vector:** 
+If winner cannot claim prize, funds locked forever → direct user loss.
+Admin might drain while prize locked.
+
+**Reasoning:** 
+Directly affects user funds. Violates core auction promise.
+
+**Dependencies:** 
+- VS1 (valid winner selected) must hold
+- If no valid winner, this property N/A
+
+**Verification Cost:** Medium (requires preserved block with state setup)
+```
+
+### Example: MEDIUM Priority
+
+```markdown
+### MEDIUM - VS4: Solvency (Prize Funds)
+
+**Impact:** Accounting integrity
+
+**Attack Vector:** 
+If contract balance < prize amount, winner cannot withdraw.
+But no withdrawal exists in this contract, so this is accounting-only.
+
+**Reasoning:** 
+Important for system integrity but not directly exploitable given current interface.
+
+**Dependencies:** 
+- HIGH properties must pass first
+- Becomes HIGH if withdrawal mechanism added
+
+**Verification Cost:** Simple (ghost-based sum check)
+```
+
+### Example: LOW Priority
+
+```markdown
+### LOW - UT1: Bid Function Updates Highest Bidder
+
+**Impact:** Local function behavior
+
+**Attack Vector:** None - this is unit-level correctness
+
+**Reasoning:** 
+Verifies single function works correctly. Easy to test manually.
+Covered by higher-level properties (VS1, HLP1).
+
+**Dependencies:** None
+
+**Verification Cost:** Simple (before/after check)
+```
+
+## 7.3 Practical Priority Assignment
+
+### Step 1: Ask Impact Questions
+
+For each property, ask:
+1. **What's the worst outcome if this property is violated?**
+   - Loss of funds → HIGH
+   - System unusable → HIGH
+   - Accounting error → MEDIUM
+   - Single function wrong → LOW
+
+2. **Can an attacker exploit this directly?**
+   - Yes + financial gain → HIGH
+   - Yes + DoS → HIGH
+   - No → MEDIUM or LOW
+
+3. **Is there a workaround or mitigation?**
+   - No workaround → Increase priority
+   - Easy workaround → Decrease priority
+
+### Step 2: Consider Verification Effort
+
+Within same priority level, order by:
+- Simple properties first (quick wins)
+- Complex properties later (when you understand system better)
+
+### Step 3: Document Trade-offs
+
+```markdown
+## Priority Assignment Trade-offs
+
+### Why VS2 is HIGH but VS4 is MEDIUM:
+VS2 affects user funds directly (withdrawal blocked).
+VS4 is accounting-only since no withdrawal mechanism exists.
+If withdrawal added later, VS4 becomes HIGH.
+
+### Why UT1 is LOW:
+Single function behavior is covered by:
+- VS1 (valid winner) - requires bid() to work
+- HLP1 (highest bidder wins) - implies bid() correctness
+Redundant verification, keep LOW unless others fail.
+```
+
+## 7.4 Integration with Categorization
+
+Your properties should now have:
+1. **Category** (Valid State / Variable Transition / High-Level / Unit Test)
+2. **Dual Mindset** ("Should Always..." / "Should Never...")
+3. **Priority** (HIGH / MEDIUM / LOW)
+
+### Complete Property Entry
+
+```markdown
+### VS2: Winner Can Always Claim Prize
+
+**Category:** Valid State  
+**Priority:** HIGH  
+**Should Always:** Winner address can call claimPrize() successfully after auction ends  
+**Should Never:** Winner should never be unable to claim prize due to contract state
+
+**Impact:** Loss of funds  
+**Attack Vector:** Funds locked if winner cannot withdraw  
+**Reasoning:** Direct user fund loss violates core protocol guarantee
+
+**Plain English:**
+After auction ends, the winner address must be able to successfully call claimPrize() 
+and receive the prize amount. The contract must hold sufficient funds.
+
+**Verification Cost:** Medium (requires state setup in preserved block)
+```
+
+## 7.5 Verification Order Strategy
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│  ROUND 1: HIGH Priority Properties                                  │
+│  ├── Simple HIGH properties (quick validation)                      │
+│  ├── Complex HIGH properties (critical but time-intensive)          │
+│  └── GOAL: Prove no critical vulnerabilities                        │
+│                                                                      │
+│  ↓ (If all HIGH pass)                                               │
+│                                                                      │
+│  ROUND 2: MEDIUM Priority Properties                                │
+│  ├── Accounting properties                                          │
+│  ├── Consistency properties                                         │
+│  └── GOAL: Prove system integrity                                   │
+│                                                                      │
+│  ↓ (If time permits)                                                │
+│                                                                      │
+│  ROUND 3: LOW Priority Properties                                   │
+│  ├── Unit test equivalents                                          │
+│  └── GOAL: Comprehensive coverage                                   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Time-Boxed Strategy
+
+If verification time is limited:
+1. **Must verify:** All HIGH priority properties
+2. **Should verify:** MEDIUM priorities related to HIGH properties
+3. **Nice to have:** All MEDIUM + selected LOW properties
+
+```markdown
+## Verification Time Budget (Example)
+
+**Available:** 2 weeks
+
+**Allocation:**
+- Week 1: HIGH priority (5 properties) - MUST COMPLETE
+- Week 2 Days 1-3: MEDIUM priority (3 properties) - SHOULD COMPLETE  
+- Week 2 Days 4-5: LOW priority (7 properties) - BEST EFFORT
+
+**Contingency:**
+If HIGH properties reveal bugs, extend Week 1, compress Week 2.
+```
+
+---
+
+## Updated Quick Checklist (v1.3)
+
+Before leaving Phase 2:
+
+**Standard Checklist:**
+- [ ] Every property has a unique ID
+- [ ] Every property has plain English description
+- [ ] Every property has impact assessment
+- [ ] Every property is categorized
+- [ ] Variables and owners documented
+- [ ] External dependencies flagged
+- [ ] Aggregate requirements flagged
+- [ ] Trusted role assumptions marked OUT OF SCOPE
+- [ ] No CVL syntax anywhere
+
+**Dual Mindset Checklist (v1.2):**
+- [ ] Each critical function has SHOULD ALWAYS property
+- [ ] Each critical function has SHOULD NEVER property
+- [ ] Attack vectors explicitly enumerated
+- [ ] Attacker goals documented
+
+**Test Mining Checklist (v1.2):**
+- [ ] Existing tests reviewed
+- [ ] Implicit invariants extracted
+- [ ] Threat assumptions documented
+- [ ] Blind spots identified
+- [ ] Coverage gaps noted
+
+**NEW - Prioritization Checklist (v1.3):**
+- [ ] Each property assigned priority (HIGH / MEDIUM / LOW)
+- [ ] Impact documented for each property
+- [ ] Attack vectors identified
+- [ ] Dependencies between properties noted
+- [ ] Verification cost estimated
+- [ ] Priority trade-offs explained
+- [ ] Verification time budget allocated

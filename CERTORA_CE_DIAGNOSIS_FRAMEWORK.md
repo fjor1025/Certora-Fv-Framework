@@ -1,8 +1,9 @@
 # Certora Counterexample Diagnosis Framework
 
-> **Version:** 2.0  
+> **Version:** 2.1  
 > **Purpose:** Determine whether a Certora counterexample represents a REAL BUG or a SPEC BUG  
-> **Philosophy:** A counterexample is not evidence until execution AND causal closure are verified.
+> **Philosophy:** A counterexample is not evidence until execution AND causal closure are verified.  
+> **Source:** Enhanced with Certora Tutorial Lesson 02 investigation workflow
 
 ---
 
@@ -10,12 +11,13 @@
 
 1. [Objective](#objective)
 2. [Input Requirements](#input-requirements)
-3. [Phase -1: Closure Verification (Mandatory Gate)](#phase--1-closure-verification-mandatory-gate)
-4. [Phase A: Counterexample Classification](#phase-a-counterexample-classification)
-5. [Phase B: Spec Repair](#phase-b-spec-repair-only-if-spec-bug)
-6. [Pattern Reference](#pattern-reference)
-7. [Quick Decision Tree](#quick-decision-tree)
-8. [Non-Negotiable Rules](#non-negotiable-rules)
+3. [Tutorial-Based Investigation Workflow](#tutorial-based-investigation-workflow)
+4. [Phase -1: Closure Verification (Mandatory Gate)](#phase--1-closure-verification-mandatory-gate)
+5. [Phase A: Counterexample Classification](#phase-a-counterexample-classification)
+6. [Phase B: Spec Repair](#phase-b-spec-repair-only-if-spec-bug)
+7. [Pattern Reference](#pattern-reference)
+8. [Quick Decision Tree](#quick-decision-tree)
+9. [Non-Negotiable Rules](#non-negotiable-rules)
 
 ---
 
@@ -43,6 +45,168 @@ Before starting diagnosis, gather:
 - [ ] Summaries used in the run
 - [ ] Mutation path analysis from validation phase
 - [ ] Invariant dependency chain documentation
+
+---
+
+## Tutorial-Based Investigation Workflow
+
+> **Source:** Certora Tutorial Lesson 02 - Investigate Violations
+
+### The 5-Step Investigation Process
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│   STEP 1: Run Entire Spec First                                         │
+│   ─────────────────────────────                                         │
+│   certoraRun config.conf                                                 │
+│                                                                          │
+│   → See which rules fail                                                │
+│   → Get overview of issues                                              │
+│   → Identify patterns across violations                                 │
+│                                                                          │
+│   STEP 2: Focus on One Rule                                             │
+│   ──────────────────────────                                            │
+│   certoraRun config.conf --rule specific_rule_name                       │
+│                                                                          │
+│   → Saves run time                                                      │
+│   → Cleaner output                                                      │
+│   → Easier to analyze call trace                                        │
+│                                                                          │
+│   STEP 3: Analyze Call Trace                                            │
+│   ───────────────────────────                                           │
+│   • Check storage values before/after each function call                │
+│   • Check arguments passed to functions                                 │
+│   • Check return values from functions                                  │
+│   • Follow execution path step-by-step                                  │
+│   • Look for HAVOC annotations (unresolved calls)                       │
+│                                                                          │
+│   STEP 4: Identify Deviation                                            │
+│   ───────────────────────────                                           │
+│   • Where does execution differ from specification?                     │
+│   • Is the difference due to incomplete spec?                           │
+│   • Is the difference due to contract bug?                              │
+│   • Is the property too strong (impossible to satisfy)?                 │
+│   • Is the implementation wrong (security bug)?                         │
+│                                                                          │
+│   STEP 5: Fix and Verify                                                │
+│   ─────────────────────────────                                         │
+│   • Fix the issue (spec OR contract)                                    │
+│   • Re-run to confirm fix                                               │
+│   • Document the fix and reasoning                                      │
+│   • Check if fix affects other rules                                    │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Call Trace Analysis Tips
+
+> **From Tutorial:** "Call traces contain information regarding the storage, arguments and return value."
+
+#### What to Check in Storage
+
+| Element | Before Call | After Call | Analysis |
+|---------|-------------|------------|----------|
+| **State Variables** | Initial values | Changed values | Did expected mutations occur? |
+| **Balances** | Starting amounts | Ending amounts | Correct arithmetic? |
+| **Mappings** | Key-value pairs | Updated pairs | Proper updates? |
+| **Counters** | Old count | New count | Increments correct? |
+
+#### What to Check in Arguments
+
+```
+Function: transfer(address to, uint256 amount)
+
+Check:
+✓ Is `to` address valid? (not zero, not this)
+✓ Is `amount` within bounds? (not overflow)
+✓ Does msg.sender have sufficient balance?
+✓ Are preconditions from spec satisfied?
+```
+
+#### What to Check in Return Values
+
+```
+Function: getBalance(address user) returns (uint256)
+
+Check:
+✓ Return value matches storage state
+✓ Return value within expected range
+✓ Return value consistent with spec
+```
+
+### Breaking Down Complex Expressions
+
+> **Best Practice from Tutorial:**
+> "Try breaking complex expressions to achieve code readability and a more simplified call trace."
+
+```cvl
+// ❌ Complex (hard to debug)
+assert balanceOf(user) + debt[user] <= totalSupply() + totalDebt();
+
+// ✅ Broken down (easier call trace)
+uint256 userTotal = balanceOf(user) + debt[user];
+uint256 systemTotal = totalSupply() + totalDebt();
+assert userTotal <= systemTotal, "User total exceeds system total";
+```
+
+**Benefits of breaking down:**
+1. Each intermediate value visible in call trace
+2. Easier to spot where logic breaks
+3. Better error messages
+4. Simpler debugging
+
+### Bug Documentation Template
+
+When you identify a bug, document it:
+
+```markdown
+### Bug Found: [Rule Name] Violation
+
+**Date:** [YYYY-MM-DD]
+
+**Rule:** `[rule_name]`
+
+**File:** `Contract.sol:LineNumber`
+
+**Type:** [REAL BUG / SPEC BUG]
+
+**Issue:**
+[One-sentence description of what's wrong]
+
+**Call Trace Summary:**
+```
+Function called: functionName(args)
+Storage before: variable = X
+Storage after: variable = Y
+Expected: variable = Z
+```
+
+**Root Cause:**
+[Detailed explanation of why the bug occurred]
+
+**Fix:**
+```solidity
+// OLD (buggy)
+require(a > b);
+
+// NEW (fixed)
+require(b > a);
+```
+
+**Reasoning:**
+The require checked `a > b`, when it should've checked `b > a`.
+This allowed [exploit description].
+
+**Impact:**
+- [ ] HIGH: Loss of funds / DoS / Privilege escalation
+- [ ] MEDIUM: Accounting inconsistency
+- [ ] LOW: Single function misbehavior
+
+**Related Properties:**
+- Property ID1 (also affected)
+- Property ID2 (dependency)
+```
 
 ---
 

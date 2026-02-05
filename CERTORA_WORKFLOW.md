@@ -1,6 +1,6 @@
 # Certora Specification Workflow — Complete Guide
 
-> **Version:** 2.0  
+> **Version:** 2.1 (Tutorial-Enhanced)  
 > **Purpose:** Step-by-step workflow for writing correct Certora specifications  
 > **Philosophy:** Understand completely → Model correctly → Write once → Debug systematically
 
@@ -8,11 +8,11 @@
 
 ## Framework Overview
 
-This workflow integrates three documents:
+This workflow integrates **five** core documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         CERTORA SPECIFICATION WORKFLOW                       │
+│                    CERTORA SPECIFICATION WORKFLOW v1.3                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────┐    ┌───────────────────────┐    ┌─────────────┐ │
@@ -24,6 +24,16 @@ This workflow integrates three documents:
 │  │  • Classify           │    │  • Templates          │    │  • Fix      │ │
 │  └───────────────────────┘    └───────────────────────┘    └─────────────┘ │
 │         Phase 0-6                   Phase 7                  When needed   │
+│                                          │                                  │
+│  ┌───────────────────────┐              │      ┌─────────────────────────┐ │
+│  │  BEST PRACTICES       │──────────────┴─────▶│  CATEGORIZING           │ │
+│  │  FROM CERTORA.md      │                     │  PROPERTIES.md          │ │
+│  │                       │                     │                         │ │
+│  │  • Property Discovery │                     │  • Prioritization       │ │
+│  │  • Common Pitfalls    │                     │  • Dual Mindset         │ │
+│  │  • Invariant Patterns │                     │  • Test Mining          │ │
+│  └───────────────────────┘                     └─────────────────────────┘ │
+│        NEW v1.3                                       Enhanced v1.3        │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```

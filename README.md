@@ -1,6 +1,39 @@
 # Certora Formal Verification Framework
 
-> **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**
+> **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
+> **Version:** 1.3 (Priority-Enhanced + Tutorial Best Practices)
+
+---
+
+## What's New in v1.3
+
+**Property Prioritization System** (extracted from Certora Tutorials):
+- HIGH / MEDIUM / LOW priority levels based on impact
+- Attack vector documentation for each property  
+- Verification time budget allocation
+- Priority-based verification ordering strategy
+- Added to `Categorizing_Properties.md` Section 7
+
+**Enhanced CE Investigation** (from Tutorial Lesson 02):
+- 5-step investigation workflow
+- Call trace analysis checklist
+- Storage/arguments/returns inspection guide
+- Bug documentation template
+- Added to `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md`
+
+**NEW: Best Practices Document**:
+- `BEST_PRACTICES_FROM_CERTORA.md` - comprehensive extraction from official tutorials
+- Property discovery techniques and common pitfalls
+- Invariant design patterns (monotonicity, conservation laws)
+- Harness best practices with examples
+- Loop handling strategies and flags
+
+---
+
+## Previous Enhancements
+
+**v1.2:** Dual Mindset ("Should Always" / "Should Never") + Test Mining  
+**v1.1:** Validation-to-Real-Spec Transition + Chat Prompts
 
 ---
 
@@ -8,12 +41,16 @@
 
 | File | Purpose | When to Use |
 |------|---------|-------------|
-| **CERTORA_MASTER_GUIDE.md** | Complete step-by-step instructions | ← **START HERE** |
+| **INDEX.md** | Navigation guide & quick access | ← **START HERE for navigation** |
+| **CERTORA_MASTER_GUIDE.md** | Complete step-by-step instructions | ← **START HERE for verification** |
 | **CERTORA_WORKFLOW.md** | Phase overview & checklist | Quick reference |
 | **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax & templates | Writing actual CVL |
 | **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** | Counterexample debugging | When rules fail |
 | **SPEC AUTHORING (CERTORA).md** | Deep methodology & theory | Understanding WHY |
 | **Categorizing_Properties.md** | Property discovery guidance | Phase 2 |
+| **BEST_PRACTICES_FROM_CERTORA.md** | Official tutorial techniques | ← **NEW in v1.3** |
+| **QUICK_REFERENCE_v1.3.md** | Printable cheat sheet | Keep open while coding |
+| **VERSION_HISTORY.md** | Version tracking & migration | Check what changed |
 
 ---
 
@@ -177,12 +214,34 @@ When working with an AI assistant, use these prompts:
 
 ---
 
+---
+
+## 🎓 How to Use the Framework (Quick Start)
+
+### For New Users:
+1. **Start with** [INDEX.md](INDEX.md) for navigation
+2. **Read** [README.md](README.md) (this file) for overview
+3. **Follow** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) step-by-step
+
+### For Returning Users:
+1. **Check** [VERSION_HISTORY.md](VERSION_HISTORY.md) for what's new
+2. **Use** [QUICK_REFERENCE_v1.3.md](QUICK_REFERENCE_v1.3.md) as cheat sheet
+3. **Reference** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) for techniques
+
+### During Verification:
+- **Phase 2:** Use `Categorizing_Properties.md` + `BEST_PRACTICES_FROM_CERTORA.md` Section 1
+- **Phase 7:** Use `CERTORA_SPEC_FRAMEWORK.md` + `BEST_PRACTICES_FROM_CERTORA.md` Sections 3-5
+- **Debugging:** Use `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` + `BEST_PRACTICES_FROM_CERTORA.md` Section 2
+
+---
+
 ## Version
 
-**Version:** 1.2  
-**Last Updated:** February 2026
+**Version:** 1.3 (Priority-Enhanced + Tutorial Best Practices)  
+**Last Updated:** February 5, 2026
 
 ### Changelog
-- v1.2: Added Dual Mindset approach (should always/never), Test Mining for property discovery
-- v1.1: Added Section 9.0 (Validation to Real Spec transition), Section 13 (Chat Prompts)
-- v1.0: Initial framework
+- **v1.3:** Property prioritization (HIGH/MEDIUM/LOW), Tutorial best practices integration, 5-step CE investigation, Invariant patterns, Loop handling, Navigation index
+- **v1.2:** Dual Mindset approach (should always/never), Test Mining for property discovery
+- **v1.1:** Section 9.0 (Validation to Real Spec transition), Section 13 (Chat Prompts)
+- **v1.0:** Initial framework release

@@ -1,7 +1,18 @@
 # CERTORA QUICKSTART TEMPLATE
 
 > **Use this template to apply the Certora workflow to ANY contract**  
-> **Copy this file and fill in the blanks for each new verification project**
+> **Copy this file and fill in the blanks for each new verification project**  
+> **Version:** 1.3 (Tutorial-Enhanced)
+
+---
+
+## WHAT'S NEW IN v1.3
+
+- **Property Prioritization:** HIGH/MEDIUM/LOW based on impact (Section 3)
+- **Dual Mindset:** "Should Always" + "Should Never" enumeration
+- **Test Mining:** Extract properties from existing tests
+- **Best Practices:** Reference BEST_PRACTICES_FROM_CERTORA.md for techniques
+- **Enhanced CE Debugging:** 5-step investigation process from tutorials
 
 ---
 

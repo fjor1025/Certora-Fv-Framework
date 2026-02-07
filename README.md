@@ -1,37 +1,41 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 1.3 (Priority-Enhanced + Tutorial Best Practices)
+> **Version:** 1.4 (Performance-Enhanced + Advanced CLI)
 
 ---
 
-## What's New in v1.3
+## What's New in v1.4
 
-**Property Prioritization System** (extracted from Certora Tutorials):
-- HIGH / MEDIUM / LOW priority levels based on impact
-- Attack vector documentation for each property  
-- Verification time budget allocation
-- Priority-based verification ordering strategy
-- Added to `Categorizing_Properties.md` Section 7
+**Performance Optimization & Advanced CLI** (based on Certora Documentation Feb 2026 updates):
 
-**Enhanced CE Investigation** (from Tutorial Lesson 02):
-- 5-step investigation workflow
-- Call trace analysis checklist
-- Storage/arguments/returns inspection guide
-- Bug documentation template
-- Added to `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md`
+**NEW: Advanced CLI Reference Document**:
+- `ADVANCED_CLI_REFERENCE.md` - comprehensive guide to performance optimization and advanced flags
+- Timeout mitigation strategies (`--split_rules`, `--multi_assert_check`, control flow splitting)
+- Advanced debugging (`--multi_example`, `--independent_satisfy`)
+- Loop & array handling from Tutorial Lessons 11 & 12
+- Multi-version project setup (compiler/optimization/EVM version maps)
+- Project-level operations (`--foundry`, `--project_sanity`)
+- Harness patterns from Tutorial Lesson 15
+- Complete command reference and decision trees
 
-**NEW: Best Practices Document**:
-- `BEST_PRACTICES_FROM_CERTORA.md` - comprehensive extraction from official tutorials
-- Property discovery techniques and common pitfalls
-- Invariant design patterns (monotonicity, conservation laws)
-- Harness best practices with examples
-- Loop handling strategies and flags
+**Updated Documents**:
+- `QUICK_REFERENCE_v1.3.md` - Added performance flags section
+- `CERTORA_MASTER_GUIDE.md` - Added Section 10.4 (Performance Optimization)
+- Framework now includes practical strategies for:
+  - Handling timeouts in complex projects
+  - Running Foundry fuzz tests with formal verification
+  - Managing multi-compiler version projects
+  - Optimizing verification performance
+
+**Why This Matters:**
+These updates address real-world challenges encountered in production audits and bug bounties. Essential for complex protocols and competitive engagements like Code4rena.
 
 ---
 
 ## Previous Enhancements
 
+**v1.3:** Property Prioritization + Tutorial Best Practices + CE Investigation  
 **v1.2:** Dual Mindset ("Should Always" / "Should Never") + Test Mining  
 **v1.1:** Validation-to-Real-Spec Transition + Chat Prompts
 
@@ -43,12 +47,13 @@
 |------|---------|-------------|
 | **INDEX.md** | Navigation guide & quick access | ← **START HERE for navigation** |
 | **CERTORA_MASTER_GUIDE.md** | Complete step-by-step instructions | ← **START HERE for verification** |
+| **ADVANCED_CLI_REFERENCE.md** | Performance & advanced flags | ← **NEW in v1.4** - Timeouts/optimization |
 | **CERTORA_WORKFLOW.md** | Phase overview & checklist | Quick reference |
 | **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax & templates | Writing actual CVL |
 | **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** | Counterexample debugging | When rules fail |
 | **SPEC AUTHORING (CERTORA).md** | Deep methodology & theory | Understanding WHY |
 | **Categorizing_Properties.md** | Property discovery guidance | Phase 2 |
-| **BEST_PRACTICES_FROM_CERTORA.md** | Official tutorial techniques | ← **NEW in v1.3** |
+| **BEST_PRACTICES_FROM_CERTORA.md** | Official tutorial techniques | Property discovery & patterns |
 | **QUICK_REFERENCE_v1.3.md** | Printable cheat sheet | Keep open while coding |
 | **VERSION_HISTORY.md** | Version tracking & migration | Check what changed |
 

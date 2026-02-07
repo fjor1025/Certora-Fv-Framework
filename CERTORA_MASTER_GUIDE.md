@@ -31,6 +31,7 @@
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
 | **CERTORA_MASTER_GUIDE.md** | Complete step-by-step instructions | Starting any new verification |
+| **ADVANCED_CLI_REFERENCE.md** | Performance optimization & advanced flags | ← **NEW in v1.4** |
 | **SPEC AUTHORING (CERTORA).md** | Deep methodology & theory | Understanding WHY |
 | **Categorizing_Properties.md** | Property discovery guidance | Phase 2 |
 | **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax & templates | Writing actual CVL |
@@ -1526,6 +1527,72 @@ When a rule FAILS, use `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` (enhanced with Tutori
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+## 10.4 Performance Optimization & Timeout Mitigation
+
+> **NEW in v1.4:** See **ADVANCED_CLI_REFERENCE.md** for complete guide
+
+When rules timeout or run slowly, use these strategies:
+
+### Quick Timeout Fixes
+
+| Problem | Solution | Command |
+|---------|----------|---------|
+| Multiple slow rules | Split to separate jobs | `--split_rules "pattern"` |
+| Complex assertions | Check separately | `--multi_assert_check` |
+| Loop complexity | Adjust iterations | `--loop_iter N` |
+| High path count | Control flow splitting | See advanced guide |
+
+### Common Performance Commands
+
+```bash
+# Split heavy rules (gives each more resources)
+certoraRun certora/confs/Contract.conf --split_rules "solvency_*" "invariant_*"
+
+# Multi-assert check (timeout mitigation)
+certoraRun certora/confs/Contract.conf --multi_assert_check
+
+# Loop handling
+certoraRun certora/confs/Contract.conf --loop_iter 3
+
+# Control flow splitting (eager splitting for large code)
+certoraRun certora/confs/Contract.conf \
+    --prover_args '-smt_initialSplitDepth 5 -depth 15'
+
+# Multiple counterexamples for debugging
+certoraRun certora/confs/Contract.conf --rule failing_rule --multi_example
+```
+
+### Performance Decision Tree
+
+```
+Rule timing out?
+│
+├─► Multiple slow rules? → --split_rules
+├─► Complex assertions? → --multi_assert_check
+├─► Loops in contract? → --loop_iter N (start with 1-3)
+├─► Large source code? → --prover_args '-smt_initialSplitDepth 5'
+└─► Still timing out? → See ADVANCED_CLI_REFERENCE.md Section 1
+```
+
+### Advanced Debugging Flags
+
+```bash
+# Multiple counterexamples (see different failure paths)
+certoraRun config.conf --rule failing_rule --multi_example
+
+# Independent satisfy (check each satisfy separately)
+certoraRun config.conf --independent_satisfy
+
+# Rule sanity (ensure non-vacuous)
+certoraRun config.conf --rule_sanity basic
+
+# Coverage analysis (find gaps)
+certoraRun config.conf --coverage_info advanced
+```
+
+**→ For detailed strategies, loop handling, multi-version projects, and harness patterns:**  
+**See ADVANCED_CLI_REFERENCE.md**
 
 ---
 

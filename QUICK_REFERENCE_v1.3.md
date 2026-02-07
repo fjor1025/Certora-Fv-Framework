@@ -179,6 +179,46 @@ invariant partLessThanWhole(address user)
 
 ---
 
+## ⚡ Performance & Advanced Flags
+
+**Reference:** ADVANCED_CLI_REFERENCE.md for complete guide
+
+### Timeout Mitigation
+
+| Problem | Solution | Command |
+|---------|----------|---------|
+| Multiple slow rules | Split to separate jobs | `--split_rules "pattern"` |
+| Complex assertions | Check separately | `--multi_assert_check` |
+| High path count | Control flow splitting | `--prover_args '-depth N'` |
+| Loops timing out | Adjust iterations | `--loop_iter N` |
+
+### Advanced Debugging
+
+| Need | Flag | Use Case |
+|------|------|----------|
+| Multiple CEs | `--multi_example` | See different failure paths |
+| Multiple scenarios | `--independent_satisfy` | Check satisfy statements separately |
+| Vacuity check | `--rule_sanity basic` | Ensure rules can fail |
+| Coverage gaps | `--coverage_info advanced` | Find untested code |
+
+### Quick Performance Commands
+
+```bash
+# Split heavy rules
+certoraRun config.conf --split_rules "solvency_*"
+
+# Multi-assert for timeouts
+certoraRun config.conf --multi_assert_check
+
+# Eager splitting for large code
+certoraRun config.conf --prover_args '-smt_initialSplitDepth 5 -depth 15'
+
+# Multiple counterexamples
+certoraRun config.conf --rule failing_rule --multi_example
+```
+
+---
+
 ## 🚀 Before Running Prover
 
 ```
@@ -198,11 +238,14 @@ invariant partLessThanWhole(address user)
 
 | Need | Document | Section |
 |------|----------|---------|
+| Performance optimization | **ADVANCED_CLI_REFERENCE** | **Sections 1-2** |
+| Loop/array handling | **ADVANCED_CLI_REFERENCE** | **Section 3** |
+| Multi-version projects | **ADVANCED_CLI_REFERENCE** | **Section 4** |
 | Property discovery | BEST_PRACTICES | Section 1 |
 | CE investigation | BEST_PRACTICES | Section 2 |
 | Invariant patterns | BEST_PRACTICES | Section 3 |
-| Harness design | BEST_PRACTICES | Section 4 |
-| Loop handling | BEST_PRACTICES | Section 5 |
+| Harness design | BEST_PRACTICES + ADVANCED_CLI | Sections 4, 6 |
+| Loop handling | BEST_PRACTICES + ADVANCED_CLI | Sections 5, 3 |
 | Common mistakes | BEST_PRACTICES | Section 6 |
 | Prioritization | Categorizing_Properties | Section 7 |
 | CVL syntax | CERTORA_SPEC_FRAMEWORK | All |

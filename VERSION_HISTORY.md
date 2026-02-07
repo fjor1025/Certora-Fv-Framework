@@ -1,7 +1,114 @@
 # Framework Version History
 
-> **Current Version:** 1.3 (Tutorial-Enhanced)  
-> **Last Updated:** February 5, 2026
+> **Current Version:** 1.4 (Performance-Enhanced + Advanced CLI)  
+> **Last Updated:** February 7, 2026
+
+---
+
+## Version 1.4 (Performance-Enhanced + Advanced CLI) - February 7, 2026
+
+### Major Additions
+
+#### New Documents
+1. **ADVANCED_CLI_REFERENCE.md** - Comprehensive performance optimization and advanced CLI guide
+   - **Section 1: Performance Optimization**
+     - `--split_rules` strategy for heavy rules
+     - `--multi_assert_check` for timeout mitigation
+     - Control flow splitting techniques (depth, mediumTimeout, eager/lazy splitting)
+     - Complete timeout mitigation checklist
+   
+   - **Section 2: Advanced Debugging**  
+     - `--multi_example` for multiple counterexamples
+     - `--independent_satisfy` for separate satisfy checks
+     - Expression breakdown techniques
+   
+   - **Section 3: Loop & Array Handling** (from Tutorial Lessons 11 & 12)
+     - `--loop_iter` and `--optimistic_loop` strategies
+     - Array uniqueness patterns
+     - Frequency tracking with ghosts
+     - Array length bounds
+   
+   - **Section 4: Multi-Version Projects**
+     - `--compiler_map` for mixed Solidity/Vyper versions
+     - `--solc_optimize_map` for per-contract optimization
+     - `--solc_evm_version_map` for different EVM targets
+     - `--solc_via_ir_map` for IR pipeline configurations
+   
+   - **Section 5: Project-Level Operations**
+     - `--project_sanity` for quick project assessment
+     - `--foundry` for formal verification of Foundry fuzz tests
+     - `--ignore_solidity_warnings` for legacy contracts
+   
+   - **Section 6: Harness Patterns** (from Tutorial Lesson 15)
+     - Complete harness template with best practices
+     - Harness vs. CVL ghosts decision tree
+     - DO/DON'T guidelines
+   
+   - **Section 7: Practical Tips**
+     - `--coverage_info` for gap analysis
+     - `--rule_sanity` for vacuity checks
+     - Running rules individually strategies
+     - Config file best practices
+   
+   - **Section 8: Quick Command Reference**
+     - Performance optimization commands
+     - Advanced debugging commands
+     - Complete real-world examples
+
+#### Enhanced Documents
+
+**QUICK_REFERENCE_v1.3.md**
+- Added **"⚡ Performance & Advanced Flags"** section
+  - Timeout mitigation quick reference table
+  - Advanced debugging flags table
+  - Quick performance commands
+- Updated document links to include ADVANCED_CLI_REFERENCE
+- Added loop/array and multi-version project references
+
+**CERTORA_MASTER_GUIDE.md**
+- Updated to v1.4
+- Added ADVANCED_CLI_REFERENCE to framework documents table (Section 1.1)
+- Added **Section 10.4: Performance Optimization & Timeout Mitigation**
+  - Quick timeout fixes table
+  - Common performance commands
+  - Performance decision tree
+  - Advanced debugging flags
+  - Direct reference to detailed strategies in ADVANCED_CLI_REFERENCE
+
+**README.md**
+- Updated to v1.4
+- Added comprehensive "What's New in v1.4" section
+- Added ADVANCED_CLI_REFERENCE to framework files table
+- Emphasized real-world applicability for production audits and bug bounties
+
+### Integration Points
+
+**Tutorial Content Integration:**
+- Lesson 11 (Loops): Loop unrolling strategies, `--loop_iter`, `--optimistic_loop` safety
+- Lesson 12 (Arrays): Array uniqueness patterns, frequency tracking, length bounds
+- Lesson 15 (Harness): Harness template, best practices, harness vs. ghosts decision
+- 3-Day Workshop: Practical workflow insights
+
+**Certora Documentation (Feb 2026 Updates):**
+- Latest CLI flags and options
+- Control flow splitting configurations
+- Multi-version project setup patterns
+- Foundry integration workflow
+
+### Philosophy
+
+**Framework Evolution:**
+Version 1.4 addresses the transition from "learning formal verification" to "production formal verification at scale":
+
+- **v1.1-v1.3** focused on methodology and property discovery
+- **v1.4** focuses on performance, productivity, and real-world complexity
+
+This version is designed for:
+- Complex DeFi protocols with timeouts
+- Multi-contract systems with various compiler versions
+- Competitive audit environments (Code4rena, Immunefi)
+- Bug bounty hunters seeking formal verification edge
+- Production audits requiring comprehensive coverage
 
 ---
 

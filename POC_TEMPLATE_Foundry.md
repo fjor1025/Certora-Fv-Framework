@@ -607,9 +607,11 @@ Quick checks:
 - [ ] Attacker starts with realistic resources (just gas + maybe some tokens)
 - [ ] No `vm.store()` on target contract (unless justified)
 - [ ] Console logs show before/after state clearly
+- [ ] Reduce Console logs to what is only important for the judger to understand the exploit
 - [ ] Assertions prove the exploit worked
 - [ ] Gas cost is reasonable (<5M gas if possible)
-- [ ] Works on mainnet fork with real addresses
+- [ ] Works on mainnet fork with real addresses or the realistic local deployment
+- [ ] No unnecessary complexity - keep it as simple as possible to demonstrate the bug
 - [ ] Code is minimal - no unnecessary complexity
 
 ---

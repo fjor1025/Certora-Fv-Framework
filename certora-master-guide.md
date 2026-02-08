@@ -175,7 +175,7 @@ IMPORTANT: You need the ENTIRE contracts folder for compilation,
 ├── SPEC AUTHORING (CERTORA).md        ← Deep methodology
 ├── categorizing-properties.md         ← Phase 2 property discovery
 │
-├── CVLDocs/                           ← Reference documentation
+├── Certora-CVL-Documentation/                           ← Reference documentation
 │   └── ...
 │
 ├── ══════════════════════════════════════════════════════════════════════

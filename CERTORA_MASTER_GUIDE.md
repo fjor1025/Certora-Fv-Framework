@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 1.3 (Tutorial-Enhanced)  
+> **Version:** 1.5 (RareSkills Integration)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---
@@ -31,6 +31,8 @@
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
 | **CERTORA_MASTER_GUIDE.md** | Complete step-by-step instructions | Starting any new verification |
+| **CVL_LANGUAGE_DEEP_DIVE.md** | Complete CVL language reference | ← **NEW in v1.5** |
+| **VERIFICATION_PLAYBOOKS.md** | Worked examples (ERC-20, WETH, ERC-721) | ← **NEW in v1.5** |
 | **ADVANCED_CLI_REFERENCE.md** | Performance optimization & advanced flags | ← **NEW in v1.4** |
 | **SPEC AUTHORING (CERTORA).md** | Deep methodology & theory | Understanding WHY |
 | **Categorizing_Properties.md** | Property discovery guidance | Phase 2 |
@@ -1201,7 +1203,7 @@ When your validation spec PASSES, you've proven your **infrastructure is correct
 │   ├── Logic errors in invariant/rule (wrong operator, wrong var)        │
 │   ├── Missing preconditions (forgot requireInvariant)                   │
 │   ├── Property too strong (not actually true)                           │
-│   └── REAL CONTRACT BUG 🎉 (this is what you want to find!)            │
+│   └── REAL CONTRACT BUG (this is what you want to find!)            │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1765,6 +1767,7 @@ I am starting a formal verification project using Certora for the following cont
 **Project Location:** [/path/to/project]
 **Primary Target Contract:** [ContractName.sol at path/to/contract]
 **Contract Dependencies:** [List the files that the target imports]
+**Token Standard (if any):** [ERC-20 / ERC-721 / WETH / None]
 
 Please help me follow the CERTORA_MASTER_GUIDE.md workflow:
 
@@ -1780,6 +1783,11 @@ Please help me follow the CERTORA_MASTER_GUIDE.md workflow:
    - All modifiers/access control
 
 The framework documents are already in my project root.
+
+**Key v1.5 references to use throughout:**
+- CVL_LANGUAGE_DEEP_DIVE.md — Complete CVL language reference (types, ghosts, hooks, operators)
+- VERIFICATION_PLAYBOOKS.md — Worked examples for ERC-20, WETH, and ERC-721
+- BEST_PRACTICES_FROM_CERTORA.md — Sections 7-9 (vacuity defense, requireInvariant lifecycle, edge cases)
 ```
 
 ## 13.2 For Continuing Phase 0 / Phase -1
@@ -1818,6 +1826,12 @@ Based on the Phase 0/-1 analysis, help me discover security properties using Cat
 - Dual mindset (Should Always / Should Never) - Section 5
 - Test mining (extract from existing tests) - Section 6
 - Avoid the 4 fatal mistakes - BEST_PRACTICES Section 1
+
+**NEW v1.5:** For each function, consider the Liveness/Effect/No-Side-Effect triple:
+- Liveness: assert success <=> (preconditions)
+- Effect: assert success => (state_changes)
+- No Side Effect: assert uninvolved_state unchanged
+See VERIFICATION_PLAYBOOKS.md Section 4 and CVL_LANGUAGE_DEEP_DIVE.md Section 15.
 
 Output should go into: spec_authoring/{target}_candidate_properties.md
 ```
@@ -1863,7 +1877,10 @@ Create the validation spec and conf to verify mutation paths are complete:
 3. Include validation rules for each INVARIANT variable
 4. Include ghost synchronization tests if ghosts are needed
 
-Reference: CERTORA_MASTER_GUIDE.md section 7.
+Reference:
+- CERTORA_MASTER_GUIDE.md section 7
+- CVL_LANGUAGE_DEEP_DIVE.md Sections 8-9 (ghost declaration, init_state axiom, hook syntax)
+- BEST_PRACTICES_FROM_CERTORA.md Section 8 (require → requireInvariant lifecycle)
 ```
 
 ## 13.5 For Phase 7 (Validation PASSED → Write Real Spec)
@@ -1872,6 +1889,7 @@ Reference: CERTORA_MASTER_GUIDE.md section 7.
 My validation spec PASSED for [ContractName]. Ready to write the real spec.
 
 **Target:** [path/to/ContractName.sol]
+**Token Standard (if any):** [ERC-20 / ERC-721 / WETH / None]
 **Validation Spec:** certora/specs/validation_{target}.spec (PASSED ✅)
 **Candidate Properties:** spec_authoring/{target}_candidate_properties.md
 
@@ -1879,14 +1897,52 @@ Please help me create the real spec:
 1. Copy infrastructure from validation spec (methods, ghosts, hooks)
 2. DELETE all validation_* rules
 3. ADD real invariants and rules from candidate_properties.md
-4. Create certora/specs/{Contract}.spec
-5. Create certora/confs/{Contract}.conf
+4. Use the Liveness/Effect/No-Side-Effect pattern for each function rule
+5. Add standard `definition` blocks (nonpayable, nonzerosender, balanceLimited)
+6. Use `requireInvariant` (not raw `require`) for proven invariant preconditions
+7. Create certora/specs/{Contract}.spec
+8. Create certora/confs/{Contract}.conf
 
 Reference:
 - CERTORA_MASTER_GUIDE.md section 9.0 (Transition from Validation to Real Spec)
-- CERTORA_SPEC_FRAMEWORK.md (CVL syntax patterns)
-- BEST_PRACTICES_FROM_CERTORA.md Section 3 (invariant design patterns)
+- CVL_LANGUAGE_DEEP_DIVE.md (complete CVL reference — types, operators, ghosts, hooks, definitions)
+- VERIFICATION_PLAYBOOKS.md (if ERC-20/721/WETH — follow the complete worked example)
+- CERTORA_SPEC_FRAMEWORK.md (CVL syntax patterns + Liveness/Effect/No-Side-Effect template)
+- BEST_PRACTICES_FROM_CERTORA.md Sections 3, 7-9 (invariant patterns, vacuity defense, lifecycle, edge cases)
 - QUICK_REFERENCE_v1.3.md (keep open for syntax lookup)
+```
+
+## 13.5.1 For Token Standard Verification (ERC-20 / ERC-721 / WETH)
+
+```markdown
+I need to verify a [ERC-20 / ERC-721 / WETH] token contract:
+
+**Target:** [path/to/TokenContract.sol]
+**Standard:** [ERC-20 / ERC-721 / WETH]
+**Non-standard features:** [mint/burn access control, fee-on-transfer, rebasing, etc.]
+
+Please use the VERIFICATION_PLAYBOOKS.md as the primary reference:
+
+**For ERC-20:** Follow Section 1 (22-rule playbook with 4-phase methodology):
+- Phase 1: Function correctness (transfer, transferFrom, approve, mint, burn)
+- Phase 2: No side effects on uninvolved accounts
+- Phase 3: Global invariants (totalSupply == sumOfBalances, individual cap, zero-address)
+- Phase 4: Authorization (only mint/burn change supply, only transfer changes balances)
+
+**For ERC-721:** Follow Section 3 (OpenZeppelin pattern):
+- Create harness with unsafeOwnerOf/unsafeGetApproved (non-reverting getters)
+- Create ERC721ReceiverHarness for DISPATCHER callback resolution
+- Use helperSoundFnCall for partially parametric rules
+- Handle mint/burn/transferFrom with ownership tracking ghost + hook
+
+**For WETH:** Follow Section 2 (Solady pattern):
+- Prove solvency invariant: nativeBalances[currentContract] >= totalSupply()
+- Use persistent ghost + CALL hook for assembly verification
+- Exclude self-calls: require e.msg.sender != currentContract
+
+Also reference:
+- CVL_LANGUAGE_DEEP_DIVE.md (mathint, satisfy, <=>, @withrevert, persistent ghost, definitions)
+- BEST_PRACTICES_FROM_CERTORA.md Section 9 (self-transfer edge case)
 ```
 
 ## 13.6 For Debugging Counterexamples
@@ -1897,15 +1953,19 @@ I have a failing rule in my Certora verification:
 **Target:** [ContractName]
 **Failing Rule:** [rule name]
 **Error/CE Summary:** [paste the counterexample or error]
+**Ghost variables involved (if any):** [ghost names]
 
 Please help me diagnose using the systematic approach:
 1. Is this a REAL bug or SPURIOUS result?
 2. If spurious, what modeling is missing?
 3. If real, what's the attack vector?
+4. If ghost values look wrong, is it a havocing issue?
 
 Reference:
-- CERTORA_CE_DIAGNOSIS_FRAMEWORK.md (comprehensive 5-phase diagnosis)
+- CERTORA_CE_DIAGNOSIS_FRAMEWORK.md (comprehensive 5-phase diagnosis + ghost havocing guide)
 - BEST_PRACTICES_FROM_CERTORA.md Section 2 (5-step investigation workflow from Tutorial Lesson 02)
+- CVL_LANGUAGE_DEEP_DIVE.md Section 4 (vacuous truth — is the rule trivially passing?)
+- CVL_LANGUAGE_DEEP_DIVE.md Section 8 (ghost havocing — when/why ghosts get arbitrary values)
 - Focus on call trace analysis: storage changes, arguments, return values
 ```
 
@@ -1938,11 +1998,14 @@ When starting any verification conversation, always include:
 | **Contract name** | `Vault` (as declared in Solidity) |
 | **Dependencies** | `imports Token.sol, Oracle.sol, Utils.sol` |
 | **Current phase** | Phase 0 / -1 / 2 / 2.5 / 3.5 / 7 |
+| **Token standard** | ERC-20 / ERC-721 / WETH / None |
 
 **Optional but helpful:**
 - Known external integrations (ERC20, Chainlink, Uniswap, etc.)
 - Special patterns (proxy, upgradeable, diamond)
 - Existing tests or known issues
+- Non-standard features (fee-on-transfer, rebasing, computed storage slots)
+- Assembly usage (low-level calls, inline assembly)
 
 ---
 

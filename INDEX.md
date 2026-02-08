@@ -1,10 +1,10 @@
 # Framework Index & Navigation Guide
 
-> **Quick navigation for the Certora Formal Verification Framework v1.3**
+> **Quick navigation for the Certora Formal Verification Framework v1.5**
 
 ---
 
-## 📚 Core Learning Path (Start Here)
+## Core Learning Path (Start Here)
 
 **If you're new to this framework:**
 
@@ -15,7 +15,7 @@
 
 ---
 
-## 📖 Document Reference by Purpose
+## Document Reference by Purpose
 
 ### Planning & Setup
 | Document | Use When |
@@ -36,6 +36,8 @@
 | Document | Use When |
 |----------|----------|
 | [CERTORA_SPEC_FRAMEWORK.md](CERTORA_SPEC_FRAMEWORK.md) | Writing CVL code |
+| [CVL_LANGUAGE_DEEP_DIVE.md](CVL_LANGUAGE_DEEP_DIVE.md) | CVL type system, ghosts, hooks, invariants ⭐ **NEW v1.5** |
+| [VERIFICATION_PLAYBOOKS.md](VERIFICATION_PLAYBOOKS.md) | Copy-paste worked examples (ERC-20, WETH, ERC-721) ⭐ **NEW v1.5** |
 | [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) | Invariant patterns & harness design |
 | [QUICK_REFERENCE_v1.3.md](QUICK_REFERENCE_v1.3.md) | Quick syntax lookup |
 
@@ -46,6 +48,11 @@
 | [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) | Section 2: 5-step investigation |
 | [QUICK_REFERENCE_v1.3.md](QUICK_REFERENCE_v1.3.md) | Quick troubleshooting |
 
+### Performance & CLI
+| Document | Use When |
+|----------|----------|
+| [ADVANCED_CLI_REFERENCE.md](ADVANCED_CLI_REFERENCE.md) | Timeout optimization, advanced flags ⭐ **NEW v1.4** |
+
 ### Reference & Learning
 | Document | Use When |
 |----------|----------|
@@ -55,53 +62,55 @@
 
 ---
 
-## 🎯 Quick Access by Phase
+## Quick Access by Phase
 
 ### Phase 0: Contract Analysis
-📄 **Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 3  
-📄 **Reference:** [SPEC AUTHORING (CERTORA).md](SPEC%20AUTHORING%20%28CERTORA%29.md) Phase 0  
-✅ **Checklist:** Enumerate entry points, storage, external calls
+**Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 3  
+**Reference:** [SPEC AUTHORING (CERTORA).md](SPEC%20AUTHORING%20%28CERTORA%29.md) Phase 0  
+**Checklist:** Enumerate entry points, storage, external calls
 
 ### Phase -1: Execution Closure
-📄 **Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 4  
-📄 **Reference:** [SPEC AUTHORING (CERTORA).md](SPEC%20AUTHORING%20%28CERTORA%29.md) Phase -1  
-✅ **Checklist:** Complete interaction ownership table
+**Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 4  
+**Reference:** [SPEC AUTHORING (CERTORA).md](SPEC%20AUTHORING%20%28CERTORA%29.md) Phase -1  
+**Checklist:** Complete interaction ownership table
 
 ### Phase 2: Property Discovery
-📄 **Primary:** [Categorizing_Properties.md](Categorizing_Properties.md)  
-📄 **Enhanced:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Section 1  
-💡 **Tips:** Avoid 4 fatal mistakes, use dual mindset, mine tests  
-✅ **Checklist:** All properties in plain English + prioritized
+**Primary:** [Categorizing_Properties.md](Categorizing_Properties.md)  
+**Enhanced:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Section 1  
+**Tips:** Avoid 4 fatal mistakes, use dual mindset, mine tests  
+**Checklist:** All properties in plain English + prioritized
 
 ### Phase 2.5: Classification (Invariant vs Rule)
-📄 **Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 6  
-📄 **Reference:** [CERTORA_WORKFLOW.md](CERTORA_WORKFLOW.md) Step 4  
-✅ **Checklist:** Each property classified with reasoning
+**Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 6  
+**Reference:** [CERTORA_WORKFLOW.md](CERTORA_WORKFLOW.md) Step 4  
+**Checklist:** Each property classified with reasoning
 
 ### Phase 3.5: Causal Validation
-📄 **Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 7  
-📄 **Reference:** [CERTORA_WORKFLOW.md](CERTORA_WORKFLOW.md) Step 5  
-✅ **Checklist:** Validation spec PASSED
+**Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 7  
+**Reference:** [CERTORA_WORKFLOW.md](CERTORA_WORKFLOW.md) Step 5  
+**Checklist:** Validation spec PASSED
 
 ### Phase 4-6: Modeling & Sanity
-📄 **Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 8  
-📄 **Patterns:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Section 3 & 4  
-✅ **Checklist:** Sanity gate all checked
+**Primary:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 8  
+**Patterns:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Section 3 & 4  
+**Checklist:** Sanity gate all checked
 
 ### Phase 7: Write CVL
-📄 **Primary:** [CERTORA_SPEC_FRAMEWORK.md](CERTORA_SPEC_FRAMEWORK.md)  
-📄 **Guide:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 9  
-💡 **Patterns:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Sections 3-5  
-✅ **Checklist:** Pre-verification checklist in QUICK_REFERENCE
+**Primary:** [CERTORA_SPEC_FRAMEWORK.md](CERTORA_SPEC_FRAMEWORK.md)  
+**CVL Reference:** [CVL_LANGUAGE_DEEP_DIVE.md](CVL_LANGUAGE_DEEP_DIVE.md) ⭐ **NEW v1.5**  
+**Worked Examples:** [VERIFICATION_PLAYBOOKS.md](VERIFICATION_PLAYBOOKS.md) ⭐ **NEW v1.5**  
+**Guide:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md) Section 9  
+**Patterns:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Sections 3-5  
+**Checklist:** Pre-verification checklist in QUICK_REFERENCE
 
 ### Debugging: Counterexamples
-📄 **Primary:** [CERTORA_CE_DIAGNOSIS_FRAMEWORK.md](CERTORA_CE_DIAGNOSIS_FRAMEWORK.md)  
-📄 **Workflow:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Section 2  
-💡 **Tips:** 5-step investigation, break down complex expressions
+**Primary:** [CERTORA_CE_DIAGNOSIS_FRAMEWORK.md](CERTORA_CE_DIAGNOSIS_FRAMEWORK.md)  
+**Workflow:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Section 2  
+**Tips:** 5-step investigation, break down complex expressions
 
 ---
 
-## 🔍 Find Information By Topic
+## Find Information By Topic
 
 ### Property Discovery
 - **Main Guide:** [Categorizing_Properties.md](Categorizing_Properties.md)
@@ -131,9 +140,10 @@
 - **Hooks:** CERTORA_SPEC_FRAMEWORK hooks section
 
 ### CVL Syntax
-- **Complete Reference:** [CERTORA_SPEC_FRAMEWORK.md](CERTORA_SPEC_FRAMEWORK.md)
+- **Complete Reference:** [CVL_LANGUAGE_DEEP_DIVE.md](CVL_LANGUAGE_DEEP_DIVE.md) ⭐ **NEW v1.5** (20 sections)
+- **Templates & Patterns:** [CERTORA_SPEC_FRAMEWORK.md](CERTORA_SPEC_FRAMEWORK.md)
 - **Quick Lookup:** [QUICK_REFERENCE_v1.3.md](QUICK_REFERENCE_v1.3.md) Section 12.2
-- **Patterns:** CERTORA_SPEC_FRAMEWORK pattern library
+- **Worked Examples:** [VERIFICATION_PLAYBOOKS.md](VERIFICATION_PLAYBOOKS.md) ⭐ **NEW v1.5**
 
 ### Counterexample Debugging
 - **Framework:** [CERTORA_CE_DIAGNOSIS_FRAMEWORK.md](CERTORA_CE_DIAGNOSIS_FRAMEWORK.md)
@@ -147,7 +157,7 @@
 
 ---
 
-## 🎓 Learning Resources
+## Learning Resources
 
 ### Official Certora Tutorials
 The framework integrates techniques from:
@@ -161,13 +171,13 @@ The framework integrates techniques from:
 **See:** [TUTORIAL_EXTRACTION_SUMMARY.md](TUTORIAL_EXTRACTION_SUMMARY.md) for complete mapping
 
 ### Framework Evolution
-- **v1.0 → v1.3:** [VERSION_HISTORY.md](VERSION_HISTORY.md)
+- **v1.0 → v1.5:** [VERSION_HISTORY.md](VERSION_HISTORY.md)
 - **Migration Guides:** VERSION_HISTORY migration sections
 - **Feature Comparison:** VERSION_HISTORY feature matrix
 
 ---
 
-## 🚀 Verification Workflow Checklist
+## Verification Workflow Checklist
 
 **Print this and check off as you progress:**
 
@@ -185,7 +195,7 @@ The framework integrates techniques from:
 
 ---
 
-## 📝 Templates & Examples
+## Templates & Examples
 
 ### Copy-Paste Templates
 - **Project Setup:** [CERTORA_QUICKSTART_TEMPLATE.md](CERTORA_QUICKSTART_TEMPLATE.md) Section 1
@@ -202,7 +212,7 @@ The framework integrates techniques from:
 
 ---
 
-## 🔧 Tools & Commands
+## Tools & Commands
 
 ### Essential Commands
 ```bash
@@ -223,7 +233,7 @@ certoraRun certora/confs/Contract.conf --rule "ruleName"
 
 ---
 
-## 💡 Quick Tips
+## Quick Tips
 
 ### Before You Start
 1. ✅ Have all framework files in your project root
@@ -245,7 +255,7 @@ certoraRun certora/confs/Contract.conf --rule "ruleName"
 
 ---
 
-## 📞 Support & Help
+## Support & Help
 
 ### Stuck? Check These First:
 1. **Common Pitfalls:** [BEST_PRACTICES_FROM_CERTORA.md](BEST_PRACTICES_FROM_CERTORA.md) Section 6
@@ -257,9 +267,9 @@ Use MASTER_GUIDE Section 13 for ready-to-use prompts for each phase.
 
 ---
 
-## 📦 Framework Files Summary
+## Framework Files Summary
 
-Total: **13 documents** (v1.3)
+Total: **19 documents** (v1.5)
 
 **Core (8):**
 1. README.md
@@ -271,19 +281,29 @@ Total: **13 documents** (v1.3)
 7. Categorizing_Properties.md
 8. CERTORA_QUICKSTART_TEMPLATE.md
 
-**Enhanced (3):**
-9. BEST_PRACTICES_FROM_CERTORA.md ⭐ NEW v1.3
-10. QUICK_REFERENCE_v1.3.md ⭐ NEW v1.3
-11. TUTORIAL_EXTRACTION_SUMMARY.md ⭐ NEW v1.3
+**Enhanced (3 — added v1.3):**
+9. BEST_PRACTICES_FROM_CERTORA.md
+10. QUICK_REFERENCE_v1.3.md
+11. TUTORIAL_EXTRACTION_SUMMARY.md
+
+**v1.4 Additions (4):**
+12. ADVANCED_CLI_REFERENCE.md ⭐ CLI & performance
+13. POC_TEMPLATE_Foundry.md ⭐ Foundry PoC template
+14. POC_TEMPLATE_HARDHAT.md ⭐ Hardhat PoC template
+15. VULNERABILITY_REPORT_TEMPLATE.md ⭐ Report template
+
+**v1.5 Additions (2):**
+16. CVL_LANGUAGE_DEEP_DIVE.md ⭐ Complete CVL language reference
+17. VERIFICATION_PLAYBOOKS.md ⭐ ERC-20/WETH/ERC-721 worked examples
 
 **Meta (2):**
-12. VERSION_HISTORY.md ⭐ NEW v1.3
-13. INDEX.md (this file) ⭐ NEW v1.3
+18. VERSION_HISTORY.md
+19. INDEX.md (this file)
 
 ---
 
-**Framework Version:** 1.3 (Tutorial-Enhanced)  
+**Framework Version:** 1.5 (RareSkills Integration)  
 **Status:** Production-Ready  
-**Last Updated:** February 5, 2026
+**Last Updated:** February 8, 2026
 
 **Start Your Verification Journey:** [CERTORA_MASTER_GUIDE.md](CERTORA_MASTER_GUIDE.md)

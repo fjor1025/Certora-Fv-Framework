@@ -806,3 +806,79 @@ Before closing any CE diagnosis:
 |---------|------|---------|
 | 2.0 | [DATE] | Added bounded state checks, NONDET refinements, filtered clause checks, multi-contract analysis, CVL 2.0 repair tools, structured templates |
 | 1.0 | [DATE] | Initial framework |
+
+---
+
+## Ghost Havocing Diagnosis Guide (NEW in v1.5)
+
+> **Source:** RareSkills Certora Book — Ghost Variables and Persistent Ghosts
+
+### What Is Ghost Havocing?
+
+When a ghost variable is "havoced," the Prover assigns it an arbitrary (random) value. This happens:
+
+| Event | Regular Ghost | Persistent Ghost |
+|-------|---------------|------------------|
+| Start of verification | Havoced | Havoced |
+| Unresolved external call | **Havoced** | Retains value |
+| Transaction reverts | Reset to pre-call | **Retains value** |
+
+### Symptoms of Ghost Havocing
+
+- Counterexample shows a ghost with an impossible value (e.g., negative balance sum)
+- Invariant base case passes but inductive step fails with unrealistic initial values
+- Rule passes with `require ghost == 0` but fails without it
+- Values "jump" between function calls in the CE trace
+
+### Diagnosis Steps
+
+1. **Check ghost initialization:** Does the ghost have `init_state axiom`?
+   ```cvl
+   ghost mathint myGhost {
+       init_state axiom myGhost == 0;  // Required for invariants
+   }
+   ```
+
+2. **Check for unresolved external calls:** Are there external calls not modeled in the methods block? These cause ALL regular ghosts to be havoced after the call.
+   - **Fix:** Add summary for the external call, or link the target contract
+
+3. **Check if `persistent ghost` is needed:** If the ghost tracks state across reverts (e.g., low-level CALL return codes), it must be persistent:
+   ```cvl
+   persistent ghost bool g_callFailed;
+   ```
+
+4. **Check Sload hooks:** Without Sload hooks, ghosts can start from unrealistic values:
+   ```cvl
+   hook Sload uint256 val balanceOf[KEY address a] {
+       require g_sum >= to_mathint(val);
+   }
+   ```
+
+5. **Do NOT use `persistent` as a quick fix:** If a regular ghost is havoced due to unresolved external calls, the correct fix is to model the external call (link contract or add summary), NOT to make the ghost persistent.
+
+### Persistent Ghost Use Cases
+
+| Use Case | Regular | Persistent | Why |
+|----------|---------|------------|-----|
+| Sum tracking | ✓ | | Standard storage hooks maintain state |
+| CALL opcode return tracking | | ✓ | Outer function may revert after CALL |
+| Assembly transfer verification | | ✓ | Low-level calls need cross-revert tracking |
+| Token counter | ✓ | | Standard accumulation |
+
+### Persistent Ghost + CALL Hook Template
+
+```cvl
+persistent ghost bool g_lowLevelCallFail;
+
+hook CALL(uint gas, address to, uint value,
+          uint argsOffset, uint argsLength,
+          uint retOffset, uint retLength) uint returnCode {
+    if (returnCode == 0) {
+        g_lowLevelCallFail = true;
+    } else {
+        g_lowLevelCallFail = false;
+    }
+}
+```
+
+**See:** `CVL_LANGUAGE_DEEP_DIVE.md` Sections 8-9 for complete ghost and hook reference.

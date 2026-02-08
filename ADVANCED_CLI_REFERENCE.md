@@ -1,9 +1,9 @@
 # ADVANCED CLI OPTIONS & PERFORMANCE OPTIMIZATION
 
-> **Version:** 1.0  
+> **Version:** 1.0 (Framework v1.5)  
 > **Purpose:** Advanced CLI flags, timeout mitigation, and performance optimization strategies  
 > **Audience:** Users experiencing timeouts, complex projects, or seeking advanced debugging  
-> **Updated:** February 7, 2026 (based on Certora Documentation latest updates)
+> **Updated:** February 8, 2026 (based on Certora Documentation latest updates)
 
 ---
 
@@ -1666,5 +1666,7 @@ Is your verification...
 
 For more information, see:
 - CERTORA_MASTER_GUIDE.md (Main workflow)
+- CVL_LANGUAGE_DEEP_DIVE.md (CVL language reference — NEW v1.5)
+- VERIFICATION_PLAYBOOKS.md (Worked examples — NEW v1.5)
 - BEST_PRACTICES_FROM_CERTORA.md (Tutorial techniques)
 - QUICK_REFERENCE_v1.3.md (Quick lookup)

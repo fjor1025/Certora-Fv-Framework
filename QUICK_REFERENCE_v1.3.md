@@ -1,10 +1,11 @@
-# Framework v1.3 Quick Reference Card
+# Framework v1.5 Quick Reference Card
 
-> **Print this or keep open while verifying**
+> **Print this or keep open while verifying**  
+> *(filename retained as `QUICK_REFERENCE_v1.3.md` for backward compatibility)*
 
 ---
 
-## 📋 Phase Checklist with Best Practices
+## Phase Checklist with Best Practices
 
 ### Phase 2: Discover Properties
 
@@ -91,7 +92,7 @@ assert userTotal <= systemTotal;
 
 ---
 
-## 🎯 Priority Guidelines
+## Priority Guidelines
 
 | Priority | Criteria | Example |
 |----------|----------|---------|
@@ -107,7 +108,7 @@ assert userTotal <= systemTotal;
 
 ---
 
-## 🔧 Loop Handling
+## Loop Handling
 
 ```json
 {
@@ -120,7 +121,7 @@ assert userTotal <= systemTotal;
 
 ---
 
-## 🏗️ Harness Patterns
+## Harness Patterns
 
 ```solidity
 contract MyContractHarness is MyContract {
@@ -219,7 +220,7 @@ certoraRun config.conf --rule failing_rule --multi_example
 
 ---
 
-## 🚀 Before Running Prover
+## Before Running Prover
 
 ```
 □ Properties in plain English first?
@@ -234,7 +235,7 @@ certoraRun config.conf --rule failing_rule --multi_example
 
 ---
 
-## 📚 Document Quick Links
+## Document Quick Links
 
 | Need | Document | Section |
 |------|----------|---------|
@@ -249,11 +250,14 @@ certoraRun config.conf --rule failing_rule --multi_example
 | Common mistakes | BEST_PRACTICES | Section 6 |
 | Prioritization | Categorizing_Properties | Section 7 |
 | CVL syntax | CERTORA_SPEC_FRAMEWORK | All |
+| CVL language deep dive | CVL_LANGUAGE_DEEP_DIVE | All ⭐ NEW v1.5 |
+| Worked examples | VERIFICATION_PLAYBOOKS | ERC-20/WETH/ERC-721 ⭐ NEW v1.5 |
+| CLI & performance | ADVANCED_CLI_REFERENCE | All ⭐ NEW v1.4 |
 | Full workflow | CERTORA_MASTER_GUIDE | All |
 
 ---
 
-## 🎓 Tutorial Mapping
+## Tutorial Mapping
 
 | Your Phase | Relevant Tutorial |
 |------------|-------------------|
@@ -267,7 +271,7 @@ certoraRun config.conf --rule failing_rule --multi_example
 
 ---
 
-## 💡 Key Quotes
+## Key Quotes
 
 > "Coming up with meaningful properties is the most challenging part of the work."
 > — Certora Tutorial Lesson 06
@@ -280,5 +284,7 @@ certoraRun config.conf --rule failing_rule --multi_example
 
 ---
 
-**Framework Version:** 1.3  
-**Last Updated:** With Certora Tutorial best practices integration
+**Framework Version:** 1.5 (RareSkills Integration)  
+**Last Updated:** February 8, 2026
+
+**v1.5 Additions:** See `CVL_LANGUAGE_DEEP_DIVE.md` for complete CVL reference, `VERIFICATION_PLAYBOOKS.md` for production-ready worked examples.

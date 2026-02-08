@@ -2,7 +2,7 @@
 
 > **What:** Key techniques extracted from official Certora Tutorials  
 > **Why:** Enhance framework with battle-tested best practices  
-> **Result:** Framework v1.3 with prioritization, investigation workflow, and comprehensive best practices
+> **Result:** Framework v1.5 with CVL deep dive, verification playbooks, prioritization, investigation workflow, and comprehensive best practices
 
 ---
 
@@ -146,7 +146,19 @@ assert userTotal <= systemTotal, "User total exceeds system total";
 
 ## Framework Version History
 
-### v1.3 (Current) - Priority-Enhanced + Tutorial Best Practices
+### v1.5 (Current) - RareSkills Integration
+- CVL Language Deep Dive (20-section CVL reference)
+- Verification Playbooks (ERC-20/WETH/ERC-721 worked examples)
+- Vacuous truth defense, requireInvariant lifecycle, self-transfer handling
+- Ghost havocing diagnosis, Liveness/Effect/No-Side-Effect pattern
+- Definition blocks template, updated chat prompts
+
+### v1.4 - Performance Optimization + CLI
+- Advanced CLI Reference (timeout mitigation, performance flags)
+- PoC templates (Foundry + Hardhat)
+- Vulnerability Report template
+
+### v1.3 - Priority-Enhanced + Tutorial Best Practices
 - Property prioritization system (HIGH / MEDIUM / LOW)
 - 5-step CE investigation workflow
 - Comprehensive best practices document
@@ -265,5 +277,7 @@ The framework now incorporates **battle-tested techniques** from Certora's offic
 - Test mining capabilities (v1.2)
 - Property prioritization (v1.3)
 - Official Certora best practices (v1.3)
+- Advanced CLI & performance optimization (v1.4)
+- RareSkills Certora Book integration (v1.5)
 
-Use `BEST_PRACTICES_FROM_CERTORA.md` as your **technique reference** throughout the verification process.
+Use `BEST_PRACTICES_FROM_CERTORA.md` as your **technique reference**, `CVL_LANGUAGE_DEEP_DIVE.md` as your **CVL language reference**, and `VERIFICATION_PLAYBOOKS.md` for **production-ready worked examples**.

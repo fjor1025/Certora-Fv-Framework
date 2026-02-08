@@ -1,40 +1,51 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 1.4 (Performance-Enhanced + Advanced CLI)
+> **Version:** 1.5 (RareSkills Integration)
 
 ---
 
-## What's New in v1.4
+## What's New in v1.5
 
-**Performance Optimization & Advanced CLI** (based on Certora Documentation Feb 2026 updates):
+**RareSkills Integration** (sourced from the complete RareSkills Certora Book — 35 chapters, 60,000+ words):
 
-**NEW: Advanced CLI Reference Document**:
-- `ADVANCED_CLI_REFERENCE.md` - comprehensive guide to performance optimization and advanced flags
-- Timeout mitigation strategies (`--split_rules`, `--multi_assert_check`, control flow splitting)
-- Advanced debugging (`--multi_example`, `--independent_satisfy`)
-- Loop & array handling from Tutorial Lessons 11 & 12
-- Multi-version project setup (compiler/optimization/EVM version maps)
-- Project-level operations (`--foundry`, `--project_sanity`)
-- Harness patterns from Tutorial Lesson 15
-- Complete command reference and decision trees
+**NEW Documents:**
+- **CVL_LANGUAGE_DEEP_DIVE.md** — Complete CVL language reference covering 20 topics:
+  - Type system (`mathint`, `require_uint256`, casting dangers)
+  - Core statements (`require`, `assert`, `satisfy` with existential semantics)
+  - Logical operators (`=>` implication, `<=>` biconditional, contrapositive)
+  - Vacuous truth and tautology defenses
+  - Method tags (`@withrevert`, `@norevert`, `lastReverted`)
+  - Environment variables (`env`, `msg.sender`, `msg.value`, `nativeBalances`)
+  - Ghost variables (initialization, havocing, persistent ghosts)
+  - Hooks (Sstore delta, Sload constraint, CALL opcode)
+  - `definition` blocks (reusable CVL expressions)
+  - Invariants (base case, inductive step, preserved blocks)
+  - `requireInvariant` lifecycle
+  - Parametric and partially parametric rules
+  - Liveness / Effect / No-Side-Effect pattern
+  - DISPATCHER and external callback resolution
+  - Loops, self-transfer handling, sanity checks
 
-**Updated Documents**:
-- `QUICK_REFERENCE_v1.3.md` - Added performance flags section
-- `CERTORA_MASTER_GUIDE.md` - Added Section 10.4 (Performance Optimization)
-- Framework now includes practical strategies for:
-  - Handling timeouts in complex projects
-  - Running Foundry fuzz tests with formal verification
-  - Managing multi-compiler version projects
-  - Optimizing verification performance
+- **VERIFICATION_PLAYBOOKS.md** — Complete worked verification examples:
+  - **ERC-20 Playbook** — 22 rules across 4 phases (Correctness, Side Effects, Invariants, Authorization)
+  - **WETH Playbook** — Solvency invariant, deposit/withdraw, persistent ghost + CALL hook
+  - **ERC-721 Playbook** — Mint/burn/transfer, helperSoundFnCall, DISPATCHER for callbacks
+
+**Updated Documents:**
+- `CERTORA_SPEC_FRAMEWORK.md` — Added `definition` blocks template, Liveness/Effect/No-Side-Effect rule template
+- `BEST_PRACTICES_FROM_CERTORA.md` — Added vacuous truth defense, `require` → `requireInvariant` lifecycle, self-transfer edge cases
+- `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` — Added ghost havocing diagnosis guide, persistent ghost patterns
+- `CERTORA_MASTER_GUIDE.md` — Added references to new documents, version bump
 
 **Why This Matters:**
-These updates address real-world challenges encountered in production audits and bug bounties. Essential for complex protocols and competitive engagements like Code4rena.
+This release integrates deep CVL language knowledge from the authoritative RareSkills Certora Book. Every gap identified in prior versions is now filled — from foundational type system semantics to production OpenZeppelin verification patterns.
 
 ---
 
 ## Previous Enhancements
 
+**v1.4:** Performance Optimization + Advanced CLI Reference  
 **v1.3:** Property Prioritization + Tutorial Best Practices + CE Investigation  
 **v1.2:** Dual Mindset ("Should Always" / "Should Never") + Test Mining  
 **v1.1:** Validation-to-Real-Spec Transition + Chat Prompts
@@ -47,6 +58,8 @@ These updates address real-world challenges encountered in production audits and
 |------|---------|-------------|
 | **INDEX.md** | Navigation guide & quick access | ← **START HERE for navigation** |
 | **CERTORA_MASTER_GUIDE.md** | Complete step-by-step instructions | ← **START HERE for verification** |
+| **CVL_LANGUAGE_DEEP_DIVE.md** | Complete CVL language reference | ← **NEW in v1.5** - CVL mastery |
+| **VERIFICATION_PLAYBOOKS.md** | Worked examples (ERC-20, WETH, ERC-721) | ← **NEW in v1.5** - Copy & adapt |
 | **ADVANCED_CLI_REFERENCE.md** | Performance & advanced flags | ← **NEW in v1.4** - Timeouts/optimization |
 | **CERTORA_WORKFLOW.md** | Phase overview & checklist | Quick reference |
 | **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax & templates | Writing actual CVL |
@@ -136,11 +149,23 @@ your-project/
 │
 ├── ═══ FRAMEWORK FILES ═══════════════════════════════════════════
 ├── CERTORA_MASTER_GUIDE.md           ← START HERE
+├── CVL_LANGUAGE_DEEP_DIVE.md         ← NEW v1.5: CVL reference
+├── VERIFICATION_PLAYBOOKS.md         ← NEW v1.5: Worked examples
 ├── CERTORA_WORKFLOW.md
 ├── CERTORA_SPEC_FRAMEWORK.md
 ├── CERTORA_CE_DIAGNOSIS_FRAMEWORK.md
 ├── SPEC AUTHORING (CERTORA).md
 ├── Categorizing_Properties.md
+├── BEST_PRACTICES_FROM_CERTORA.md
+├── ADVANCED_CLI_REFERENCE.md         ← NEW v1.4: CLI & performance
+├── QUICK_REFERENCE_v1.3.md
+├── INDEX.md
+├── VERSION_HISTORY.md
+├── CERTORA_QUICKSTART_TEMPLATE.md
+├── TUTORIAL_EXTRACTION_SUMMARY.md
+├── POC_TEMPLATE_Foundry.md
+├── POC_TEMPLATE_HARDHAT.md
+├── VULNERABILITY_REPORT_TEMPLATE.md
 │
 ├── ═══ YOUR CONTRACTS ════════════════════════════════════════════
 ├── contracts/
@@ -221,7 +246,7 @@ When working with an AI assistant, use these prompts:
 
 ---
 
-## 🎓 How to Use the Framework (Quick Start)
+## How to Use the Framework (Quick Start)
 
 ### For New Users:
 1. **Start with** [INDEX.md](INDEX.md) for navigation
@@ -242,10 +267,12 @@ When working with an AI assistant, use these prompts:
 
 ## Version
 
-**Version:** 1.3 (Priority-Enhanced + Tutorial Best Practices)  
-**Last Updated:** February 5, 2026
+**Version:** 1.5 (RareSkills Integration)  
+**Last Updated:** February 2026
 
 ### Changelog
+- **v1.5:** RareSkills Certora Book integration (35 chapters), CVL Language Deep Dive, Verification Playbooks (ERC-20/WETH/ERC-721), vacuous truth defense, requireInvariant lifecycle, Liveness/Effect/No-Side-Effect pattern, ghost havocing diagnosis
+- **v1.4:** Performance optimization, Advanced CLI Reference
 - **v1.3:** Property prioritization (HIGH/MEDIUM/LOW), Tutorial best practices integration, 5-step CE investigation, Invariant patterns, Loop handling, Navigation index
 - **v1.2:** Dual Mindset approach (should always/never), Test Mining for property discovery
 - **v1.1:** Section 9.0 (Validation to Real Spec transition), Section 13 (Chat Prompts)

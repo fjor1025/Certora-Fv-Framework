@@ -675,7 +675,7 @@ A valid spec must end with:
 
 ---
 
-## 📚 FRAMEWORK INTEGRATION
+## FRAMEWORK INTEGRATION
 
 This document is part of the complete framework:
 
@@ -683,16 +683,19 @@ This document is part of the complete framework:
 |----------|---------|-------------|
 | **SPEC AUTHORING (CERTORA).md** | Understand contract, model execution, classify properties | Before writing any CVL |
 | **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax, templates, patterns | When writing CVL spec |
+| **CVL_LANGUAGE_DEEP_DIVE.md** | Complete CVL language reference (types, ghosts, hooks, invariants) | CVL mastery ⭐ NEW v1.5 |
+| **VERIFICATION_PLAYBOOKS.md** | Production-ready worked examples (ERC-20, WETH, ERC-721) | Copy & adapt ⭐ NEW v1.5 |
 | **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** | Debug counterexamples systematically | When prover returns CEs |
 | **BEST_PRACTICES_FROM_CERTORA.md** | Official tutorial techniques & patterns | Throughout verification |
+| **ADVANCED_CLI_REFERENCE.md** | Performance optimization, timeout mitigation | CLI flags ⭐ NEW v1.4 |
 | **QUICK_REFERENCE_v1.3.md** | Cheat sheet & quick syntax lookup | Keep open while coding |
 
 **Workflow:**
 ```
 SPEC AUTHORING → Pass Phase 6 → SPEC FRAMEWORK (write CVL) → Run Prover → CE DIAGNOSIS (if needed)
                      ↓                     ↓                                    ↓
-              BEST_PRACTICES        BEST_PRACTICES                      BEST_PRACTICES
-               Section 1              Sections 3-5                        Section 2
+              BEST_PRACTICES        CVL_LANGUAGE_DEEP_DIVE              BEST_PRACTICES
+               Section 1           + VERIFICATION_PLAYBOOKS               Section 2
 ```
 
 ---

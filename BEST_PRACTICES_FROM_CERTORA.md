@@ -635,6 +635,141 @@ invariant levelB_property()
 
 ---
 
+# 7. VACUOUS TRUTH & TAUTOLOGY DEFENSE (NEW in v1.5)
+
+> **Source:** RareSkills Certora Book — Chapters on Implication, Biconditional, and Overflow
+
+## 7.1 Vacuous Truth — The Silent Killer
+
+When the condition P in `P => Q` can never be true, the implication is trivially verified **regardless of Q**:
+
+```cvl
+// VERIFIED — but meaningless! uint256 can never be negative.
+rule vacuously_true() {
+    uint256 x;
+    assert x < 0 => 1 == 2;  // Passes because x < 0 is impossible
+}
+```
+
+**Common causes:**
+- Contradictory `require` statements that eliminate all execution paths
+- Using `require e.msg.sender == address(0)` (address(0) can't send transactions)
+- Overly restrictive bounds: `require x > max_uint256`
+
+## 7.2 Tautology — The Other Silent Killer
+
+When Q is always true regardless of P, the implication is trivially verified:
+
+```cvl
+// VERIFIED — but proves nothing about max()
+rule tautologically_true() {
+    uint256 x; uint256 y;
+    mathint result = max(x, y);
+    assert x > y => result >= 0;  // result >= 0 ALWAYS holds for uint256
+}
+```
+
+## 7.3 Defenses
+
+1. **Always use `--rule_sanity basic`** (default since Prover v8.1.0) — the Prover flags vacuous rules
+2. **Use `satisfy` to confirm reachability** before writing `assert`
+3. **Prefer `<=>` over `=>`** — biconditional forces both-direction verification
+4. **Review the Prover report** for "vacuous" warnings in the sanity panel
+5. **Test with `satisfy`** first to confirm the preconditions are reachable
+
+**See:** `CVL_LANGUAGE_DEEP_DIVE.md` Section 4 for comprehensive treatment.
+
+---
+
+# 8. THE `require` → `requireInvariant` LIFECYCLE (NEW in v1.5)
+
+> **Source:** RareSkills Certora Book — Chapter on requireInvariant
+
+## 8.1 The Problem
+
+Every rule starts from a fresh symbolic state with arbitrary values. Even proven invariants are NOT automatically assumed in other rules.
+
+## 8.2 The Three-Phase Lifecycle
+
+**Phase 1 — Use `require` during development:**
+```cvl
+rule transfer_effect(env e) {
+    require balanceOf(e.msg.sender) + balanceOf(to) <= max_uint256;
+    // ... rule logic — passes but precondition is unverified
+}
+```
+
+**Phase 2 — Prove the invariant independently:**
+```cvl
+invariant totalSupplyEqualsSumOfBalances()
+    to_mathint(totalSupply()) == g_sumOfBalances;
+```
+
+**Phase 3 — Upgrade `require` → `requireInvariant`:**
+```cvl
+rule transfer_effect(env e) {
+    requireInvariant totalSupplyEqualsSumOfBalances();
+    // Now the precondition is PROVEN, not assumed
+}
+```
+
+## 8.3 Why `requireInvariant` Is Superior
+
+| Feature | `require` | `requireInvariant` |
+|---------|-----------|-------------------|
+| Source of truth | Writer's assertion | Previously proven property |
+| Can hide bugs? | Yes | No — references verified invariant |
+| Documentation | Manual | Self-documenting — links to invariant |
+| Code review | "Is this assumption valid?" | "Is this invariant proven?" |
+
+---
+
+# 9. SELF-TRANSFER & EDGE CASE PATTERNS (NEW in v1.5)
+
+> **Source:** RareSkills Certora Book — ERC-20 and ERC-721 Capstone Chapters
+
+## 9.1 Self-Transfer Edge Case
+
+When `from == to` in a transfer, the balance should remain unchanged. Many specifications fail this:
+
+```cvl
+rule transfer_selfTransfer(env e) {
+    address to; uint256 amount;
+    address sender = e.msg.sender;
+
+    mathint senderBefore = balanceOf(sender);
+
+    transfer(e, to, amount);
+
+    if (sender == to) {
+        assert to_mathint(balanceOf(sender)) == senderBefore;
+    } else {
+        assert to_mathint(balanceOf(sender)) == senderBefore - to_mathint(amount);
+    }
+}
+```
+
+## 9.2 Compact Pattern Using `assert_uint256`
+
+```cvl
+assert success => (
+    to_mathint(balanceOf(from)) == balFromBefore - assert_uint256(from != to ? 1 : 0) &&
+    to_mathint(balanceOf(to))   == balToBefore   + assert_uint256(from != to ? 1 : 0)
+);
+```
+
+## 9.3 Self-Call Exclusion
+
+When `msg.sender == currentContract`, ETH accounting breaks for WETH-like contracts:
+
+```cvl
+require e.msg.sender != currentContract;  // Modeling constraint, not revert condition
+```
+
+**See:** `CVL_LANGUAGE_DEEP_DIVE.md` Section 18 and `VERIFICATION_PLAYBOOKS.md` for complete examples.
+
+---
+
 # INTEGRATION WITH YOUR FRAMEWORK
 
 ## Mapping to Framework Phases
@@ -643,10 +778,12 @@ invariant levelB_property()
 |-----------------|------------------------|
 | **Phase 2** | Sections 1.1, 1.2, 1.3 (Property Discovery, Prioritization) |
 | **Phase 3.5** | Section 3.1, 3.2 (Invariant Patterns) |
-| **Phase 7** | Section 3.3, 6.2 (Preserved Blocks, Readability) |
+| **Phase 7** | Section 3.3, 6.2, 7, 8, 9 (Preserved Blocks, Vacuity, Lifecycle, Edge Cases) |
 | **CE Debugging** | Section 2 (CE Investigation Process) |
 | **Harness Design** | Section 4 (Harness Best Practices) |
 | **Loop Handling** | Section 5 (Loop Configuration) |
+| **CVL Deep Dive** | `CVL_LANGUAGE_DEEP_DIVE.md` (Complete CVL Reference) |
+| **Worked Examples** | `VERIFICATION_PLAYBOOKS.md` (ERC-20, WETH, ERC-721) |
 
 ---
 
@@ -661,6 +798,11 @@ invariant levelB_property()
 □ Loop_iter set appropriately?
 □ Harnesses expose needed internal state?
 □ Property IDs tracked to avoid duplication?
+□ Vacuous truth checked? (--rule_sanity basic)             ← NEW v1.5
+□ require upgraded to requireInvariant where possible?      ← NEW v1.5
+□ Self-transfer edge case handled?                          ← NEW v1.5
+□ Non-payable functions have e.msg.value == 0 require?      ← NEW v1.5
+□ Liveness/Effect/No-Side-Effect pattern used?              ← NEW v1.5
 ```
 
 ---

@@ -839,7 +839,7 @@ If HIGH properties reveal bugs, extend Week 1, compress Week 2.
 
 ---
 
-## Updated Quick Checklist (v1.3)
+## Updated Quick Checklist (v1.5)
 
 Before leaving Phase 2:
 

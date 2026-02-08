@@ -2,17 +2,25 @@
 
 > **Use this template to apply the Certora workflow to ANY contract**  
 > **Copy this file and fill in the blanks for each new verification project**  
-> **Version:** 1.3 (Tutorial-Enhanced)
+> **Version:** 1.5 (RareSkills Integration)
 
 ---
 
-## WHAT'S NEW IN v1.3
+## WHAT'S NEW IN v1.5
 
-- **Property Prioritization:** HIGH/MEDIUM/LOW based on impact (Section 3)
-- **Dual Mindset:** "Should Always" + "Should Never" enumeration
-- **Test Mining:** Extract properties from existing tests
-- **Best Practices:** Reference BEST_PRACTICES_FROM_CERTORA.md for techniques
-- **Enhanced CE Debugging:** 5-step investigation process from tutorials
+- **CVL Language Deep Dive:** Complete 20-section CVL reference (`CVL_LANGUAGE_DEEP_DIVE.md`)
+- **Verification Playbooks:** Production-ready worked examples for ERC-20, WETH, ERC-721 (`VERIFICATION_PLAYBOOKS.md`)
+- **Vacuous Truth Defense:** Always pair `require` with `satisfy` (BEST_PRACTICES Section 7)
+- **requireInvariant Lifecycle:** Prove independently → then compose (BEST_PRACTICES Section 8)
+- **Self-Transfer Handling:** Separate `from == to` cases (BEST_PRACTICES Section 9)
+- **Ghost Havocing Diagnosis:** Persistent ghost + CALL hook patterns (CE_DIAGNOSIS)
+- **Liveness/Effect/No-Side-Effect Pattern:** New rule template (SPEC_FRAMEWORK)
+
+### Previous Enhancements
+- **v1.4:** Advanced CLI Reference, Performance optimization, PoC templates
+- **v1.3:** Property Prioritization, Dual Mindset, Test Mining, 5-step CE Investigation
+- **v1.2:** Dual Mindset approach, Test Mining for property discovery
+- **v1.1:** Validation-to-Real-Spec transition, Chat Prompts
 
 ---
 
@@ -835,12 +843,21 @@ certoraRun certora/confs/EmergencyProtectedTimelock.conf
 ## FILES IN YOUR FRAMEWORK
 
 ```
-/home/brett/dual-governance/
+your-project/
 ├── CERTORA_QUICKSTART_TEMPLATE.md    ← THIS FILE (how to apply)
+├── CERTORA_MASTER_GUIDE.md           ← Complete step-by-step instructions
+├── CVL_LANGUAGE_DEEP_DIVE.md         ← CVL language reference ⭐ NEW v1.5
+├── VERIFICATION_PLAYBOOKS.md         ← Worked examples ⭐ NEW v1.5
 ├── CERTORA_WORKFLOW.md               ← Step-by-step process
 ├── CERTORA_SPEC_FRAMEWORK.md         ← CVL templates & patterns
 ├── CERTORA_CE_DIAGNOSIS_FRAMEWORK.md ← Debugging counterexamples
 ├── SPEC AUTHORING (CERTORA).md       ← Deep methodology
+├── Categorizing_Properties.md        ← Property discovery
+├── BEST_PRACTICES_FROM_CERTORA.md    ← Proven techniques
+├── ADVANCED_CLI_REFERENCE.md         ← CLI & performance ⭐ NEW v1.4
+├── QUICK_REFERENCE_v1.3.md           ← Printable cheat sheet
+├── INDEX.md                          ← Navigation guide
+├── VERSION_HISTORY.md                ← Version tracking
 │
 ├── spec_authoring/
 │   ├── {contract}_spec_authoring.md

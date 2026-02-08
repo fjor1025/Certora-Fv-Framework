@@ -4,10 +4,13 @@
 > **CVL Syntax Reference:** CVL 2.0 (Certora Prover)  
 > **Philosophy:** You are not verifying a contract. You are verifying a *closed EVM universe* with that contract inside it.
 
-**v1.3 Companion Documents:**
-- **BEST_PRACTICES_FROM_CERTORA.md** - Official tutorial techniques for invariants, CE investigation, loop handling
-- **QUICK_REFERENCE_v1.3.md** - Printable cheat sheet with CVL syntax and phase checklists
-- **Categorizing_Properties.md Section 7** - Property prioritization (HIGH/MEDIUM/LOW)
+**v1.5 Companion Documents:**
+- **CVL_LANGUAGE_DEEP_DIVE.md** — Complete CVL language reference (types, ghosts, hooks, invariants) ⭐ NEW v1.5
+- **VERIFICATION_PLAYBOOKS.md** — Production-ready worked examples (ERC-20, WETH, ERC-721) ⭐ NEW v1.5
+- **BEST_PRACTICES_FROM_CERTORA.md** — Official tutorial techniques for invariants, CE investigation, loop handling
+- **ADVANCED_CLI_REFERENCE.md** — Performance optimization, timeout mitigation ⭐ NEW v1.4
+- **QUICK_REFERENCE_v1.3.md** — Printable cheat sheet with CVL syntax and phase checklists
+- **Categorizing_Properties.md Section 7** — Property prioritization (HIGH/MEDIUM/LOW)
 
 ---
 
@@ -710,7 +713,7 @@ invariant complexInvariant(uint256 id, address user)
 
 > **Before ANY property implementation, classify it.**
 
-📄 **See also:**
+**See also:**
 - **BEST_PRACTICES_FROM_CERTORA.md Section 3** - Invariant design patterns (monotonicity, conservation laws)
 - **Categorizing_Properties.md Section 7** - Property prioritization framework
 
@@ -1098,6 +1101,13 @@ methods {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// DEFINITIONS (Reusable CVL Expressions — NEW in v1.5)
+// ═══════════════════════════════════════════════════════════════
+definition nonpayable(env e) returns bool = e.msg.value == 0;
+definition nonzerosender(env e) returns bool = e.msg.sender != 0;
+definition balanceLimited(address a) returns bool = balanceOf(a) < max_uint256;
+
+// ═══════════════════════════════════════════════════════════════
 // CUSTOM SUMMARY IMPLEMENTATIONS
 // ═══════════════════════════════════════════════════════════════
 function customSummary() returns bytes {
@@ -1182,6 +1192,34 @@ rule myRule(env e, address user, uint256 amount) {
         "Value not updated correctly";
 }
 
+/// @title Liveness / Effect / No-Side-Effect Rule (NEW in v1.5)
+/// Industry-standard pattern from OpenZeppelin specifications.
+/// See CVL_LANGUAGE_DEEP_DIVE.md Section 15 and VERIFICATION_PLAYBOOKS.md
+rule livenessEffectTemplate(env e) {
+    require nonpayable(e);
+    require nonzerosender(e);
+    
+    // Pre-state snapshot
+    uint256 valueBefore = getValue(e.msg.sender);
+    address otherAccount;
+    uint256 otherValueBefore = getValue(otherAccount);
+    
+    // Action
+    myFunction@withrevert(e, amount);
+    bool success = !lastReverted;
+    
+    // LIVENESS: success <=> preconditions
+    assert success <=> (
+        valueBefore >= to_mathint(amount)
+    );
+    
+    // EFFECT: success => correct state changes
+    assert success => to_mathint(getValue(e.msg.sender)) == valueBefore - to_mathint(amount);
+    
+    // NO SIDE EFFECT: uninvolved accounts unchanged
+    assert getValue(otherAccount) != otherValueBefore => otherAccount == e.msg.sender;
+}
+
 /// @title Parametric rule
 rule parametricRule(method f) 
     filtered { f -> f.contract == currentContract }
@@ -1245,7 +1283,7 @@ rule parametricRule(method f)
 
 ### If You Get Counterexamples:
 
-📄 **For comprehensive CE debugging, see:**
+**For comprehensive CE debugging, see:**
 - **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** - Systematic 5-phase diagnosis
 - **BEST_PRACTICES_FROM_CERTORA.md Section 2** - Tutorial-based investigation workflow
 

@@ -12,7 +12,7 @@ This workflow integrates **five** core documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CERTORA SPECIFICATION WORKFLOW v1.3                       │
+│                    CERTORA SPECIFICATION WORKFLOW v1.5                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────┐    ┌───────────────────────┐    ┌─────────────┐ │
@@ -653,6 +653,10 @@ Go through EVERY checkbox. ALL must pass.
 - Invariant and rule patterns
 - CVL 2.0 syntax
 
+**Also reference (NEW v1.5):**
+- `CVL_LANGUAGE_DEEP_DIVE.md` — Type system, ghosts, hooks, invariant lifecycle
+- `VERIFICATION_PLAYBOOKS.md` — Copy-paste ERC-20/WETH/ERC-721 examples
+
 **Spec Structure:**
 ```cvl
 // 1. Imports
@@ -717,7 +721,11 @@ If prover returns counterexamples:
 |----------|----------|
 | `SPEC AUTHORING (CERTORA).md` | Understanding contract, modeling, classifying |
 | `CERTORA_SPEC_FRAMEWORK.md` | Writing CVL code |
+| `CVL_LANGUAGE_DEEP_DIVE.md` | CVL type system, ghosts, hooks, invariants ⭐ NEW v1.5 |
+| `VERIFICATION_PLAYBOOKS.md` | Copy-paste worked examples ⭐ NEW v1.5 |
 | `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` | Debugging counterexamples |
+| `ADVANCED_CLI_REFERENCE.md` | Performance optimization, timeouts ⭐ NEW v1.4 |
+| `BEST_PRACTICES_FROM_CERTORA.md` | Proven techniques & patterns |
 | `CERTORA_WORKFLOW.md` | Following the process |
 
 ### File Purpose

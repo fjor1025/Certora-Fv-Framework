@@ -8,8 +8,8 @@
 
 ## WHAT'S NEW IN v1.5
 
-- **CVL Language Deep Dive:** Complete 20-section CVL reference (`CVL_LANGUAGE_DEEP_DIVE.md`)
-- **Verification Playbooks:** Production-ready worked examples for ERC-20, WETH, ERC-721 (`VERIFICATION_PLAYBOOKS.md`)
+- **CVL Language Deep Dive:** Complete 20-section CVL reference (`cvl-language-deep-dive.md`)
+- **Verification Playbooks:** Production-ready worked examples for ERC-20, WETH, ERC-721 (`verification-playbooks.md`)
 - **Vacuous Truth Defense:** Always pair `require` with `satisfy` (BEST_PRACTICES Section 7)
 - **requireInvariant Lifecycle:** Prove independently → then compose (BEST_PRACTICES Section 8)
 - **Self-Transfer Handling:** Separate `from == to` cases (BEST_PRACTICES Section 9)
@@ -687,7 +687,7 @@ certoraRun certora/confs/{Contract}.conf
 
 ### Step 8.4: Debug Counterexamples
 
-Use `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md`:
+Use `certora-ce-diagnosis-framework.md`:
 
 1. **Check if CE is real or spurious**
 2. **If spurious:** Add `require` or fix modeling
@@ -844,20 +844,20 @@ certoraRun certora/confs/EmergencyProtectedTimelock.conf
 
 ```
 your-project/
-├── CERTORA_QUICKSTART_TEMPLATE.md    ← THIS FILE (how to apply)
-├── CERTORA_MASTER_GUIDE.md           ← Complete step-by-step instructions
-├── CVL_LANGUAGE_DEEP_DIVE.md         ← CVL language reference ⭐ NEW v1.5
-├── VERIFICATION_PLAYBOOKS.md         ← Worked examples ⭐ NEW v1.5
-├── CERTORA_WORKFLOW.md               ← Step-by-step process
-├── CERTORA_SPEC_FRAMEWORK.md         ← CVL templates & patterns
-├── CERTORA_CE_DIAGNOSIS_FRAMEWORK.md ← Debugging counterexamples
+├── certora-quickstart-template.md    ← THIS FILE (how to apply)
+├── certora-master-guide.md           ← Complete step-by-step instructions
+├── cvl-language-deep-dive.md         ← CVL language reference ⭐ NEW v1.5
+├── verification-playbooks.md         ← Worked examples ⭐ NEW v1.5
+├── certora-workflow.md               ← Step-by-step process
+├── certora-spec-framework.md         ← CVL templates & patterns
+├── certora-ce-diagnosis-framework.md ← Debugging counterexamples
 ├── SPEC AUTHORING (CERTORA).md       ← Deep methodology
-├── Categorizing_Properties.md        ← Property discovery
-├── BEST_PRACTICES_FROM_CERTORA.md    ← Proven techniques
-├── ADVANCED_CLI_REFERENCE.md         ← CLI & performance ⭐ NEW v1.4
-├── QUICK_REFERENCE_v1.3.md           ← Printable cheat sheet
-├── INDEX.md                          ← Navigation guide
-├── VERSION_HISTORY.md                ← Version tracking
+├── categorizing-properties.md        ← Property discovery
+├── best-practices-from-certora.md    ← Proven techniques
+├── advanced-cli-reference.md         ← CLI & performance ⭐ NEW v1.4
+├── quick-reference-v1.3.md           ← Printable cheat sheet
+├── index.md                          ← Navigation guide
+├── version-history.md                ← Version tracking
 │
 ├── spec_authoring/
 │   ├── {contract}_spec_authoring.md

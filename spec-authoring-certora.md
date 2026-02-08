@@ -200,13 +200,13 @@ List candidate security properties **without choosing CVL syntax**.
 
 > ❌ Do **not** write `invariant`, `rule`, `require`, or `assume` yet.
 
-🚨 Develop a comprehensive list of properties in plain English, then categorize them using **`Categorizing_Properties.md`**
+🚨 Develop a comprehensive list of properties in plain English, then categorize them using **`categorizing-properties.md`**
 
 **NEW v1.3 Enhancements:**
 - **Prioritization:** Assign HIGH/MEDIUM/LOW priority (Section 7)
 - **Dual Mindset:** "Should Always" + "Should Never" enumeration (Section 5)
 - **Test Mining:** Extract properties from existing tests (Section 6)
-- **Best Practices:** See `BEST_PRACTICES_FROM_CERTORA.md` Section 1 for property discovery techniques and common pitfalls
+- **Best Practices:** See `best-practices-from-certora.md` Section 1 for property discovery techniques and common pitfalls
 > These categories are NOT a commitment to invariant vs rule.
 Right now, that rule is implicit, not explicit.
 > Categorization at this stage is semantic only and **MUST NOT** be used to infer invariant vs rule.
@@ -642,7 +642,7 @@ Before CVL is written:
 
 > **Only enter this phase after Phase 6 sanity gate passes.**
 
-**Use** `CERTORA_SPEC_FRAMEWORK.md` **for:**
+**Use** `certora-spec-framework.md` **for:**
 - Methods block structure
 - Ghost and hook patterns
 - validState() and validEnv() functions
@@ -682,13 +682,13 @@ This document is part of the complete framework:
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
 | **SPEC AUTHORING (CERTORA).md** | Understand contract, model execution, classify properties | Before writing any CVL |
-| **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax, templates, patterns | When writing CVL spec |
-| **CVL_LANGUAGE_DEEP_DIVE.md** | Complete CVL language reference (types, ghosts, hooks, invariants) | CVL mastery ⭐ NEW v1.5 |
-| **VERIFICATION_PLAYBOOKS.md** | Production-ready worked examples (ERC-20, WETH, ERC-721) | Copy & adapt ⭐ NEW v1.5 |
-| **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** | Debug counterexamples systematically | When prover returns CEs |
-| **BEST_PRACTICES_FROM_CERTORA.md** | Official tutorial techniques & patterns | Throughout verification |
-| **ADVANCED_CLI_REFERENCE.md** | Performance optimization, timeout mitigation | CLI flags ⭐ NEW v1.4 |
-| **QUICK_REFERENCE_v1.3.md** | Cheat sheet & quick syntax lookup | Keep open while coding |
+| **certora-spec-framework.md** | CVL 2.0 syntax, templates, patterns | When writing CVL spec |
+| **cvl-language-deep-dive.md** | Complete CVL language reference (types, ghosts, hooks, invariants) | CVL mastery ⭐ NEW v1.5 |
+| **verification-playbooks.md** | Production-ready worked examples (ERC-20, WETH, ERC-721) | Copy & adapt ⭐ NEW v1.5 |
+| **certora-ce-diagnosis-framework.md** | Debug counterexamples systematically | When prover returns CEs |
+| **best-practices-from-certora.md** | Official tutorial techniques & patterns | Throughout verification |
+| **advanced-cli-reference.md** | Performance optimization, timeout mitigation | CLI flags ⭐ NEW v1.4 |
+| **quick-reference-v1.3.md** | Cheat sheet & quick syntax lookup | Keep open while coding |
 
 **Workflow:**
 ```

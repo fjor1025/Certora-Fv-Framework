@@ -5,12 +5,12 @@
 > **Philosophy:** You are not verifying a contract. You are verifying a *closed EVM universe* with that contract inside it.
 
 **v1.5 Companion Documents:**
-- **CVL_LANGUAGE_DEEP_DIVE.md** — Complete CVL language reference (types, ghosts, hooks, invariants) ⭐ NEW v1.5
-- **VERIFICATION_PLAYBOOKS.md** — Production-ready worked examples (ERC-20, WETH, ERC-721) ⭐ NEW v1.5
-- **BEST_PRACTICES_FROM_CERTORA.md** — Official tutorial techniques for invariants, CE investigation, loop handling
-- **ADVANCED_CLI_REFERENCE.md** — Performance optimization, timeout mitigation ⭐ NEW v1.4
-- **QUICK_REFERENCE_v1.3.md** — Printable cheat sheet with CVL syntax and phase checklists
-- **Categorizing_Properties.md Section 7** — Property prioritization (HIGH/MEDIUM/LOW)
+- **cvl-language-deep-dive.md** — Complete CVL language reference (types, ghosts, hooks, invariants) ⭐ NEW v1.5
+- **verification-playbooks.md** — Production-ready worked examples (ERC-20, WETH, ERC-721) ⭐ NEW v1.5
+- **best-practices-from-certora.md** — Official tutorial techniques for invariants, CE investigation, loop handling
+- **advanced-cli-reference.md** — Performance optimization, timeout mitigation ⭐ NEW v1.4
+- **quick-reference-v1.3.md** — Printable cheat sheet with CVL syntax and phase checklists
+- **categorizing-properties.md Section 7** — Property prioritization (HIGH/MEDIUM/LOW)
 
 ---
 
@@ -714,8 +714,8 @@ invariant complexInvariant(uint256 id, address user)
 > **Before ANY property implementation, classify it.**
 
 **See also:**
-- **BEST_PRACTICES_FROM_CERTORA.md Section 3** - Invariant design patterns (monotonicity, conservation laws)
-- **Categorizing_Properties.md Section 7** - Property prioritization framework
+- **best-practices-from-certora.md Section 3** - Invariant design patterns (monotonicity, conservation laws)
+- **categorizing-properties.md Section 7** - Property prioritization framework
 
 ### Classification Decision Tree
 
@@ -1194,7 +1194,7 @@ rule myRule(env e, address user, uint256 amount) {
 
 /// @title Liveness / Effect / No-Side-Effect Rule (NEW in v1.5)
 /// Industry-standard pattern from OpenZeppelin specifications.
-/// See CVL_LANGUAGE_DEEP_DIVE.md Section 15 and VERIFICATION_PLAYBOOKS.md
+/// See cvl-language-deep-dive.md Section 15 and verification-playbooks.md
 rule livenessEffectTemplate(env e) {
     require nonpayable(e);
     require nonzerosender(e);
@@ -1284,8 +1284,8 @@ rule parametricRule(method f)
 ### If You Get Counterexamples:
 
 **For comprehensive CE debugging, see:**
-- **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** - Systematic 5-phase diagnosis
-- **BEST_PRACTICES_FROM_CERTORA.md Section 2** - Tutorial-based investigation workflow
+- **certora-ce-diagnosis-framework.md** - Systematic 5-phase diagnosis
+- **best-practices-from-certora.md Section 2** - Tutorial-based investigation workflow
 
 | Counterexample Type | Root Cause | Fix |
 |---------------------|------------|-----|

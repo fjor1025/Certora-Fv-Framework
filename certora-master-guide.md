@@ -30,16 +30,16 @@
 
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
-| **CERTORA_MASTER_GUIDE.md** | Complete step-by-step instructions | Starting any new verification |
-| **CVL_LANGUAGE_DEEP_DIVE.md** | Complete CVL language reference | ← **NEW in v1.5** |
-| **VERIFICATION_PLAYBOOKS.md** | Worked examples (ERC-20, WETH, ERC-721) | ← **NEW in v1.5** |
-| **ADVANCED_CLI_REFERENCE.md** | Performance optimization & advanced flags | ← **NEW in v1.4** |
+| **certora-master-guide.md** | Complete step-by-step instructions | Starting any new verification |
+| **cvl-language-deep-dive.md** | Complete CVL language reference | ← **NEW in v1.5** |
+| **verification-playbooks.md** | Worked examples (ERC-20, WETH, ERC-721) | ← **NEW in v1.5** |
+| **advanced-cli-reference.md** | Performance optimization & advanced flags | ← **NEW in v1.4** |
 | **SPEC AUTHORING (CERTORA).md** | Deep methodology & theory | Understanding WHY |
-| **Categorizing_Properties.md** | Property discovery guidance | Phase 2 |
-| **CERTORA_SPEC_FRAMEWORK.md** | CVL 2.0 syntax & templates | Writing actual CVL |
-| **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** | Counterexample debugging | When rules fail |
-| **CERTORA_WORKFLOW.md** | Phase overview | Quick reference |
-| **BEST_PRACTICES_FROM_CERTORA.md** | Official tutorial techniques | ← **NEW in v1.3** |
+| **categorizing-properties.md** | Property discovery guidance | Phase 2 |
+| **certora-spec-framework.md** | CVL 2.0 syntax & templates | Writing actual CVL |
+| **certora-ce-diagnosis-framework.md** | Counterexample debugging | When rules fail |
+| **certora-workflow.md** | Phase overview | Quick reference |
+| **best-practices-from-certora.md** | Official tutorial techniques | ← **NEW in v1.3** |
 
 ## 1.2 The Golden Rule
 
@@ -168,12 +168,12 @@ IMPORTANT: You need the ENTIRE contracts folder for compilation,
 │   FRAMEWORK FILES (Copy these to every new project)
 ├── ══════════════════════════════════════════════════════════════════════
 │
-├── CERTORA_MASTER_GUIDE.md            ← This file - START HERE
-├── CERTORA_WORKFLOW.md                ← Phase overview
-├── CERTORA_SPEC_FRAMEWORK.md          ← CVL 2.0 syntax & templates
-├── CERTORA_CE_DIAGNOSIS_FRAMEWORK.md  ← Counterexample debugging
+├── certora-master-guide.md            ← This file - START HERE
+├── certora-workflow.md                ← Phase overview
+├── certora-spec-framework.md          ← CVL 2.0 syntax & templates
+├── certora-ce-diagnosis-framework.md  ← Counterexample debugging
 ├── SPEC AUTHORING (CERTORA).md        ← Deep methodology
-├── Categorizing_Properties.md         ← Phase 2 property discovery
+├── categorizing-properties.md         ← Phase 2 property discovery
 │
 ├── CVLDocs/                           ← Reference documentation
 │   └── ...
@@ -231,12 +231,12 @@ IMPORTANT: You need the ENTIRE contracts folder for compilation,
 dex-verification/
 │
 ├── ═══ FRAMEWORK FILES ═══════════════════════════════════════════════════
-├── CERTORA_MASTER_GUIDE.md
-├── CERTORA_WORKFLOW.md
-├── CERTORA_SPEC_FRAMEWORK.md
-├── CERTORA_CE_DIAGNOSIS_FRAMEWORK.md
+├── certora-master-guide.md
+├── certora-workflow.md
+├── certora-spec-framework.md
+├── certora-ce-diagnosis-framework.md
 ├── SPEC AUTHORING (CERTORA).md
-├── Categorizing_Properties.md
+├── categorizing-properties.md
 │
 ├── ═══ ORIGINAL CONTRACTS ════════════════════════════════════════════════
 ├── protocols/
@@ -327,14 +327,14 @@ touch "certora/confs/${TARGET_CONTRACT}.conf"
 
 # Copy from your template location (adjust path as needed)
 # cp /path/to/templates/CERTORA_*.md .
-# cp /path/to/templates/Categorizing_Properties.md .
+# cp /path/to/templates/categorizing-properties.md .
 # cp /path/to/templates/"SPEC AUTHORING (CERTORA).md" .
 
 echo "✅ Verification structure created for ${TARGET_CONTRACT}"
 echo ""
 echo "Next steps:"
 echo "1. Open spec_authoring/${TARGET_LOWER}_spec_authoring.md"
-echo "2. Follow CERTORA_MASTER_GUIDE.md Phase 0"
+echo "2. Follow certora-master-guide.md Phase 0"
 ```
 
 ## 2.4 Configuration File Template
@@ -711,18 +711,18 @@ For EACH external contract called:
 
 > **Goal:** List all security properties in plain English
 
-## 5.1 Use Categorizing_Properties.md + Best Practices
+## 5.1 Use categorizing-properties.md + Best Practices
 
-Follow the template in `Categorizing_Properties.md` to discover properties.
+Follow the template in `categorizing-properties.md` to discover properties.
 
-**NEW in v1.3:** Also reference `BEST_PRACTICES_FROM_CERTORA.md` Section 1 for:
+**NEW in v1.3:** Also reference `best-practices-from-certora.md` Section 1 for:
 - Property discovery techniques
 - The 4 fatal mistakes to avoid
 - Anti-pattern: mimicking implementation
 - Iterative discovery process
 
 **Property Prioritization (v1.3):**
-After discovering properties, assign priority levels using `Categorizing_Properties.md` Section 7:
+After discovering properties, assign priority levels using `categorizing-properties.md` Section 7:
 - **HIGH**: Loss of funds, DoS, privilege escalation
 - **MEDIUM**: Accounting integrity, solvency
 - **LOW**: Single function correctness
@@ -1494,7 +1494,7 @@ certoraRun certora/confs/YourContract.conf 2>&1 | tee prover_output.log
 
 ## 10.3 Counterexample Debugging
 
-When a rule FAILS, use `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` (enhanced with Tutorial Lesson 02 workflow):
+When a rule FAILS, use `certora-ce-diagnosis-framework.md` (enhanced with Tutorial Lesson 02 workflow):
 
 **5-Step Investigation Process (from BEST_PRACTICES Section 2):**
 1. Run entire spec first (get overview of failures)
@@ -1532,7 +1532,7 @@ When a rule FAILS, use `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` (enhanced with Tutori
 
 ## 10.4 Performance Optimization & Timeout Mitigation
 
-> **NEW in v1.4:** See **ADVANCED_CLI_REFERENCE.md** for complete guide
+> **NEW in v1.4:** See **advanced-cli-reference.md** for complete guide
 
 When rules timeout or run slowly, use these strategies:
 
@@ -1574,7 +1574,7 @@ Rule timing out?
 ├─► Complex assertions? → --multi_assert_check
 ├─► Loops in contract? → --loop_iter N (start with 1-3)
 ├─► Large source code? → --prover_args '-smt_initialSplitDepth 5'
-└─► Still timing out? → See ADVANCED_CLI_REFERENCE.md Section 1
+└─► Still timing out? → See advanced-cli-reference.md Section 1
 ```
 
 ### Advanced Debugging Flags
@@ -1594,7 +1594,7 @@ certoraRun config.conf --coverage_info advanced
 ```
 
 **→ For detailed strategies, loop handling, multi-version projects, and harness patterns:**  
-**See ADVANCED_CLI_REFERENCE.md**
+**See advanced-cli-reference.md**
 
 ---
 
@@ -1732,7 +1732,7 @@ Before running prover, verify:
 | Invariant fails on all | Ghost not synced | Check hooks |
 | Rule fails unexpectedly | Missing validState() | Add requireInvariant |
 
-**NEW:** See `BEST_PRACTICES_FROM_CERTORA.md` Section 6 for common pitfalls and anti-patterns.
+**NEW:** See `best-practices-from-certora.md` Section 6 for common pitfalls and anti-patterns.
 
 ---
 
@@ -1769,7 +1769,7 @@ I am starting a formal verification project using Certora for the following cont
 **Contract Dependencies:** [List the files that the target imports]
 **Token Standard (if any):** [ERC-20 / ERC-721 / WETH / None]
 
-Please help me follow the CERTORA_MASTER_GUIDE.md workflow:
+Please help me follow the certora-master-guide.md workflow:
 
 1. First, create the folder structure (spec_authoring/, certora/specs/, certora/confs/, certora/harnesses/)
 2. Create the analysis documents for this target:
@@ -1785,9 +1785,9 @@ Please help me follow the CERTORA_MASTER_GUIDE.md workflow:
 The framework documents are already in my project root.
 
 **Key v1.5 references to use throughout:**
-- CVL_LANGUAGE_DEEP_DIVE.md — Complete CVL language reference (types, ghosts, hooks, operators)
-- VERIFICATION_PLAYBOOKS.md — Worked examples for ERC-20, WETH, and ERC-721
-- BEST_PRACTICES_FROM_CERTORA.md — Sections 7-9 (vacuity defense, requireInvariant lifecycle, edge cases)
+- cvl-language-deep-dive.md — Complete CVL language reference (types, ghosts, hooks, operators)
+- verification-playbooks.md — Worked examples for ERC-20, WETH, and ERC-721
+- best-practices-from-certora.md — Sections 7-9 (vacuity defense, requireInvariant lifecycle, edge cases)
 ```
 
 ## 13.2 For Continuing Phase 0 / Phase -1
@@ -1803,8 +1803,8 @@ Please analyze the contract and help me fill in the spec_authoring document:
 - Phase -1: External contracts, interaction ownership table, modeling decisions
 
 Reference: 
-- CERTORA_MASTER_GUIDE.md sections 3 and 4
-- BEST_PRACTICES_FROM_CERTORA.md Section 4 (harness patterns if needed)
+- certora-master-guide.md sections 3 and 4
+- best-practices-from-certora.md Section 4 (harness patterns if needed)
 ```
 
 ## 13.3 For Phase 2 (Property Discovery)
@@ -1815,14 +1815,14 @@ Continue Certora verification for [ContractName]:
 **Target:** [path/to/ContractName.sol]
 **Current Phase:** 2 (Property Discovery)
 
-Based on the Phase 0/-1 analysis, help me discover security properties using Categorizing_Properties.md:
+Based on the Phase 0/-1 analysis, help me discover security properties using categorizing-properties.md:
 - Valid States (range constraints)
 - State Transitions (function effects)
 - System-Level (aggregates, sums)
 - Access Control (who can do what)
 
 **NEW v1.3:** Also apply:
-- Property prioritization (HIGH/MEDIUM/LOW) - Categorizing_Properties.md Section 7
+- Property prioritization (HIGH/MEDIUM/LOW) - categorizing-properties.md Section 7
 - Dual mindset (Should Always / Should Never) - Section 5
 - Test mining (extract from existing tests) - Section 6
 - Avoid the 4 fatal mistakes - BEST_PRACTICES Section 1
@@ -1831,7 +1831,7 @@ Based on the Phase 0/-1 analysis, help me discover security properties using Cat
 - Liveness: assert success <=> (preconditions)
 - Effect: assert success => (state_changes)
 - No Side Effect: assert uninvolved_state unchanged
-See VERIFICATION_PLAYBOOKS.md Section 4 and CVL_LANGUAGE_DEEP_DIVE.md Section 15.
+See verification-playbooks.md Section 4 and cvl-language-deep-dive.md Section 15.
 
 Output should go into: spec_authoring/{target}_candidate_properties.md
 ```
@@ -1860,7 +1860,7 @@ Please help me discover properties using the DUAL MINDSET approach:
 **3. Categorize all properties:**
    - Valid States / State Transitions / System-Level / Threat-Driven
 
-Reference: Categorizing_Properties.md sections 5 and 6 (Dual Checklist & Test Mining)
+Reference: categorizing-properties.md sections 5 and 6 (Dual Checklist & Test Mining)
 ```
 
 ## 13.4 For Phase 3.5 (Causal Validation)
@@ -1878,9 +1878,9 @@ Create the validation spec and conf to verify mutation paths are complete:
 4. Include ghost synchronization tests if ghosts are needed
 
 Reference:
-- CERTORA_MASTER_GUIDE.md section 7
-- CVL_LANGUAGE_DEEP_DIVE.md Sections 8-9 (ghost declaration, init_state axiom, hook syntax)
-- BEST_PRACTICES_FROM_CERTORA.md Section 8 (require → requireInvariant lifecycle)
+- certora-master-guide.md section 7
+- cvl-language-deep-dive.md Sections 8-9 (ghost declaration, init_state axiom, hook syntax)
+- best-practices-from-certora.md Section 8 (require → requireInvariant lifecycle)
 ```
 
 ## 13.5 For Phase 7 (Validation PASSED → Write Real Spec)
@@ -1904,12 +1904,12 @@ Please help me create the real spec:
 8. Create certora/confs/{Contract}.conf
 
 Reference:
-- CERTORA_MASTER_GUIDE.md section 9.0 (Transition from Validation to Real Spec)
-- CVL_LANGUAGE_DEEP_DIVE.md (complete CVL reference — types, operators, ghosts, hooks, definitions)
-- VERIFICATION_PLAYBOOKS.md (if ERC-20/721/WETH — follow the complete worked example)
-- CERTORA_SPEC_FRAMEWORK.md (CVL syntax patterns + Liveness/Effect/No-Side-Effect template)
-- BEST_PRACTICES_FROM_CERTORA.md Sections 3, 7-9 (invariant patterns, vacuity defense, lifecycle, edge cases)
-- QUICK_REFERENCE_v1.3.md (keep open for syntax lookup)
+- certora-master-guide.md section 9.0 (Transition from Validation to Real Spec)
+- cvl-language-deep-dive.md (complete CVL reference — types, operators, ghosts, hooks, definitions)
+- verification-playbooks.md (if ERC-20/721/WETH — follow the complete worked example)
+- certora-spec-framework.md (CVL syntax patterns + Liveness/Effect/No-Side-Effect template)
+- best-practices-from-certora.md Sections 3, 7-9 (invariant patterns, vacuity defense, lifecycle, edge cases)
+- quick-reference-v1.3.md (keep open for syntax lookup)
 ```
 
 ## 13.5.1 For Token Standard Verification (ERC-20 / ERC-721 / WETH)
@@ -1921,7 +1921,7 @@ I need to verify a [ERC-20 / ERC-721 / WETH] token contract:
 **Standard:** [ERC-20 / ERC-721 / WETH]
 **Non-standard features:** [mint/burn access control, fee-on-transfer, rebasing, etc.]
 
-Please use the VERIFICATION_PLAYBOOKS.md as the primary reference:
+Please use the verification-playbooks.md as the primary reference:
 
 **For ERC-20:** Follow Section 1 (22-rule playbook with 4-phase methodology):
 - Phase 1: Function correctness (transfer, transferFrom, approve, mint, burn)
@@ -1941,8 +1941,8 @@ Please use the VERIFICATION_PLAYBOOKS.md as the primary reference:
 - Exclude self-calls: require e.msg.sender != currentContract
 
 Also reference:
-- CVL_LANGUAGE_DEEP_DIVE.md (mathint, satisfy, <=>, @withrevert, persistent ghost, definitions)
-- BEST_PRACTICES_FROM_CERTORA.md Section 9 (self-transfer edge case)
+- cvl-language-deep-dive.md (mathint, satisfy, <=>, @withrevert, persistent ghost, definitions)
+- best-practices-from-certora.md Section 9 (self-transfer edge case)
 ```
 
 ## 13.6 For Debugging Counterexamples
@@ -1962,10 +1962,10 @@ Please help me diagnose using the systematic approach:
 4. If ghost values look wrong, is it a havocing issue?
 
 Reference:
-- CERTORA_CE_DIAGNOSIS_FRAMEWORK.md (comprehensive 5-phase diagnosis + ghost havocing guide)
-- BEST_PRACTICES_FROM_CERTORA.md Section 2 (5-step investigation workflow from Tutorial Lesson 02)
-- CVL_LANGUAGE_DEEP_DIVE.md Section 4 (vacuous truth — is the rule trivially passing?)
-- CVL_LANGUAGE_DEEP_DIVE.md Section 8 (ghost havocing — when/why ghosts get arbitrary values)
+- certora-ce-diagnosis-framework.md (comprehensive 5-phase diagnosis + ghost havocing guide)
+- best-practices-from-certora.md Section 2 (5-step investigation workflow from Tutorial Lesson 02)
+- cvl-language-deep-dive.md Section 4 (vacuous truth — is the rule trivially passing?)
+- cvl-language-deep-dive.md Section 8 (ghost havocing — when/why ghosts get arbitrary values)
 - Focus on call trace analysis: storage changes, arguments, return values
 ```
 
@@ -1984,7 +1984,7 @@ Please help me resolve using loop handling strategies:
 3. Do I need loop invariants in preserved block?
 4. Should I simplify the loop in a harness?
 
-Reference: BEST_PRACTICES_FROM_CERTORA.md Section 5 (Loop Handling from Tutorial Lesson 11)
+Reference: best-practices-from-certora.md Section 5 (Loop Handling from Tutorial Lesson 11)
 ```
 
 ## 13.7 Essential Information to Provide

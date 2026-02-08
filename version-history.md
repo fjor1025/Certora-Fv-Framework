@@ -14,7 +14,7 @@ Complete analysis of the **RareSkills Certora Book** — 35 chapters, 60,000+ wo
 
 #### New Documents
 
-1. **CVL_LANGUAGE_DEEP_DIVE.md** — Complete CVL language reference (20 sections)
+1. **cvl-language-deep-dive.md** — Complete CVL language reference (20 sections)
    - **Section 1: Type System** — `mathint` semantics, `require_uint256` dangers, `to_mathint`/`assert_uint256` casting reference
    - **Section 2: Core Statements** — `require`, `assert`, `satisfy` with existential quantification and solver examples
    - **Section 3: Logical Operators** — `=>` implication, `<=>` biconditional, contrapositive equivalence
@@ -36,7 +36,7 @@ Complete analysis of the **RareSkills Certora Book** — 35 chapters, 60,000+ wo
    - **Section 19: Invariant Sanity Checks** — `rule_not_vacuous`, `invariant_not_trivial_postcondition`
    - **Section 20: Quick Reference Tables** — Statement semantics, operator reference, ghost initialization, hook types
 
-2. **VERIFICATION_PLAYBOOKS.md** — Complete worked verification examples
+2. **verification-playbooks.md** — Complete worked verification examples
    - **ERC-20 Playbook (22 rules):**
      - Phase 1: Function correctness (transfer, transferFrom, approve, mint, burn)
      - Phase 2: No side effects (balance isolation, allowance isolation)
@@ -65,27 +65,27 @@ Complete analysis of the **RareSkills Certora Book** — 35 chapters, 60,000+ wo
 
 #### Updated Documents
 
-3. **CERTORA_SPEC_FRAMEWORK.md**
+3. **certora-spec-framework.md**
    - Added `definition` blocks section (nonpayable, nonzerosender, balanceLimited)
    - Added Liveness/Effect/No-Side-Effect rule template in CVL 2.0 Templates section
 
-4. **BEST_PRACTICES_FROM_CERTORA.md**
+4. **best-practices-from-certora.md**
    - Added Section 7: Vacuous Truth & Tautology Defense
    - Added Section 8: The `require` → `requireInvariant` Lifecycle
    - Added Section 9: Self-Transfer & Edge Case Patterns
    - Updated framework phase mapping table
    - Expanded pre-run checklist with v1.5 items
 
-5. **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md**
+5. **certora-ce-diagnosis-framework.md**
    - Added Ghost Havocing Diagnosis Guide with symptoms, steps, and fixes
    - Added Persistent Ghost + CALL Hook template
    - Added havocing behavior comparison table (regular vs persistent)
 
-6. **CERTORA_MASTER_GUIDE.md**
+6. **certora-master-guide.md**
    - Version bump to v1.5
-   - Added CVL_LANGUAGE_DEEP_DIVE.md and VERIFICATION_PLAYBOOKS.md to document table
+   - Added cvl-language-deep-dive.md and verification-playbooks.md to document table
 
-7. **README.md**
+7. **readme.md**
    - Version bump to v1.5
    - Complete "What's New in v1.5" section
    - Updated framework files table with new documents
@@ -122,7 +122,7 @@ Complete analysis of the **RareSkills Certora Book** — 35 chapters, 60,000+ wo
 ### Major Additions
 
 #### New Documents
-1. **ADVANCED_CLI_REFERENCE.md** - Comprehensive performance optimization and advanced CLI guide
+1. **advanced-cli-reference.md** - Comprehensive performance optimization and advanced CLI guide
    - **Section 1: Performance Optimization**
      - `--split_rules` strategy for heavy rules
      - `--multi_assert_check` for timeout mitigation
@@ -169,7 +169,7 @@ Complete analysis of the **RareSkills Certora Book** — 35 chapters, 60,000+ wo
 
 #### Enhanced Documents
 
-**QUICK_REFERENCE_v1.3.md**
+**quick-reference-v1.3.md**
 - Added **"⚡ Performance & Advanced Flags"** section
   - Timeout mitigation quick reference table
   - Advanced debugging flags table
@@ -177,7 +177,7 @@ Complete analysis of the **RareSkills Certora Book** — 35 chapters, 60,000+ wo
 - Updated document links to include ADVANCED_CLI_REFERENCE
 - Added loop/array and multi-version project references
 
-**CERTORA_MASTER_GUIDE.md**
+**certora-master-guide.md**
 - Updated to v1.4
 - Added ADVANCED_CLI_REFERENCE to framework documents table (Section 1.1)
 - Added **Section 10.4: Performance Optimization & Timeout Mitigation**
@@ -187,7 +187,7 @@ Complete analysis of the **RareSkills Certora Book** — 35 chapters, 60,000+ wo
   - Advanced debugging flags
   - Direct reference to detailed strategies in ADVANCED_CLI_REFERENCE
 
-**README.md**
+**readme.md**
 - Updated to v1.4
 - Added comprehensive "What's New in v1.4" section
 - Added ADVANCED_CLI_REFERENCE to framework files table
@@ -229,7 +229,7 @@ This version is designed for:
 ### Major Additions
 
 #### New Documents
-1. **BEST_PRACTICES_FROM_CERTORA.md** - Comprehensive extraction from official Certora tutorials
+1. **best-practices-from-certora.md** - Comprehensive extraction from official Certora tutorials
    - Property discovery techniques (Lesson 06)
    - 5-step CE investigation workflow (Lesson 02)
    - Invariant design patterns (Lessons 07, 08, 15)
@@ -237,13 +237,13 @@ This version is designed for:
    - Loop handling strategies (Lesson 11)
    - Common pitfalls and anti-patterns
 
-2. **QUICK_REFERENCE_v1.3.md** - Printable cheat sheet
+2. **quick-reference-v1.3.md** - Printable cheat sheet
    - Phase checklists with best practices
    - Invariant pattern quick reference
    - Pre-verification checklist
    - Command cheat sheet
 
-3. **TUTORIAL_EXTRACTION_SUMMARY.md** - Documentation of extraction process
+3. **tutorial-extraction-summary.md** - Documentation of extraction process
    - Tutorial-to-framework mapping
    - Key insights extracted
    - Integration points
@@ -251,7 +251,7 @@ This version is designed for:
 
 #### Enhanced Documents
 
-**Categorizing_Properties.md**
+**categorizing-properties.md**
 - Added **Section 7: Property Prioritization**
   - HIGH / MEDIUM / LOW priority levels
   - Impact-based prioritization matrix
@@ -260,7 +260,7 @@ This version is designed for:
   - Complete property entry template
 - Updated checklist to v1.3
 
-**CERTORA_CE_DIAGNOSIS_FRAMEWORK.md**
+**certora-ce-diagnosis-framework.md**
 - Updated to v2.1
 - Added **Tutorial-Based Investigation Workflow** section
   - 5-step systematic investigation process
@@ -268,7 +268,7 @@ This version is designed for:
   - Expression breakdown best practices
   - Bug documentation template
 
-**CERTORA_MASTER_GUIDE.md**
+**certora-master-guide.md**
 - Updated to v1.3
 - Added BEST_PRACTICES document to framework table
 - Enhanced Phase 2 (Property Discovery) with:
@@ -280,17 +280,17 @@ This version is designed for:
 - Added reference to common pitfalls (Section 12.4)
 - Updated Phase 2 chat prompt with v1.3 enhancements
 
-**CERTORA_WORKFLOW.md**
+**certora-workflow.md**
 - Updated to v2.1
 - Enhanced framework overview diagram with BEST_PRACTICES and updated Categorizing_Properties
 - Added v1.3 enhancements note to Phase 2
 - Added reference to 5-step CE debugging
 
-**CERTORA_QUICKSTART_TEMPLATE.md**
+**certora-quickstart-template.md**
 - Added "What's New in v1.3" section
 - References to prioritization, dual mindset, test mining
 
-**README.md**
+**readme.md**
 - Updated to v1.3
 - Added comprehensive "What's New" section
 - Added BEST_PRACTICES to file list
@@ -302,7 +302,7 @@ This version is designed for:
 
 ### Enhancements
 
-**Categorizing_Properties.md**
+**categorizing-properties.md**
 - Added **Section 5: RIGHT / WRONG BEHAVIOR DUAL CHECKLIST**
   - Dual mindset approach: "Should Always" vs "Should Never"
   - Attack vector enumeration
@@ -313,10 +313,10 @@ This version is designed for:
   - Coverage blind spot identification
   - Implicit invariant extraction
 
-**CERTORA_MASTER_GUIDE.md**
+**certora-master-guide.md**
 - Updated Phase 2 chat prompt with dual mindset option (Section 13.3.1)
 
-**README.md**
+**readme.md**
 - Added v1.2 features section
 
 ---
@@ -325,7 +325,7 @@ This version is designed for:
 
 ### Enhancements
 
-**CERTORA_MASTER_GUIDE.md**
+**certora-master-guide.md**
 - Added **Section 9.0: Transition from Validation Spec to Real Spec**
   - What validation passing guarantees
   - Step-by-step creation of real spec from validation
@@ -344,25 +344,25 @@ This version is designed for:
 
 ### Core Documents Created
 
-1. **CERTORA_MASTER_GUIDE.md**
+1. **certora-master-guide.md**
    - Complete 9-phase methodology
    - Project setup templates
    - Phase-by-phase instructions
    - Templates for all documents
 
-2. **CERTORA_WORKFLOW.md**
+2. **certora-workflow.md**
    - Phase overview
    - Visual workflow diagrams
    - Quick reference cards
    - Document purpose mapping
 
-3. **CERTORA_SPEC_FRAMEWORK.md**
+3. **certora-spec-framework.md**
    - CVL 2.0 syntax reference
    - Pattern library
    - Method block patterns
    - Ghost and hook templates
 
-4. **CERTORA_CE_DIAGNOSIS_FRAMEWORK.md** (v2.0)
+4. **certora-ce-diagnosis-framework.md** (v2.0)
    - Counterexample classification
    - REAL BUG vs SPEC BUG decision tree
    - Causal closure verification
@@ -374,18 +374,18 @@ This version is designed for:
    - Execution closure principles
    - Property classification theory
 
-6. **Categorizing_Properties.md**
+6. **categorizing-properties.md**
    - Property discovery framework
    - 4 property categories
    - Documentation templates
    - External dependency handling
 
-7. **CERTORA_QUICKSTART_TEMPLATE.md**
+7. **certora-quickstart-template.md**
    - Quick start guide
    - Copy-paste templates
    - Command cheat sheet
 
-8. **README.md**
+8. **readme.md**
    - Framework overview
    - File descriptions
    - Quick start instructions
@@ -423,22 +423,22 @@ This version is designed for:
 
 | Document | v1.0 | v1.1 | v1.2 | v1.3 | v1.4 | v1.5 | Notes |
 |----------|------|------|------|------|------|------|-------|
-| CERTORA_MASTER_GUIDE.md | 1.0 | 1.1 | 1.1 | 1.3 | 1.3 | 1.5 | Added v1.5 doc refs + Section 13 prompts |
-| CERTORA_WORKFLOW.md | 1.0 | 1.0 | 2.0 | 2.1 | 2.1 | 2.1 | Stable |
-| CERTORA_SPEC_FRAMEWORK.md | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.1 | Added definitions + L/E/NSE template |
-| CERTORA_CE_DIAGNOSIS_FRAMEWORK.md | 2.0 | 2.0 | 2.0 | 2.1 | 2.1 | 2.2 | Added ghost havocing diagnosis |
+| certora-master-guide.md | 1.0 | 1.1 | 1.1 | 1.3 | 1.3 | 1.5 | Added v1.5 doc refs + Section 13 prompts |
+| certora-workflow.md | 1.0 | 1.0 | 2.0 | 2.1 | 2.1 | 2.1 | Stable |
+| certora-spec-framework.md | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.1 | Added definitions + L/E/NSE template |
+| certora-ce-diagnosis-framework.md | 2.0 | 2.0 | 2.0 | 2.1 | 2.1 | 2.2 | Added ghost havocing diagnosis |
 | SPEC AUTHORING (CERTORA).md | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | Stable - principles |
-| Categorizing_Properties.md | 1.0 | 1.0 | 1.2 | 1.3 | 1.3 | 1.3 | Stable |
-| CERTORA_QUICKSTART_TEMPLATE.md | 1.0 | 1.0 | 1.0 | 1.3 | 1.3 | 1.3 | Stable |
-| README.md | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 | Version tracking |
-| BEST_PRACTICES_FROM_CERTORA.md | - | - | - | NEW | 1.0 | 1.1 | Added Sections 7-9 |
-| QUICK_REFERENCE_v1.3.md | - | - | - | NEW | 1.0 | 1.0 | Cheat sheet |
-| TUTORIAL_EXTRACTION_SUMMARY.md | - | - | - | NEW | 1.0 | 1.0 | Documentation |
-| INDEX.md | - | - | - | NEW | 1.0 | 1.0 | Navigation |
-| VERSION_HISTORY.md | - | - | - | NEW | 1.0 | 1.1 | Updated matrices + migration |
-| ADVANCED_CLI_REFERENCE.md | - | - | - | - | NEW | 1.0 | Performance & CLI |
-| CVL_LANGUAGE_DEEP_DIVE.md | - | - | - | - | - | NEW | Complete CVL reference |
-| VERIFICATION_PLAYBOOKS.md | - | - | - | - | - | NEW | ERC-20/WETH/ERC-721 worked examples |
+| categorizing-properties.md | 1.0 | 1.0 | 1.2 | 1.3 | 1.3 | 1.3 | Stable |
+| certora-quickstart-template.md | 1.0 | 1.0 | 1.0 | 1.3 | 1.3 | 1.3 | Stable |
+| readme.md | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 | Version tracking |
+| best-practices-from-certora.md | - | - | - | NEW | 1.0 | 1.1 | Added Sections 7-9 |
+| quick-reference-v1.3.md | - | - | - | NEW | 1.0 | 1.0 | Cheat sheet |
+| tutorial-extraction-summary.md | - | - | - | NEW | 1.0 | 1.0 | Documentation |
+| index.md | - | - | - | NEW | 1.0 | 1.0 | Navigation |
+| version-history.md | - | - | - | NEW | 1.0 | 1.1 | Updated matrices + migration |
+| advanced-cli-reference.md | - | - | - | - | NEW | 1.0 | Performance & CLI |
+| cvl-language-deep-dive.md | - | - | - | - | - | NEW | Complete CVL reference |
+| verification-playbooks.md | - | - | - | - | - | NEW | ERC-20/WETH/ERC-721 worked examples |
 | POC_TEMPLATE_Foundry.md | - | - | - | - | NEW | 1.0 | Foundry PoC template |
 | POC_TEMPLATE_HARDHAT.md | - | - | - | - | NEW | 1.0 | Hardhat PoC template |
 | VULNERABILITY_REPORT_TEMPLATE.md | - | - | - | - | NEW | 1.0 | Vulnerability report template |
@@ -454,31 +454,31 @@ This version is designed for:
 **To adopt v1.5 enhancements:**
 
 1. **Use CVL Language Deep Dive for spec writing:**
-   - Reference `CVL_LANGUAGE_DEEP_DIVE.md` for type system, ghost variables, hooks, invariants
+   - Reference `cvl-language-deep-dive.md` for type system, ghost variables, hooks, invariants
    - Contains 20 detailed sections covering all CVL 2.0 concepts
    - Use the Quick Reference Tables (Section 20) for at-a-glance lookup
 
 2. **Use Verification Playbooks for worked examples:**
-   - Use `VERIFICATION_PLAYBOOKS.md` for production-ready spec patterns
+   - Use `verification-playbooks.md` for production-ready spec patterns
    - ERC-20 Playbook: 22 rules across 4 phases (start here for token verification)
    - WETH Playbook: Solvency invariants with persistent ghost + CALL hook
    - ERC-721 Playbook: NFT verification with DISPATCHER for callbacks
 
 3. **Apply vacuous truth defense:**
-   - Check `BEST_PRACTICES_FROM_CERTORA.md` Section 7
+   - Check `best-practices-from-certora.md` Section 7
    - Always pair `require` with `satisfy` to prove witness existence
    - Use `assert ... => ...` instead of `require ...; assert ...` when possible
 
 4. **Adopt requireInvariant lifecycle:**
-   - Check `BEST_PRACTICES_FROM_CERTORA.md` Section 8
+   - Check `best-practices-from-certora.md` Section 8
    - Prove invariant independently → then use `requireInvariant` in rules
 
 5. **Handle self-transfer edge cases:**
-   - Check `BEST_PRACTICES_FROM_CERTORA.md` Section 9
+   - Check `best-practices-from-certora.md` Section 9
    - Always separate `from == to` and `from != to` cases in token transfer rules
 
 6. **Debug ghost havocing:**
-   - Check `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` ghost havocing section
+   - Check `certora-ce-diagnosis-framework.md` ghost havocing section
    - Use `persistent ghost` + `hook CALL` pattern for native balance tracking
 
 ### From v1.3 to v1.4
@@ -488,7 +488,7 @@ This version is designed for:
 **To adopt v1.4 enhancements:**
 
 1. **Use Advanced CLI Reference for performance:**
-   - Reference `ADVANCED_CLI_REFERENCE.md` for timeout optimization
+   - Reference `advanced-cli-reference.md` for timeout optimization
    - Use `--smt_timeout`, `--loop_iter`, `--optimistic_loop` flags
    - Apply modular verification with `--rule` flag for large specs
 
@@ -505,15 +505,15 @@ This version is designed for:
 1. **Add prioritization to existing properties:**
    - Open your `candidate_properties.md`
    - Add **Priority:** field (HIGH/MEDIUM/LOW) to each property
-   - Reference `Categorizing_Properties.md` Section 7 for criteria
+   - Reference `categorizing-properties.md` Section 7 for criteria
 
 2. **Reference best practices during verification:**
-   - Use `BEST_PRACTICES_FROM_CERTORA.md` Section 1 during Phase 2
+   - Use `best-practices-from-certora.md` Section 1 during Phase 2
    - Use Section 2 for CE debugging
    - Use Section 3 for invariant design
 
 3. **Use quick reference card:**
-   - Print or keep open `QUICK_REFERENCE_v1.3.md`
+   - Print or keep open `quick-reference-v1.3.md`
    - Follow pre-verification checklist before running prover
 
 4. **Apply 5-step CE investigation:**
@@ -574,12 +574,12 @@ Tutorial sources:
 ## Support
 
 For questions or issues:
-1. Check `BEST_PRACTICES_FROM_CERTORA.md` Section 6 (Common Pitfalls)
-2. Review `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` for debugging
-3. Consult `QUICK_REFERENCE_v1.3.md` for quick answers
-4. Reference `CVL_LANGUAGE_DEEP_DIVE.md` for CVL language details
-5. Use `VERIFICATION_PLAYBOOKS.md` for worked examples
-6. Reference specific tutorial lessons via `TUTORIAL_EXTRACTION_SUMMARY.md`
+1. Check `best-practices-from-certora.md` Section 6 (Common Pitfalls)
+2. Review `certora-ce-diagnosis-framework.md` for debugging
+3. Consult `quick-reference-v1.3.md` for quick answers
+4. Reference `cvl-language-deep-dive.md` for CVL language details
+5. Use `verification-playbooks.md` for worked examples
+6. Reference specific tutorial lessons via `tutorial-extraction-summary.md`
 
 ---
 

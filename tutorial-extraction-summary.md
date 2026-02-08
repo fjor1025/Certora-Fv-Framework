@@ -29,7 +29,7 @@
 ```
 Framework Document                    Section Added                Tutorial Source
 ─────────────────────────────────────────────────────────────────────────────────
-BEST_PRACTICES_FROM_CERTORA.md       [NEW FILE]                   All tutorials
+best-practices-from-certora.md       [NEW FILE]                   All tutorials
 ├── Section 1                         Property Discovery           Lesson 06
 ├── Section 2                         CE Investigation             Lesson 02
 ├── Section 3                         Invariant Patterns           Lessons 07, 08, 15
@@ -37,13 +37,13 @@ BEST_PRACTICES_FROM_CERTORA.md       [NEW FILE]                   All tutorials
 ├── Section 5                         Loop Handling                Lesson 11
 └── Section 6                         Common Pitfalls              Lesson 06
 
-Categorizing_Properties.md           Section 7                     Auction Demo
+categorizing-properties.md           Section 7                     Auction Demo
 └── Property Prioritization          NEW in v1.3                   propertiesList.md
 
-CERTORA_CE_DIAGNOSIS_FRAMEWORK.md    Tutorial-Based Workflow       Lesson 02
+certora-ce-diagnosis-framework.md    Tutorial-Based Workflow       Lesson 02
 └── 5-Step Investigation             NEW in v2.1                   Investigate Violations
 
-README.md                            Version & File List           N/A
+readme.md                            Version & File List           N/A
 └── Updated to v1.3                  Framework overview
 ```
 
@@ -76,7 +76,7 @@ README.md                            Version & File List           N/A
 - MEDIUM: Accounting integrity, solvency
 - LOW: Single function correctness, redundant checks
 
-**Framework Impact:** Added Section 7 to Categorizing_Properties.md with prioritization templates.
+**Framework Impact:** Added Section 7 to categorizing-properties.md with prioritization templates.
 
 ### 4. CE Investigation is Systematic
 
@@ -184,13 +184,13 @@ assert userTotal <= systemTotal, "User total exceeds system total";
 
 ## Usage Guidelines
 
-### When to Reference BEST_PRACTICES_FROM_CERTORA.md
+### When to Reference best-practices-from-certora.md
 
 | Phase | Use Case | Section |
 |-------|----------|---------|
 | **Phase 2** | Discovering properties | Section 1: Property Discovery |
 | **Phase 2** | Avoiding common mistakes | Section 6: Common Pitfalls |
-| **Phase 2** | Prioritizing properties | Reference Categorizing_Properties.md Section 7 |
+| **Phase 2** | Prioritizing properties | Reference categorizing-properties.md Section 7 |
 | **Phase 3.5** | Designing invariants | Section 3: Invariant Patterns |
 | **Phase 7** | Writing rules | Section 6.2: Readability |
 | **Phase 11** | Creating harnesses | Section 4: Harness Best Practices |
@@ -233,7 +233,7 @@ You have 3 specs that passed validation:
 
 ### For New Contract Verifications
 
-1. **Phase 2:** Use Categorizing_Properties.md + BEST_PRACTICES Section 1
+1. **Phase 2:** Use categorizing-properties.md + BEST_PRACTICES Section 1
 2. **Phase 3.5:** Reference invariant patterns from Section 3.2
 3. **Phase 7:** Follow readability guidelines from Section 6.2
 4. **CE Debugging:** Use 5-step workflow from Section 2
@@ -280,4 +280,4 @@ The framework now incorporates **battle-tested techniques** from Certora's offic
 - Advanced CLI & performance optimization (v1.4)
 - RareSkills Certora Book integration (v1.5)
 
-Use `BEST_PRACTICES_FROM_CERTORA.md` as your **technique reference**, `CVL_LANGUAGE_DEEP_DIVE.md` as your **CVL language reference**, and `VERIFICATION_PLAYBOOKS.md` for **production-ready worked examples**.
+Use `best-practices-from-certora.md` as your **technique reference**, `cvl-language-deep-dive.md` as your **CVL language reference**, and `verification-playbooks.md` for **production-ready worked examples**.

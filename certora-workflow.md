@@ -94,9 +94,9 @@ project_name/
 │   └── causal_validation.md     # Causal analysis (Phase 3.5)
 └── docs/
     ├── SPEC AUTHORING (CERTORA).md
-    ├── CERTORA_SPEC_FRAMEWORK.md
-    ├── CERTORA_CE_DIAGNOSIS_FRAMEWORK.md
-    └── CERTORA_WORKFLOW.md (this file)
+    ├── certora-spec-framework.md
+    ├── certora-ce-diagnosis-framework.md
+    └── certora-workflow.md (this file)
 ```
 
 ---
@@ -646,7 +646,7 @@ Go through EVERY checkbox. ALL must pass.
 
 **Now and ONLY now, write the actual CVL spec.**
 
-**Reference:** `CERTORA_SPEC_FRAMEWORK.md` for:
+**Reference:** `certora-spec-framework.md` for:
 - Methods block structure
 - Ghost and hook templates
 - validState() pattern
@@ -654,8 +654,8 @@ Go through EVERY checkbox. ALL must pass.
 - CVL 2.0 syntax
 
 **Also reference (NEW v1.5):**
-- `CVL_LANGUAGE_DEEP_DIVE.md` — Type system, ghosts, hooks, invariant lifecycle
-- `VERIFICATION_PLAYBOOKS.md` — Copy-paste ERC-20/WETH/ERC-721 examples
+- `cvl-language-deep-dive.md` — Type system, ghosts, hooks, invariant lifecycle
+- `verification-playbooks.md` — Copy-paste ERC-20/WETH/ERC-721 examples
 
 **Spec Structure:**
 ```cvl
@@ -704,7 +704,7 @@ certoraRun certora/confs/[Contract].conf
 
 If prover returns counterexamples:
 
-**Reference:** `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md`
+**Reference:** `certora-ce-diagnosis-framework.md`
 
 1. Complete Phase -1 closure checks
 2. If any fail → SPEC BUG → Fix per Phase B
@@ -720,13 +720,13 @@ If prover returns counterexamples:
 | Document | Use When |
 |----------|----------|
 | `SPEC AUTHORING (CERTORA).md` | Understanding contract, modeling, classifying |
-| `CERTORA_SPEC_FRAMEWORK.md` | Writing CVL code |
-| `CVL_LANGUAGE_DEEP_DIVE.md` | CVL type system, ghosts, hooks, invariants ⭐ NEW v1.5 |
-| `VERIFICATION_PLAYBOOKS.md` | Copy-paste worked examples ⭐ NEW v1.5 |
-| `CERTORA_CE_DIAGNOSIS_FRAMEWORK.md` | Debugging counterexamples |
-| `ADVANCED_CLI_REFERENCE.md` | Performance optimization, timeouts ⭐ NEW v1.4 |
-| `BEST_PRACTICES_FROM_CERTORA.md` | Proven techniques & patterns |
-| `CERTORA_WORKFLOW.md` | Following the process |
+| `certora-spec-framework.md` | Writing CVL code |
+| `cvl-language-deep-dive.md` | CVL type system, ghosts, hooks, invariants ⭐ NEW v1.5 |
+| `verification-playbooks.md` | Copy-paste worked examples ⭐ NEW v1.5 |
+| `certora-ce-diagnosis-framework.md` | Debugging counterexamples |
+| `advanced-cli-reference.md` | Performance optimization, timeouts ⭐ NEW v1.4 |
+| `best-practices-from-certora.md` | Proven techniques & patterns |
+| `certora-workflow.md` | Following the process |
 
 ### File Purpose
 

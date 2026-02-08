@@ -677,7 +677,7 @@ rule tautologically_true() {
 4. **Review the Prover report** for "vacuous" warnings in the sanity panel
 5. **Test with `satisfy`** first to confirm the preconditions are reachable
 
-**See:** `CVL_LANGUAGE_DEEP_DIVE.md` Section 4 for comprehensive treatment.
+**See:** `cvl-language-deep-dive.md` Section 4 for comprehensive treatment.
 
 ---
 
@@ -766,7 +766,7 @@ When `msg.sender == currentContract`, ETH accounting breaks for WETH-like contra
 require e.msg.sender != currentContract;  // Modeling constraint, not revert condition
 ```
 
-**See:** `CVL_LANGUAGE_DEEP_DIVE.md` Section 18 and `VERIFICATION_PLAYBOOKS.md` for complete examples.
+**See:** `cvl-language-deep-dive.md` Section 18 and `verification-playbooks.md` for complete examples.
 
 ---
 
@@ -782,8 +782,8 @@ require e.msg.sender != currentContract;  // Modeling constraint, not revert con
 | **CE Debugging** | Section 2 (CE Investigation Process) |
 | **Harness Design** | Section 4 (Harness Best Practices) |
 | **Loop Handling** | Section 5 (Loop Configuration) |
-| **CVL Deep Dive** | `CVL_LANGUAGE_DEEP_DIVE.md` (Complete CVL Reference) |
-| **Worked Examples** | `VERIFICATION_PLAYBOOKS.md` (ERC-20, WETH, ERC-721) |
+| **CVL Deep Dive** | `cvl-language-deep-dive.md` (Complete CVL Reference) |
+| **Worked Examples** | `verification-playbooks.md` (ERC-20, WETH, ERC-721) |
 
 ---
 

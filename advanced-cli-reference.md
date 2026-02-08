@@ -1665,8 +1665,8 @@ Is your verification...
 > "The best performance optimization is the one you don't need because you designed your verification strategy correctly from the start."
 
 For more information, see:
-- CERTORA_MASTER_GUIDE.md (Main workflow)
-- CVL_LANGUAGE_DEEP_DIVE.md (CVL language reference — NEW v1.5)
-- VERIFICATION_PLAYBOOKS.md (Worked examples — NEW v1.5)
-- BEST_PRACTICES_FROM_CERTORA.md (Tutorial techniques)
-- QUICK_REFERENCE_v1.3.md (Quick lookup)
+- certora-master-guide.md (Main workflow)
+- cvl-language-deep-dive.md (CVL language reference — NEW v1.5)
+- verification-playbooks.md (Worked examples — NEW v1.5)
+- best-practices-from-certora.md (Tutorial techniques)
+- quick-reference-v1.3.md (Quick lookup)

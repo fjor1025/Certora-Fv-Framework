@@ -1,7 +1,7 @@
 # Framework v1.5 Quick Reference Card
 
 > **Print this or keep open while verifying**  
-> *(filename retained as `QUICK_REFERENCE_v1.3.md` for backward compatibility)*
+> *(filename retained as `quick-reference-v1.3.md` for backward compatibility)*
 
 ---
 
@@ -182,7 +182,7 @@ invariant partLessThanWhole(address user)
 
 ## ⚡ Performance & Advanced Flags
 
-**Reference:** ADVANCED_CLI_REFERENCE.md for complete guide
+**Reference:** advanced-cli-reference.md for complete guide
 
 ### Timeout Mitigation
 
@@ -287,4 +287,4 @@ certoraRun config.conf --rule failing_rule --multi_example
 **Framework Version:** 1.5 (RareSkills Integration)  
 **Last Updated:** February 8, 2026
 
-**v1.5 Additions:** See `CVL_LANGUAGE_DEEP_DIVE.md` for complete CVL reference, `VERIFICATION_PLAYBOOKS.md` for production-ready worked examples.
+**v1.5 Additions:** See `cvl-language-deep-dive.md` for complete CVL reference, `verification-playbooks.md` for production-ready worked examples.

@@ -881,4 +881,4 @@ hook CALL(uint gas, address to, uint value,
 }
 ```
 
-**See:** `CVL_LANGUAGE_DEEP_DIVE.md` Sections 8-9 for complete ghost and hook reference.
+**See:** `cvl-language-deep-dive.md` Sections 8-9 for complete ghost and hook reference.

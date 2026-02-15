@@ -1,50 +1,35 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 1.5 (RareSkills Integration)
+> **Version:** 1.8 (Reachability Validation)
 
 ---
 
-## What's New in v1.5
+## What's New in v1.8
 
-**RareSkills Integration** (sourced from the complete RareSkills Certora Book — 35 chapters, 60,000+ words):
+**Reachability Validation — Function Liveness via `satisfy`:**
 
-**NEW Documents:**
-- **cvl-language-deep-dive.md** — Complete CVL language reference covering 20 topics:
-  - Type system (`mathint`, `require_uint256`, casting dangers)
-  - Core statements (`require`, `assert`, `satisfy` with existential semantics)
-  - Logical operators (`=>` implication, `<=>` biconditional, contrapositive)
-  - Vacuous truth and tautology defenses
-  - Method tags (`@withrevert`, `@norevert`, `lastReverted`)
-  - Environment variables (`env`, `msg.sender`, `msg.value`, `nativeBalances`)
-  - Ghost variables (initialization, havocing, persistent ghosts)
-  - Hooks (Sstore delta, Sload constraint, CALL opcode)
-  - `definition` blocks (reusable CVL expressions)
-  - Invariants (base case, inductive step, preserved blocks)
-  - `requireInvariant` lifecycle
-  - Parametric and partially parametric rules
-  - Liveness / Effect / No-Side-Effect pattern
-  - DISPATCHER and external callback resolution
-  - Loops, self-transfer handling, sanity checks
+The framework now prescribes `satisfy` reachability rules as a **mandatory proactive step** in the validation spec — not just a diagnostic afterthought. Without these, a validation spec can pass all assertion rules while proving nothing (vacuity).
 
-- **verification-playbooks.md** — Complete worked verification examples:
-  - **ERC-20 Playbook** — 22 rules across 4 phases (Correctness, Side Effects, Invariants, Authorization)
-  - **WETH Playbook** — Solvency invariant, deposit/withdraw, persistent ghost + CALL hook
-  - **ERC-721 Playbook** — Mint/burn/transfer, helperSoundFnCall, DISPATCHER for callbacks
+- **Validation Rule 0: Function Reachability** — `f@withrevert(e, args); satisfy !lastReverted;` for every state-changing function
+- **Phase 0.5** in verification-playbooks.md — Reachability sits between builtin scan and function correctness
+- **Validation Execution Order** — satisfy (reachability) → mutation paths → ghost sync → THEN real spec
+- Updated checklists in `certora-master-guide.md`, `spec-authoring-certora.md`, `certora-spec-framework.md`
 
-**Updated Documents:**
-- `certora-spec-framework.md` — Added `definition` blocks template, Liveness/Effect/No-Side-Effect rule template
-- `best-practices-from-certora.md` — Added vacuous truth defense, `require` → `requireInvariant` lifecycle, self-transfer edge cases
-- `certora-ce-diagnosis-framework.md` — Added ghost havocing diagnosis guide, persistent ghost patterns
-- `certora-master-guide.md` — Added references to new documents, version bump
+**Previous releases (v1.6–v1.7.1):**
+- **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`, `--assume_no_casting_overflow`, `--method` name-only filtering)
+- **v1.6:** Revert/failure-path coverage (`@withrevert`, biconditional `<=>`, MUST REVERT WHEN, SILENT PASS diagnosis)
 
-**Why This Matters:**
-This release integrates deep CVL language knowledge from the authoritative RareSkills Certora Book. Every gap identified in prior versions is now filled — from foundational type system semantics to production OpenZeppelin verification patterns.
+See [version-history.md](version-history.md) for the complete changelog.
 
 ---
 
 ## Previous Enhancements
 
+**v1.7.1:** Quick Start Chat Prompts updated for v1.6/v1.7  
+**v1.7:** Prover v8.8.0 Built-in Rules (uncheckedOverflow, safeCasting)  
+**v1.6:** Revert/Failure-Path Coverage (@withrevert, biconditional, MUST REVERT WHEN)  
+**v1.5:** RareSkills Integration (CVL Deep Dive, Verification Playbooks)  
 **v1.4:** Performance Optimization + Advanced CLI Reference  
 **v1.3:** Property Prioritization + Tutorial Best Practices + CE Investigation  
 **v1.2:** Dual Mindset ("Should Always" / "Should Never") + Test Mining  
@@ -64,7 +49,7 @@ This release integrates deep CVL language knowledge from the authoritative RareS
 | **certora-workflow.md** | Phase overview & checklist | Quick reference |
 | **certora-spec-framework.md** | CVL 2.0 syntax & templates | Writing actual CVL |
 | **certora-ce-diagnosis-framework.md** | Counterexample debugging | When rules fail |
-| **SPEC AUTHORING (CERTORA).md** | Deep methodology & theory | Understanding WHY |
+| **spec-authoring-certora.md** | Deep methodology & theory | Understanding WHY |
 | **categorizing-properties.md** | Property discovery guidance | Phase 2 |
 | **best-practices-from-certora.md** | Official tutorial techniques | Property discovery & patterns |
 | **quick-reference-v1.3.md** | Printable cheat sheet | Keep open while coding |
@@ -110,13 +95,18 @@ touch "certora/confs/${TARGET_CONTRACT}.conf"
 
 ```
 Phase 0   → Contract Analysis (entry points, storage, external calls)
+            └── Builtin Safety Scan (uncheckedOverflow, safeCasting) ← v1.7
 Phase -1  → Execution Closure (external contracts, modeling decisions)
 Phase 2   → Property Discovery (DUAL MINDSET: should always + should never)
             └── Mine tests for invariants, threats, blind spots
+            └── Enumerate MUST REVERT WHEN conditions ← v1.6
 Phase 2.5 → Classification (INVARIANT vs RULE)
 Phase 3.5 → Causal Validation ← RUN VALIDATION SPEC FIRST
+            └── satisfy reachability rules (anti-vacuity) ← v1.8
+            └── Mutation path + ghost sync validation
 Phase 4-6 → Modeling & Sanity Gate
 Phase 7   → Write Real CVL Spec
+            └── @withrevert + biconditional <=> for every function ← v1.6
 ```
 
 ---
@@ -197,12 +187,15 @@ your-project/
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                                                                          │
 │   1. Write VALIDATION spec first (validates your modeling)              │
-│   2. Run: certoraRun validation.conf                                    │
-│   3. ALL PASS? → Proceed to real spec                                   │
-│   4. Copy infrastructure (methods, ghosts, hooks) from validation       │
-│   5. Add REAL invariants and rules from candidate_properties.md         │
+│   2. Write satisfy reachability rules (proves functions are LIVE) ← v1.8│
+│   3. Run: certoraRun validation.conf                                    │
+│   4. ALL PASS? → Proceed to real spec                                   │
+│   5. Copy infrastructure (methods, ghosts, hooks) from validation       │
+│   6. Add REAL invariants and rules from candidate_properties.md         │
+│   7. Write @withrevert + biconditional rules for all functions ← v1.6  │
 │                                                                          │
 │   Why? Validation eliminates the HARDEST bugs:                          │
+│   ✅ Always-reverting functions (vacuity) — caught by satisfy ← v1.8   │
 │   ✅ Ghost desync, missing hooks, wrong types, DISPATCHER issues        │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -267,10 +260,14 @@ When working with an AI assistant, use these prompts:
 
 ## Version
 
-**Version:** 1.5 (RareSkills Integration)  
+**Version:** 1.8 (Reachability Validation)  
 **Last Updated:** February 2026
 
 ### Changelog
+- **v1.8:** Reachability Validation — `satisfy` rules as mandatory validation step, Phase 0.5, validation execution order
+- **v1.7.1:** Quick Start Chat Prompts updated for v1.6/v1.7 features
+- **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`), `--assume_no_casting_overflow`, `--method` name-only
+- **v1.6:** Revert/failure-path coverage (`@withrevert`, `<=>` biconditional, MUST REVERT WHEN, SILENT PASS)
 - **v1.5:** RareSkills Certora Book integration (35 chapters), CVL Language Deep Dive, Verification Playbooks (ERC-20/WETH/ERC-721), vacuous truth defense, requireInvariant lifecycle, Liveness/Effect/No-Side-Effect pattern, ghost havocing diagnosis
 - **v1.4:** Performance optimization, Advanced CLI Reference
 - **v1.3:** Property prioritization (HIGH/MEDIUM/LOW), Tutorial best practices integration, 5-step CE investigation, Invariant patterns, Loop handling, Navigation index

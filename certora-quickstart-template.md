@@ -2,21 +2,20 @@
 
 > **Use this template to apply the Certora workflow to ANY contract**  
 > **Copy this file and fill in the blanks for each new verification project**  
-> **Version:** 1.5 (RareSkills Integration)
+> **Version:** 1.8 (Reachability Validation)
 
 ---
 
-## WHAT'S NEW IN v1.5
+## WHAT'S NEW IN v1.8
 
-- **CVL Language Deep Dive:** Complete 20-section CVL reference (`cvl-language-deep-dive.md`)
-- **Verification Playbooks:** Production-ready worked examples for ERC-20, WETH, ERC-721 (`verification-playbooks.md`)
-- **Vacuous Truth Defense:** Always pair `require` with `satisfy` (BEST_PRACTICES Section 7)
-- **requireInvariant Lifecycle:** Prove independently → then compose (BEST_PRACTICES Section 8)
-- **Self-Transfer Handling:** Separate `from == to` cases (BEST_PRACTICES Section 9)
-- **Ghost Havocing Diagnosis:** Persistent ghost + CALL hook patterns (CE_DIAGNOSIS)
-- **Liveness/Effect/No-Side-Effect Pattern:** New rule template (SPEC_FRAMEWORK)
+- **Reachability Validation:** `satisfy` rules are now a mandatory step in the validation spec — proves functions are live before any assert rules
+- **Phase 0.5:** Reachability validation sits between builtin scan and function correctness
+- **Validation Execution Order:** satisfy → mutation paths → ghost sync → THEN real spec
 
 ### Previous Enhancements
+- **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`)
+- **v1.6:** Revert/failure-path coverage (`@withrevert`, biconditional `<=>`, MUST REVERT WHEN)
+- **v1.5:** RareSkills integration, CVL Deep Dive, Verification Playbooks
 - **v1.4:** Advanced CLI Reference, Performance optimization, PoC templates
 - **v1.3:** Property Prioritization, Dual Mindset, Test Mining, 5-step CE Investigation
 - **v1.2:** Dual Mindset approach, Test Mining for property discovery

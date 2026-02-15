@@ -1,8 +1,8 @@
 # Certora Specification Workflow — Complete Guide
 
-> **Version:** 2.1 (Tutorial-Enhanced)  
+> **Version:** 2.2 (Reachability Validation)  
 > **Purpose:** Step-by-step workflow for writing correct Certora specifications  
-> **Philosophy:** Understand completely → Model correctly → Write once → Debug systematically
+> **Philosophy:** Understand completely → Model correctly → Validate reachability → Write once → Debug systematically
 
 ---
 
@@ -12,7 +12,7 @@ This workflow integrates **five** core documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CERTORA SPECIFICATION WORKFLOW v1.5                       │
+│                    CERTORA SPECIFICATION WORKFLOW v1.8                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────┐    ┌───────────────────────┐    ┌─────────────┐ │
@@ -49,8 +49,8 @@ graph TD
     C --> D[Create causal_validation.md]
     D --> E[Phase 2.5: Invariant vs Rule Decision]
     E --> F[Phase 3: Property Specification Blocks]
-    F --> G[Phase 3.5: Causal Validation<br/>Write & run validation rules]
-    G --> H{All validations pass?}
+    F --> G[Phase 3.5: Causal Validation<br/>satisfy reachability + validation rules]
+    G --> H{All validations pass?<br/>satisfy + assert}
     H -->|No| I[Fix modeling gaps]
     I --> G
     H -->|Yes| J[Phase 4: Modeling Decisions]
@@ -450,6 +450,31 @@ hook Sstore balances[KEY address user] uint256 newBal (uint256 oldBal) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// VALIDATION RULE 0: Function Reachability (satisfy)   NEW v1.8
+// ══════════════════════════════════════════════════════════════
+// Before proving ANY assert, prove each function CAN execute
+// without reverting. If satisfy fails → every assert is vacuous.
+
+rule reachability_transfer() {
+    env e; address to; uint256 amount;
+    require e.msg.sender != 0;
+    require e.msg.value == 0;
+    transfer@withrevert(e, to, amount);
+    satisfy !lastReverted, "transfer is reachable (non-reverting path exists)";
+}
+
+rule reachability_mint() {
+    env e; address to; uint256 amount;
+    require e.msg.sender != 0;
+    require e.msg.value == 0;
+    mint@withrevert(e, to, amount);
+    satisfy !lastReverted, "mint is reachable (non-reverting path exists)";
+}
+
+// Repeat for EVERY state-changing function.
+// If ANY satisfy is VIOLATED → STOP. Fix harness / DISPATCHER / require.
+
+// ══════════════════════════════════════════════════════════════
 // VALIDATION RULE 1: Mutation Path Completeness for balances
 // ══════════════════════════════════════════════════════════════
 rule mutation_paths_balances(method f, address user) 
@@ -515,6 +540,8 @@ certoraRun certora/confs/validation_[project].conf
 
 | Rule Result | Meaning | Action |
 |-------------|---------|--------|
+| `reachability_*` PASS | Function can execute without reverting | ✅ Proceed |
+| `reachability_*` VIOLATED | Function always reverts — all asserts are vacuous | Fix preconditions, harness, or DISPATCHER |
 | `mutation_paths_*` PASS | All mutation paths known | ✅ Proceed |
 | `mutation_paths_*` FAIL | Unknown function mutates variable | Add to mutation list, may need hook |
 | `ghost_sync_*` PASS | Hooks are complete | ✅ Proceed |
@@ -528,6 +555,8 @@ certoraRun certora/confs/validation_[project].conf
 ### [PROPERTY_A1]
 ...
 **Validation Rules:**
+- [x] reachability_transfer: PASSED
+- [x] reachability_mint: PASSED
 - [x] mutation_paths_balances: PASSED
 - [x] ghost_sync_sumBalances: PASSED  
 - [x] constructor_establishes_solvency: PASSED

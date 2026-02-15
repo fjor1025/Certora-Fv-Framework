@@ -1,6 +1,6 @@
 # Framework Index & Navigation Guide
 
-> **Quick navigation for the Certora Formal Verification Framework v1.5**
+> **Quick navigation for the Certora Formal Verification Framework v1.8**
 
 ---
 
@@ -36,8 +36,8 @@
 | Document | Use When |
 |----------|----------|
 | [certora-spec-framework.md](certora-spec-framework.md) | Writing CVL code |
-| [cvl-language-deep-dive.md](cvl-language-deep-dive.md) | CVL type system, ghosts, hooks, invariants ⭐ **NEW v1.5** |
-| [verification-playbooks.md](verification-playbooks.md) | Copy-paste worked examples (ERC-20, WETH, ERC-721) ⭐ **NEW v1.5** |
+| [cvl-language-deep-dive.md](cvl-language-deep-dive.md) | CVL type system, ghosts, hooks, invariants, builtin rules §19.1 ⭐ |
+| [verification-playbooks.md](verification-playbooks.md) | Copy-paste worked examples (ERC-20, WETH, ERC-721) ⭐ |
 | [best-practices-from-certora.md](best-practices-from-certora.md) | Invariant patterns & harness design |
 | [quick-reference-v1.3.md](quick-reference-v1.3.md) | Quick syntax lookup |
 
@@ -51,7 +51,7 @@
 ### Performance & CLI
 | Document | Use When |
 |----------|----------|
-| [advanced-cli-reference.md](advanced-cli-reference.md) | Timeout optimization, advanced flags ⭐ **NEW v1.4** |
+| [advanced-cli-reference.md](advanced-cli-reference.md) | Timeout optimization, advanced flags, `--method` name-only (v8.8.0+) |
 
 ### Reference & Learning
 | Document | Use When |
@@ -88,7 +88,8 @@
 ### Phase 3.5: Causal Validation
 **Primary:** [certora-master-guide.md](certora-master-guide.md) Section 7  
 **Reference:** [certora-workflow.md](certora-workflow.md) Step 5  
-**Checklist:** Validation spec PASSED
+**Checklist:** Reachability (`satisfy`) PASSED + Validation spec PASSED  
+**Key (v1.8):** Write `satisfy` rules BEFORE assert rules — proves functions are live (anti-vacuity)
 
 ### Phase 4-6: Modeling & Sanity
 **Primary:** [certora-master-guide.md](certora-master-guide.md) Section 8  
@@ -186,6 +187,7 @@ The framework integrates techniques from:
 - [ ] **Phase -1** - Execution closure mapped (MASTER_GUIDE Section 4)
 - [ ] **Phase 2** - Properties discovered & prioritized (Categorizing_Properties)
 - [ ] **Phase 2.5** - Properties classified (MASTER_GUIDE Section 6)
+- [ ] **Phase 3.5** - Reachability (`satisfy`) PASSED (MASTER_GUIDE Section 7) ← v1.8
 - [ ] **Phase 3.5** - Validation spec PASSED (MASTER_GUIDE Section 7)
 - [ ] **Phase 4-6** - Modeling complete, sanity checks passed (MASTER_GUIDE Section 8)
 - [ ] **Phase 7** - Real spec written (MASTER_GUIDE Section 9)
@@ -302,8 +304,8 @@ Total: **19 documents** (v1.5)
 
 ---
 
-**Framework Version:** 1.5 (RareSkills Integration)  
+**Framework Version:** 1.8 (Reachability Validation)  
 **Status:** Production-Ready  
-**Last Updated:** February 8, 2026
+**Last Updated:** February 15, 2026
 
 **Start Your Verification Journey:** [certora-master-guide.md](certora-master-guide.md)

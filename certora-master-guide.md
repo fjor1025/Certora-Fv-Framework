@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 1.5 (RareSkills Integration)  
+> **Version:** 1.8 (Reachability Validation)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---

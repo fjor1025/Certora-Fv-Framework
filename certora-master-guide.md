@@ -964,6 +964,8 @@ rule validation_mutation_paths_var1(method f)
 
 ### Checklist
 
+- [ ] **Reachability: `satisfy` rules written for every state-changing function** ← NEW v1.8
+- [ ] **Reachability: ALL `satisfy` rules PASS (no always-reverting functions)** ← NEW v1.8
 - [ ] All mutation paths enumerated
 - [ ] All paths have hooks (if ghost)
 - [ ] Constructor modeled
@@ -1035,6 +1037,39 @@ hook Sstore currentContract.mapping[KEY address user] uint256 newVal (uint256 ol
 function getVariable() returns uint256 {
     return currentContract.variable;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDATION RULE 0: Function Reachability (satisfy)        NEW v1.8
+// ═══════════════════════════════════════════════════════════════
+// Before proving ANY assert, prove each function CAN execute
+// without reverting. If satisfy fails → function always reverts
+// → every assert rule is vacuously true (proves nothing).
+// ═══════════════════════════════════════════════════════════════
+
+rule validation_reachability_function1() {
+    env e;
+    // Add realistic caller constraints
+    require e.msg.sender != 0;
+    require e.msg.value == 0;  // if non-payable
+
+    function1@withrevert(e);
+    satisfy !lastReverted, "function1 is reachable (non-reverting path exists)";
+}
+
+rule validation_reachability_function2(uint256 amount) {
+    env e;
+    require e.msg.sender != 0;
+    require e.msg.value == 0;
+
+    function2@withrevert(e, amount);
+    satisfy !lastReverted, "function2 is reachable (non-reverting path exists)";
+}
+
+// Repeat for EVERY state-changing function.
+// If ANY satisfy rule is VIOLATED → STOP.
+// The function always reverts under your modeling,
+// which means every assert rule for it is vacuous.
+// Fix: check harness, DISPATCHER config, or require statements.
 
 // ═══════════════════════════════════════════════════════════════
 // VALIDATION RULE 1: Mutation Paths for [Variable]
@@ -1159,6 +1194,7 @@ For each property marked "Aggregate/History Required?: Yes":
 
 **Causal Closure**
 - [ ] validation spec written
+- [ ] Function reachability (`satisfy`) rules PASS for all entry points ← NEW v1.8
 - [ ] certoraRun validation PASSED (all rules)
 - [ ] All ghosts have complete hooks
 - [ ] init_state axioms for all ghosts
@@ -1192,6 +1228,7 @@ When your validation spec PASSES, you've proven your **infrastructure is correct
 │   VALIDATION PASSED = Your INFRASTRUCTURE is correct                    │
 │                                                                          │
 │   ✅ ELIMINATED (you won't see these bugs):                             │
+│   ├── Always-reverting functions (vacuity) — caught by satisfy rules    │
 │   ├── Ghost desynchronization                                           │
 │   ├── Missing mutation paths (incomplete hooks)                         │
 │   ├── Wrong hook types                                                  │
@@ -1230,6 +1267,7 @@ cp certora/confs/validation_{target}.conf certora/confs/{Target}.conf
 | `hook` definitions | **KEEP** | Proven complete |
 | `using` statements | **KEEP** | Contract bindings work |
 | Helper functions | **KEEP** | Utility functions |
+| `rule validation_reachability_*` | **DELETE** | Reachability proven; no longer needed |
 | `rule validation_*` | **DELETE** | Replace with real properties |
 | Real `invariant` | **ADD** | From candidate_properties.md |
 | Real `rule` | **ADD** | From candidate_properties.md |
@@ -1751,6 +1789,7 @@ Before considering verification complete:
 □ Phase 2: All security properties discovered
 □ Phase 2.5: Each property classified (INVARIANT/RULE)
 □ Phase 3.5: Causal validation PASSED
+□ Phase 3.5: Function reachability (satisfy) PASSED for all entry points  ← NEW v1.8
 □ Phase 6: Sanity gate ALL CHECKED
 □ Phase 7: CVL spec written
 □ Prover: All rules PASS
@@ -1908,17 +1947,28 @@ Continue Certora verification for [ContractName]:
 Create the validation spec and conf to verify mutation paths are complete:
 1. Create certora/specs/validation_{target}.spec
 2. Create certora/confs/validation_{target}.conf
-3. Include validation rules for each INVARIANT variable
-4. Include ghost synchronization tests if ghosts are needed
-5. Include revert validation: for each state-changing function, write a  ← NEW v1.6
+3. **Write `satisfy` reachability rules for EVERY state-changing function**  ← NEW v1.8
+   - `f@withrevert(e, args); satisfy !lastReverted;`
+   - If any satisfy is VIOLATED → function always reverts → all asserts are vacuous
+   - Fix harness / DISPATCHER / require constraints before proceeding
+4. Include validation rules for each INVARIANT variable
+5. Include ghost synchronization tests if ghosts are needed
+6. Include revert validation: for each state-changing function, write a  ← NEW v1.6
    `@withrevert` rule confirming revert conditions are exhaustive
-6. If using Prover v8.8.0+, include `use builtin rule sanity;` to catch  ← NEW v1.7
+7. If using Prover v8.8.0+, include `use builtin rule sanity;` to catch  ← NEW v1.7
    vacuous rules early
 
+**Validation Execution Order:**
+- Run reachability (`satisfy`) rules FIRST → proves functions are live
+- Then run mutation path rules → proves modeling is complete
+- Then run ghost sync rules → proves ghosts track reality
+- Only after ALL PASS → proceed to Phase 7 (real spec)
+
 Reference:
-- certora-master-guide.md section 7
+- certora-master-guide.md section 7 (validation spec template with Rule 0)
 - cvl-language-deep-dive.md Sections 8-9 (ghost declaration, init_state axiom, hook syntax)
 - cvl-language-deep-dive.md §19.1 (builtin rules — sanity, deepSanity)  ← NEW v1.7
+- best-practices-from-certora.md Section 7 (vacuity defense, satisfy for reachability)
 - best-practices-from-certora.md Section 8 (require → requireInvariant lifecycle)
 - certora-spec-framework.md Revert/Failure-Path Checklist  ← NEW v1.6
 ```

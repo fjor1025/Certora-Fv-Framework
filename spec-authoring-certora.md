@@ -622,6 +622,7 @@ Before CVL is written:
 
 ### Causal Closure Checks
 ☐ Causal validation completed for ALL properties
+☐ **Function reachability: `satisfy` rules PASS for every state-changing function** ← NEW v1.8
 ☐ All mutation paths enumerated and validated
 ☐ All ghosts have Sstore hooks for every mutation path
 ☐ All ghosts have Sload hooks enforcing relationships

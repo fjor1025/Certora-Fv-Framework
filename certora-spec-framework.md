@@ -1080,6 +1080,7 @@ Before considering any spec complete, verify ALL items:
 
 | ✅ | Item | Notes |
 |----|------|-------|
+| ☐ | **`satisfy` reachability rules PASS for all entry points** | Proves no function always reverts (anti-vacuity) ← NEW v1.8 |
 | ☐ | Mutation paths enumerated for all property variables | Phase 0 |
 | ☐ | Constructor effects modeled (init_state axioms) | Phase 0 |
 | ☐ | Ghosts have Sstore hooks for ALL mutation paths | Phase 1 |

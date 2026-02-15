@@ -676,8 +676,20 @@ rule tautologically_true() {
 3. **Prefer `<=>` over `=>`** — biconditional forces both-direction verification
 4. **Review the Prover report** for "vacuous" warnings in the sanity panel
 5. **Test with `satisfy`** first to confirm the preconditions are reachable
+6. **Write reachability rules in the validation spec** (NEW v1.8):
+   ```cvl
+   rule validation_reachability_withdraw() {
+       env e; uint256 amount;
+       require e.msg.sender != 0;
+       withdraw@withrevert(e, amount);
+       satisfy !lastReverted, "withdraw is reachable";
+   }
+   ```
+   If this is VIOLATED, the function always reverts under your modeling →
+   every assert rule is vacuously true. Fix BEFORE writing real spec.
 
 **See:** `cvl-language-deep-dive.md` Section 4 for comprehensive treatment.
+**See:** `certora-master-guide.md` Section 7.2, Validation Rule 0 for the full template.
 
 ---
 

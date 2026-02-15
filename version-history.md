@@ -1,7 +1,72 @@
 # Framework Version History
 
-> **Current Version:** 1.7.1 (Quick Start Prompts Update)  
+> **Current Version:** 1.8 (Reachability Validation — Function Liveness via `satisfy`)  
 > **Last Updated:** February 2026
+
+---
+
+## Version 1.8 (Reachability Validation — `satisfy` in Validation Spec) - February 2026
+
+### Rationale
+The framework had `satisfy` documented as a *reference concept* (cvl-language-deep-dive §4) and a *reactive diagnostic tool* (ce-diagnosis-framework B.5), but it was **never prescribed as a mandatory proactive step in the validation workflow**. This is the single most important gap: without `satisfy` reachability rules, a validation spec can pass all assertion rules while proving nothing — because every function always reverts (vacuity). This is the "Gold Standard" gap identified by senior specification architects: **before proving any assert, prove each function CAN execute without reverting**.
+
+### The Problem This Solves
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ WITHOUT reachability validation:                                         │
+│                                                                          │
+│   withdraw() always reverts (bad harness / require / DISPATCHER)        │
+│        ↓                                                                 │
+│   rule deposit_withdraw_integrity { ... withdraw(e, amount); ... }      │
+│        ↓                                                                 │
+│   assert balance_after == balance_before - amount  →  ✅ PASSES         │
+│        ↓                                                                 │
+│   But "after" state NEVER EXISTS → assert is VACUOUSLY TRUE             │
+│   You verified a lie.                                                    │
+│                                                                          │
+│ WITH reachability validation (v1.8):                                     │
+│                                                                          │
+│   rule validation_reachability_withdraw() {                              │
+│       withdraw@withrevert(e, amount);                                    │
+│       satisfy !lastReverted;  →  ❌ VIOLATED (function always reverts)  │
+│   }                                                                      │
+│        ↓                                                                 │
+│   STOP. Fix harness before writing any assert rules.                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Changes by Document
+
+#### certora-master-guide.md
+- **§7.2 Validation Spec Template**: Added **Validation Rule 0: Function Reachability** with complete `satisfy` pattern — placed BEFORE mutation path and ghost sync rules
+- **§7.1 Causal Validation Checklist**: Added 2 new items (satisfy rules written + all pass)
+- **§8.3 Phase 6 Sanity Gate**: Added reachability gate to Causal Closure section
+- **§9.0 What Validation Passing Guarantees**: Added "Always-reverting functions (vacuity)" to eliminated bugs list
+- **§9.0 What to KEEP, DELETE, ADD**: Added `rule validation_reachability_*` → DELETE row
+- **§13.4 Phase 3.5 Prompt**: Added satisfy step (#3), validation execution order guidance, Phase 0.5 concept
+- **FINAL CHECKLIST**: Added "Function reachability (satisfy) PASSED"
+
+#### spec-authoring-certora.md
+- **Phase 6 Causal Closure Checks**: Added satisfy reachability gate
+
+#### certora-spec-framework.md
+- **Causal Closure Checklist**: Added satisfy reachability row as first item
+
+#### verification-playbooks.md
+- **§4.1 Four-Phase System**: Added **Phase 0.5: REACHABILITY VALIDATION** between builtin scan and function correctness
+
+#### best-practices-from-certora.md
+- **§7.3 Defenses**: Added item #6 with complete worked `satisfy` rule example and explanation
+
+### Key Concept: Validation Execution Order (v1.8)
+
+```
+1. satisfy rules (reachability)  →  Proves functions are LIVE
+2. Mutation path rules (assert)  →  Proves modeling is COMPLETE
+3. Ghost sync rules (assert)     →  Proves ghosts track REALITY
+4. ALL PASS                      →  Safe to write real spec
+```
 
 ---
 

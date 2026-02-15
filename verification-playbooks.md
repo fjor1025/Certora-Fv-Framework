@@ -1259,6 +1259,14 @@ Phase 0: BUILTIN SAFETY SCAN (NEW — v8.8.0)
 ├── use builtin rule msgValueInLoopRule →  msg.value in loops?
 └── use builtin rule hasDelegateCalls  →  Unexpected delegates?
 
+Phase 0.5: REACHABILITY VALIDATION (NEW — v1.8)
+├── For EVERY state-changing function:
+│   ├── f@withrevert(e, args);
+│   └── satisfy !lastReverted;  →  Proves function is live
+├── If ANY satisfy is VIOLATED → function always reverts
+│   └── Every assert rule for that function is VACUOUSLY TRUE
+└── Fix harness / DISPATCHER / require constraints before Phase 1
+
 Phase 1: FUNCTION CORRECTNESS
 ├── For each external function:
 │   ├── Liveness: assert success <=> (preconditions)

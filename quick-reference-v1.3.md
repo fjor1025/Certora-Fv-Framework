@@ -284,7 +284,7 @@ certoraRun config.conf --rule failing_rule --multi_example
 
 ---
 
-**Framework Version:** 1.5 (RareSkills Integration)  
-**Last Updated:** February 8, 2026
+**Framework Version:** 1.9 (Red Team Hardening)  
+**Last Updated:** February 16, 2026
 
 **v1.5 Additions:** See `cvl-language-deep-dive.md` for complete CVL reference, `verification-playbooks.md` for production-ready worked examples.

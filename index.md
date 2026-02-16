@@ -304,8 +304,8 @@ Total: **19 documents** (v1.5)
 
 ---
 
-**Framework Version:** 1.8 (Reachability Validation)  
+**Framework Version:** 1.9 (Red Team Hardening)  
 **Status:** Production-Ready  
-**Last Updated:** February 15, 2026
+**Last Updated:** February 16, 2026
 
 **Start Your Verification Journey:** [certora-master-guide.md](certora-master-guide.md)

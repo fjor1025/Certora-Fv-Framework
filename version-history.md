@@ -1,7 +1,70 @@
 # Framework Version History
 
-> **Current Version:** 1.8 (Reachability Validation — Function Liveness via `satisfy`)  
+> **Current Version:** 1.9 (Red Team Hardening — Principal Engineer Audit Fixes)  
 > **Last Updated:** February 2026
+
+---
+
+## Version 1.9 (Red Team Hardening — Principal Engineer Audit Fixes) - February 2026
+
+### Rationale
+The framework was subjected to a full "Principal Engineer's Audit" — a Red Team review that assumed the framework was flawed until proven solid, testing it against 4 Pillars of Failure: Vacuity (Silent Pass), Ghost Integrity (Harness), Revert Precision, and Invariant Lifecycle. Four findings were identified and fixed.
+
+### Finding P1-A: Satisfy Proves Liveness, Not Effect (LOW)
+**Problem:** The `satisfy !lastReverted` template could be misinterpreted as proving that a function *works correctly*, when it only proves a non-reverting path *exists*. A function that runs but does nothing (e.g., `withdraw(0)`) passes this check.
+
+**Fix:** Added explicit annotation to the Validation Rule 0 template clarifying that `satisfy` proves liveness, mutation path rules prove effect, and both are required.
+
+**Files changed:** `certora-master-guide.md` (§7.2 Validation Rule 0 comment block)
+
+### Finding Q2: No Failure-Path Satisfy Template (LOW)
+**Problem:** The framework validated success-path reachability (`satisfy !lastReverted`) but had no explicit template for validating that revert paths are reachable (`satisfy lastReverted`). Without this, a biconditional `<=>` revert rule can pass vacuously because the failure scenario is impossible under the modeling.
+
+**Fix:** Added **Validation Rule 0b: Failure-Path Reachability** with complete templates and checklist items.
+
+**Files changed:**
+- `certora-master-guide.md` (§7.1 checklist, §7.2 new Rule 0b template, §8.3 Sanity Gate)
+- `spec-authoring-certora.md` (Phase 6 Causal Closure Checks)
+- `best-practices-from-certora.md` (§7.3 item #7 with worked example)
+
+### Finding P2-B: Custom Summary Accuracy Validation (MEDIUM)
+**Problem:** NONDET and DISPATCHER summaries had explicit checklists, but custom summaries (ghost-based uninterpreted functions) were trusted implicitly with no accuracy validation. A custom summary that overpromises determinism can hide real bugs.
+
+**Fix:** Added mandatory accuracy annotation (Exact / Overapproximation / Underapproximation) and justification requirement for all custom summaries. Added dedicated checklist section.
+
+**Files changed:**
+- `certora-spec-framework.md` (Custom Summary Rules section — added validation protocol and annotated example)
+- `spec-authoring-certora.md` (Phase 6 — new Custom Summary Accuracy Checks subsection)
+- `certora-master-guide.md` (§8.3 Sanity Gate — new Custom Summary Accuracy checklist)
+
+### Finding P4-A: Invariant Cycle Detection Protocol (MEDIUM)
+**Problem:** `requireInvariant` cycle detection was manual. In a large spec with 20+ invariants, an engineer could create A→B→A circular dependencies without noticing. The Prover does NOT reject cyclic `requireInvariant` chains — it simply assumes both hold, creating a logical loop.
+
+**Fix:** Introduced a formal Cycle Detection Protocol:
+1. Every invariant must have `@dev Level: N` annotation
+2. `requireInvariant` may only reference strictly lower-level invariants
+3. Base invariants (Level 1) must be proven in isolation first (`--rule`)
+4. Dependency DAG must be documented in `causal_validation.md`
+5. If you cannot assign a level, you have a cycle → refactor
+
+**Files changed:**
+- `certora-spec-framework.md` (Invariants template section — added DAG protocol, updated all `@dev` tags)
+- `certora-ce-diagnosis-framework.md` (Phase -1.4 Invariant Dependencies — expanded checklist + protocol)
+- `best-practices-from-certora.md` (§8.4 new Circular Dependency Detection section)
+- `certora-master-guide.md` (§8.3 Sanity Gate — new Invariant Dependency Safety checklist)
+- `spec-authoring-certora.md` (Phase 6 — new Invariant Dependency Safety subsection)
+
+### Summary of Changes by Document
+
+| Document | Changes |
+|----------|---------|
+| `certora-master-guide.md` | Rule 0 annotation, Rule 0b template, checklist additions (3 new sections in Sanity Gate) |
+| `certora-spec-framework.md` | Custom summary validation protocol, invariant DAG protocol, `@dev Level: N` tags |
+| `certora-ce-diagnosis-framework.md` | Expanded Phase -1.4 with cycle detection checks |
+| `spec-authoring-certora.md` | Phase 6 — 3 new checklist subsections |
+| `best-practices-from-certora.md` | Satisfy annotation, failure-path §7.3#7, cycle detection §8.4 |
+| `readme.md` | Version bump to 1.9, changelog entry |
+| `version-history.md` | This entry |
 
 ---
 

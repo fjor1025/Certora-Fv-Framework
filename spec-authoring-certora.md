@@ -623,12 +623,26 @@ Before CVL is written:
 ### Causal Closure Checks
 ☐ Causal validation completed for ALL properties
 ☐ **Function reachability: `satisfy` rules PASS for every state-changing function** ← NEW v1.8
+☐ **Failure-path reachability: `satisfy lastReverted` rules PASS for critical revert conditions** ← NEW v1.9
 ☐ All mutation paths enumerated and validated
 ☐ All ghosts have Sstore hooks for every mutation path
 ☐ All ghosts have Sload hooks enforcing relationships
 ☐ Constructor effects modeled (init_state axioms)
 ☐ No causally unconstrained state changes
 ☐ No HAVOC-dependent paths to property variables
+
+### Custom Summary Accuracy Checks (NEW v1.9)
+☐ For each custom summary: documented as Exact / Overapproximation / Underapproximation
+☐ Custom summaries do not assume determinism the real function doesn't guarantee
+☐ Custom summary accuracy justified in Phase -1.3 Modeling Obligations
+☐ Removing any custom summary constraint does not reintroduce a real exploit
+
+### Invariant Dependency Safety (NEW v1.9)
+☐ Every invariant annotated with `@dev Level: N` (dependency depth)
+☐ Invariant dependency DAG documented (no cycles)
+☐ `requireInvariant` only references strictly lower-level invariants
+☐ Base invariants (Level 1) proven in isolation first
+☐ Higher-level invariants proven only after their dependencies pass
 
 ### Bounded State Checks
 ☐ Array lengths bounded realistically (< 1000)

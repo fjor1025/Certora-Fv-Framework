@@ -1,6 +1,6 @@
 # Certora Counterexample Diagnosis Framework
 
-> **Version:** 2.1  
+> **Version:** 2.2 (Red Team Hardening)  
 > **Purpose:** Determine whether a Certora counterexample represents a REAL BUG or a SPEC BUG  
 > **Philosophy:** A counterexample is not evidence until execution AND causal closure are verified.  
 > **Source:** Enhanced with Certora Tutorial Lesson 02 investigation workflow
@@ -301,10 +301,20 @@ This allowed [exploit description].
 |-------|--------|-------|
 | All `requireInvariant` calls reference proven invariants | ☐ | |
 | Invariant dependency chain has no cycles | ☐ | |
-| Base invariants (no dependencies) are proven first | ☐ | |
+| Every invariant has `@dev Level: N` annotation | ☐ | ← NEW v1.9 |
+| `requireInvariant` only references LOWER-level invariants | ☐ | ← NEW v1.9 |
+| Invariant dependency DAG documented in `causal_validation.md` | ☐ | ← NEW v1.9 |
+| Base invariants (Level 1, no dependencies) proven in isolation first (`--rule`) | ☐ | |
+| Higher-level invariants proven only after their dependencies pass | ☐ | ← NEW v1.9 |
 | Preserved blocks load all necessary dependencies | ☐ | |
 
 🚨 **If ANY box fails → SPEC BUG (Dependency Violation) → Skip to Phase B**
+
+> **Cycle Detection Protocol (NEW v1.9):**
+> If you cannot assign a unique level N to every invariant such that all
+> `requireInvariant` calls point to strictly lower levels, you have a
+> circular dependency. This creates a logical loop where both invariants
+> are assumed true without proof. **STOP and refactor the invariant chain.**
 
 ---
 

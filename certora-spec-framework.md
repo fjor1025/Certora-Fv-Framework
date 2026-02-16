@@ -1,6 +1,6 @@
 # Certora Specification Framework — Execution-Closed & Causally-Closed Universe
 
-> **Version:** 2.0  
+> **Version:** 2.1  
 > **CVL Syntax Reference:** CVL 2.0 (Certora Prover)  
 > **Philosophy:** You are not verifying a contract. You are verifying a *closed EVM universe* with that contract inside it.
 
@@ -161,8 +161,23 @@ Use custom summaries when:
 * You need deterministic behavior for uninterpreted functions
 * You need to prevent havoc from complex external calls
 
+> 🚨 **Custom Summary Accuracy Validation (NEW v1.9):**
+> Custom summaries are **trusted by construction** — the Prover will not verify that
+> your summary matches the real function's behavior. For each custom summary, you MUST:
+>
+> 1. **Document** whether the summary is an exact model, overapproximation, or underapproximation
+> 2. **Justify** any determinism assumption (uninterpreted ghost = same input → same output).
+>    If the real function is non-deterministic (e.g., reads mutable storage), an uninterpreted
+>    ghost overpromises and may hide real bugs.
+> 3. **Add a checklist entry** in `spec_authoring.md` Phase -1.3 Modeling Obligations:
+>    `| [function] | Custom Summary | [Exact/Over/Under] | [Justification] |`
+> 4. **If the summary constrains return values** (e.g., always returns `true`, caps a price),
+>    verify that removing the constraint does not reintroduce a real exploit.
+
 ```cvl
 // Ghost-based uninterpreted function (same input = same output)
+// ACCURACY: Overapproximation — assumes deterministic behavior.
+// JUSTIFICATION: Real function reads immutable storage; determinism is code-enforced.
 ghost CVLCallGetResumeSinceTimestampBool(address) returns bool; 
 ghost CVLCallGetResumeSinceTimestampStamp(address) returns uint256; 
 
@@ -630,7 +645,7 @@ function validEnv(env e) {
 /**
  * @title Zero address has no balance
  * @notice address(0) cannot hold tokens
- * @dev Foundation invariant — no dependencies
+ * @dev Level: 1 | Dependencies: NONE | Foundation invariant
  */
 invariant zeroAddressHasNoBalance()
     balanceOf(0) == 0
@@ -649,7 +664,7 @@ invariant zeroAddressHasNoBalance()
 /**
  * @title Sum of balances equals total supply
  * @notice Ghost sumBalances tracks the actual sum
- * @dev Depends on: zeroAddressHasNoBalance
+ * @dev Level: 2 | Dependencies: zeroAddressHasNoBalance
  */
 invariant sumBalancesEqualsTotalSupply()
     to_mathint(totalSupply()) == sumBalances
@@ -666,7 +681,7 @@ invariant sumBalancesEqualsTotalSupply()
 /**
  * @title No single balance exceeds total supply
  * @notice Derived from sum invariant
- * @dev Depends on: sumBalancesEqualsTotalSupply
+ * @dev Level: 3 | Dependencies: sumBalancesEqualsTotalSupply
  */
 invariant noBalanceExceedsTotalSupply(address user)
     balanceOf(user) <= totalSupply()
@@ -1229,10 +1244,27 @@ function validEnv(env e) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// INVARIANTS (ordered by dependency)
+// INVARIANTS (ordered by dependency level — see DAG below)
+// ═══════════════════════════════════════════════════════════════
+//
+// INVARIANT DEPENDENCY DAG (NEW v1.9 — Cycle Detection):
+//   Level 1: invariant1  (no dependencies — prove FIRST with --rule)
+//       ↓
+//   Level 2: invariant2  (depends on invariant1)
+//       ↓
+//   Level 3: ...         (depends on Level 2)
+//
+// 🚨 CYCLE DETECTION PROTOCOL:
+//   1. Every invariant MUST have @dev Level: N annotation
+//   2. requireInvariant may ONLY reference invariants at a LOWER level
+//   3. Prove Level 1 invariants in isolation: --rule "invariant1"
+//   4. Only after Level 1 passes, prove Level 2, etc.
+//   5. If you cannot assign a level → you have a circular dependency → STOP and refactor
+//   6. Document the DAG in causal_validation.md
 // ═══════════════════════════════════════════════════════════════
 
 /// @title Level 1 invariant (no dependencies)
+/// @dev Level: 1 | Dependencies: NONE | Prove first with: --rule "invariant1"
 invariant invariant1()
     condition1
     filtered { f -> f.contract == currentContract }
@@ -1243,6 +1275,7 @@ invariant invariant1()
     }
 
 /// @title Level 2 invariant (depends on Level 1)
+/// @dev Level: 2 | Dependencies: invariant1 | Prove after Level 1 passes
 invariant invariant2()
     condition2
     filtered { f -> f.contract == currentContract }

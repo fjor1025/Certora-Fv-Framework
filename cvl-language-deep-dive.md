@@ -1,6 +1,6 @@
 # CVL Language Deep Dive — Complete Reference
 
-> **Framework Version:** v1.5 (RareSkills Integration)
+> **Framework Version:** v1.9 (Red Team Hardening)
 > **Source:** Extracted from the RareSkills Certora Book (60,000+ words, 35 chapters, official Certora collaboration)
 > **Purpose:** Fill every CVL language gap — from foundational semantics to advanced patterns used in production OpenZeppelin/Solmate/Solady specifications.
 
@@ -1656,4 +1656,4 @@ definition nonzerosender(env e) returns bool = e.msg.sender != 0;
 
 ---
 
-*This document is part of the Certora-Fv-Framework v1.5 (RareSkills Integration). Knowledge sourced from the RareSkills Certora Book — a collaboration between RareSkills and Certora.*
+*This document is part of the Certora-Fv-Framework v1.9 (Red Team Hardening). Knowledge sourced from the RareSkills Certora Book — a collaboration between RareSkills and Certora.*

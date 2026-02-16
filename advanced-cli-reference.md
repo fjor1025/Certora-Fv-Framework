@@ -1,9 +1,9 @@
 # ADVANCED CLI OPTIONS & PERFORMANCE OPTIMIZATION
 
-> **Version:** 1.0 (Framework v1.5)  
+> **Version:** 1.0 (Framework v1.9)  
 > **Purpose:** Advanced CLI flags, timeout mitigation, and performance optimization strategies  
 > **Audience:** Users experiencing timeouts, complex projects, or seeking advanced debugging  
-> **Updated:** February 8, 2026 (based on Certora Documentation latest updates)
+> **Updated:** February 16, 2026 (based on Certora Documentation latest updates)
 
 ---
 

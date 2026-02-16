@@ -688,8 +688,26 @@ rule tautologically_true() {
    If this is VIOLATED, the function always reverts under your modeling →
    every assert rule is vacuously true. Fix BEFORE writing real spec.
 
+   > ⚠️ `satisfy !lastReverted` proves **liveness** (a non-reverting path exists),
+   > NOT **effect** (the function changes state). Effect is validated by mutation
+   > path rules (Validation Rule 1). Both are required.
+
+7. **Write failure-path reachability rules** (NEW v1.9):
+   ```cvl
+   rule validation_revert_reachability_withdraw_insufficient() {
+       env e; uint256 amount;
+       require e.msg.sender != 0;
+       require balanceOf(e.msg.sender) < amount;
+       withdraw@withrevert(e, amount);
+       satisfy lastReverted, "withdraw reverts on insufficient balance (revert path is reachable)";
+   }
+   ```
+   If this is VIOLATED, the revert scenario is unreachable under your modeling →
+   your biconditional `<=>` revert rules will pass vacuously (the failure side
+   is never tested). Fix BEFORE writing `@withrevert` rules in real spec.
+
 **See:** `cvl-language-deep-dive.md` Section 4 for comprehensive treatment.
-**See:** `certora-master-guide.md` Section 7.2, Validation Rule 0 for the full template.
+**See:** `certora-master-guide.md` Section 7.2, Validation Rules 0/0b for the full templates.
 
 ---
 
@@ -733,6 +751,33 @@ rule transfer_effect(env e) {
 | Can hide bugs? | Yes | No — references verified invariant |
 | Documentation | Manual | Self-documenting — links to invariant |
 | Code review | "Is this assumption valid?" | "Is this invariant proven?" |
+
+## 8.4 Circular Dependency Detection (NEW v1.9)
+
+> **Risk:** If Invariant A uses `requireInvariant B` and Invariant B uses
+> `requireInvariant A`, both are assumed true without independent proof.
+> The Prover will NOT reject this — it creates a logical loop.
+
+**Protocol:**
+1. **Assign levels:** Every invariant gets `@dev Level: N` in its doc comment
+2. **Rule:** `requireInvariant` may ONLY reference invariants at a **strictly lower** level
+3. **Prove in order:** Run `--rule invariant1` for all Level 1 first, then Level 2, etc.
+4. **Document the DAG:** Sketch the dependency graph in `causal_validation.md`
+5. **If you can't assign a level:** You have a cycle. Refactor until acyclic.
+
+```cvl
+// ✅ CORRECT — Level 2 depends on Level 1 (acyclic)
+/// @dev Level: 2 | Dependencies: zeroAddressHasNoBalance (Level 1)
+invariant sumBalancesEqualsTotalSupply()
+    to_mathint(totalSupply()) == sumBalances
+    { preserved { requireInvariant zeroAddressHasNoBalance(); } }
+
+// ❌ WRONG — Circular dependency (both Level 2, each requires the other)
+/// @dev Level: ??? | Dependencies: invariantB → CYCLE DETECTED
+invariant invariantA()
+    conditionA
+    { preserved { requireInvariant invariantB(); } }  // B requires A → loop!
+```
 
 ---
 

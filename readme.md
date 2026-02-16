@@ -1,22 +1,25 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 1.8 (Reachability Validation)
+> **Version:** 1.9 (Red Team Hardening)
 
 ---
 
-## What's New in v1.8
+## What's New in v1.9
 
-**Reachability Validation — Function Liveness via `satisfy`:**
+**Red Team Hardening — Principal Engineer Audit Fixes:**
 
-The framework now prescribes `satisfy` reachability rules as a **mandatory proactive step** in the validation spec — not just a diagnostic afterthought. Without these, a validation spec can pass all assertion rules while proving nothing (vacuity).
+The framework was subjected to a full Red Team audit against 4 Pillars of Failure (Vacuity, Ghost Integrity, Revert Precision, Invariant Lifecycle). v1.9 closes the gaps identified:
 
-- **Validation Rule 0: Function Reachability** — `f@withrevert(e, args); satisfy !lastReverted;` for every state-changing function
-- **Phase 0.5** in verification-playbooks.md — Reachability sits between builtin scan and function correctness
-- **Validation Execution Order** — satisfy (reachability) → mutation paths → ghost sync → THEN real spec
-- Updated checklists in `certora-master-guide.md`, `spec-authoring-certora.md`, `certora-spec-framework.md`
+- **Satisfy Annotation (P1-A):** `satisfy !lastReverted` template now explicitly documents it proves *liveness*, not *effect* — mutation path rules prove effect. Both are required.
+- **Failure-Path Reachability (Q2):** New **Validation Rule 0b** — `satisfy lastReverted` templates for critical revert conditions. Prevents biconditional `<=>` rules from passing vacuously when revert scenarios are unreachable.
+- **Custom Summary Accuracy Validation (P2-B):** New checklist and mandatory annotations for custom summaries (Exact / Overapproximation / Underapproximation). Custom summaries are trusted by construction — they now require explicit accuracy justification.
+- **Invariant Cycle Detection Protocol (P4-A):** New `@dev Level: N` annotation requirement, dependency DAG documentation, and level-by-level proving protocol. Prevents circular `requireInvariant` chains that create logical loops without proof.
 
-**Previous releases (v1.6–v1.7.1):**
+- Updated checklists in `certora-master-guide.md`, `spec-authoring-certora.md`, `certora-spec-framework.md`, `certora-ce-diagnosis-framework.md`, `best-practices-from-certora.md`
+
+**Previous releases (v1.6–v1.8):**
+- **v1.8:** Reachability Validation (`satisfy` in validation spec, Phase 0.5)
 - **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`, `--assume_no_casting_overflow`, `--method` name-only filtering)
 - **v1.6:** Revert/failure-path coverage (`@withrevert`, biconditional `<=>`, MUST REVERT WHEN, SILENT PASS diagnosis)
 
@@ -26,6 +29,7 @@ See [version-history.md](version-history.md) for the complete changelog.
 
 ## Previous Enhancements
 
+**v1.8:** Reachability Validation (satisfy in validation spec, Phase 0.5)  
 **v1.7.1:** Quick Start Chat Prompts updated for v1.6/v1.7  
 **v1.7:** Prover v8.8.0 Built-in Rules (uncheckedOverflow, safeCasting)  
 **v1.6:** Revert/Failure-Path Coverage (@withrevert, biconditional, MUST REVERT WHEN)  

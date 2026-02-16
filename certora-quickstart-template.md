@@ -2,17 +2,19 @@
 
 > **Use this template to apply the Certora workflow to ANY contract**  
 > **Copy this file and fill in the blanks for each new verification project**  
-> **Version:** 1.8 (Reachability Validation)
+> **Version:** 1.9 (Red Team Hardening)
 
 ---
 
-## WHAT'S NEW IN v1.8
+## WHAT'S NEW IN v1.9
 
-- **Reachability Validation:** `satisfy` rules are now a mandatory step in the validation spec — proves functions are live before any assert rules
-- **Phase 0.5:** Reachability validation sits between builtin scan and function correctness
-- **Validation Execution Order:** satisfy → mutation paths → ghost sync → THEN real spec
+- **Failure-path reachability:** `satisfy lastReverted` rules validate revert paths are reachable before biconditional `<=>` rules
+- **Custom summary accuracy:** Mandatory annotation (Exact/Over/Under) and justification for every custom summary
+- **Invariant dependency DAG:** `@dev Level: N` annotations, cycle detection protocol, level-by-level proving
+- **Satisfy liveness annotation:** Explicit warning that `satisfy !lastReverted` proves liveness, not effect
 
 ### Previous Enhancements
+- **v1.8:** Reachability validation (`satisfy` rules as mandatory pre-step)
 - **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`)
 - **v1.6:** Revert/failure-path coverage (`@withrevert`, biconditional `<=>`, MUST REVERT WHEN)
 - **v1.5:** RareSkills integration, CVL Deep Dive, Verification Playbooks

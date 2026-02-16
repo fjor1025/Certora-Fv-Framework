@@ -1,6 +1,6 @@
 # Certora Specification Workflow — Complete Guide
 
-> **Version:** 2.2 (Reachability Validation)  
+> **Version:** 2.3 (Red Team Hardening)  
 > **Purpose:** Step-by-step workflow for writing correct Certora specifications  
 > **Philosophy:** Understand completely → Model correctly → Validate reachability → Write once → Debug systematically
 
@@ -12,7 +12,7 @@ This workflow integrates **five** core documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CERTORA SPECIFICATION WORKFLOW v1.8                       │
+│                    CERTORA SPECIFICATION WORKFLOW v1.9                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────┐    ┌───────────────────────┐    ┌─────────────┐ │

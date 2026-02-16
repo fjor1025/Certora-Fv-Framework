@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 1.8 (Reachability Validation)  
+> **Version:** 1.9 (Red Team Hardening)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---
@@ -966,6 +966,8 @@ rule validation_mutation_paths_var1(method f)
 
 - [ ] **Reachability: `satisfy` rules written for every state-changing function** ← NEW v1.8
 - [ ] **Reachability: ALL `satisfy` rules PASS (no always-reverting functions)** ← NEW v1.8
+- [ ] **Failure-path reachability: `satisfy lastReverted` rules for critical revert conditions** ← NEW v1.9
+- [ ] **Failure-path reachability: ALL failure-path `satisfy` rules PASS** ← NEW v1.9
 - [ ] All mutation paths enumerated
 - [ ] All paths have hooks (if ghost)
 - [ ] Constructor modeled
@@ -1044,6 +1046,12 @@ function getVariable() returns uint256 {
 // Before proving ANY assert, prove each function CAN execute
 // without reverting. If satisfy fails → function always reverts
 // → every assert rule is vacuously true (proves nothing).
+//
+// ⚠️ IMPORTANT: satisfy !lastReverted proves LIVENESS (a non-
+// reverting path exists), NOT EFFECT (the function changes state).
+// Effect is validated by Validation Rule 1 (mutation path rules).
+// BOTH are required — do not treat satisfy alone as proof of
+// functional correctness.
 // ═══════════════════════════════════════════════════════════════
 
 rule validation_reachability_function1() {
@@ -1070,6 +1078,38 @@ rule validation_reachability_function2(uint256 amount) {
 // The function always reverts under your modeling,
 // which means every assert rule for it is vacuous.
 // Fix: check harness, DISPATCHER config, or require statements.
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDATION RULE 0b: Failure-Path Reachability (satisfy)   NEW v1.9
+// ═══════════════════════════════════════════════════════════════
+// For each critical revert condition, prove the revert path is
+// reachable. Without this, a biconditional `<=>` in your real
+// spec may pass vacuously because the revert scenario is
+// impossible under your modeling.
+// ═══════════════════════════════════════════════════════════════
+
+rule validation_revert_reachability_function1_unauthorized() {
+    env e;
+    require e.msg.sender != authorizedAddress();
+    require e.msg.value == 0;
+
+    function1@withrevert(e);
+    satisfy lastReverted, "function1 reverts for unauthorized caller (revert path is reachable)";
+}
+
+rule validation_revert_reachability_function2_zero_amount() {
+    env e;
+    require e.msg.sender != 0;
+    require e.msg.value == 0;
+
+    function2@withrevert(e, 0);
+    satisfy lastReverted, "function2 reverts for zero amount (revert path is reachable)";
+}
+
+// Repeat for EVERY critical revert condition documented in Phase 3.
+// If ANY satisfy-revert rule is VIOLATED → the revert path is
+// unreachable under your modeling, and your biconditional `<=>`
+// revert rules will pass vacuously. Fix BEFORE writing real spec.
 
 // ═══════════════════════════════════════════════════════════════
 // VALIDATION RULE 1: Mutation Paths for [Variable]
@@ -1195,9 +1235,21 @@ For each property marked "Aggregate/History Required?: Yes":
 **Causal Closure**
 - [ ] validation spec written
 - [ ] Function reachability (`satisfy`) rules PASS for all entry points ← NEW v1.8
+- [ ] Failure-path reachability (`satisfy lastReverted`) rules PASS for critical revert conditions ← NEW v1.9
 - [ ] certoraRun validation PASSED (all rules)
 - [ ] All ghosts have complete hooks
 - [ ] init_state axioms for all ghosts
+
+**Invariant Dependency Safety**
+- [ ] Every invariant annotated with `@dev Level: N` (dependency depth)
+- [ ] Dependency DAG sketched in `causal_validation.md` (no cycles)
+- [ ] Base invariants (Level 1) proven in isolation first (`--rule`)
+- [ ] Higher-level invariants proven only after their dependencies pass
+
+**Custom Summary Accuracy** ← NEW v1.9
+- [ ] For each custom summary: behavior documented (overapproximation vs exact)
+- [ ] Custom summaries do not assume determinism the real function doesn't guarantee
+- [ ] Custom summary accuracy justified in `spec_authoring.md`
 
 **Bounded State**
 - [ ] Array params: require arr.length < 100
@@ -1838,11 +1890,13 @@ Please help me follow the certora-master-guide.md workflow:
 
 The framework documents are already in my project root.
 
-**Key references to use throughout (v1.7):**
+**Key references to use throughout (v1.9):**
 - cvl-language-deep-dive.md — Complete CVL language reference (types, ghosts, hooks, operators, builtin rules §19.1)
 - verification-playbooks.md — Worked examples for ERC-20, WETH, ERC-721 + Phase 0 builtin scan
 - best-practices-from-certora.md — Sections 7-9 (vacuity defense, requireInvariant lifecycle, edge cases)
+- best-practices-from-certora.md — §8.4 Circular dependency detection for invariant DAGs  ← NEW v1.9
 - certora-spec-framework.md — Revert/failure-path patterns (Pattern B: @withrevert PREFERRED)
+- certora-spec-framework.md — Custom summary accuracy protocol & invariant DAG protocol  ← NEW v1.9
 - categorizing-properties.md — MUST REVERT WHEN checklist for property discovery
 ```
 
@@ -1951,15 +2005,22 @@ Create the validation spec and conf to verify mutation paths are complete:
    - `f@withrevert(e, args); satisfy !lastReverted;`
    - If any satisfy is VIOLATED → function always reverts → all asserts are vacuous
    - Fix harness / DISPATCHER / require constraints before proceeding
-4. Include validation rules for each INVARIANT variable
-5. Include ghost synchronization tests if ghosts are needed
-6. Include revert validation: for each state-changing function, write a  ← NEW v1.6
+4. **Write `satisfy lastReverted` rules for critical revert conditions**  ← NEW v1.9
+   - Proves revert paths are reachable (guards biconditional `<=>` from vacuity)
+5. Include validation rules for each INVARIANT variable
+6. Include ghost synchronization tests if ghosts are needed
+7. Include revert validation: for each state-changing function, write a  ← NEW v1.6
    `@withrevert` rule confirming revert conditions are exhaustive
-7. If using Prover v8.8.0+, include `use builtin rule sanity;` to catch  ← NEW v1.7
+8. If using Prover v8.8.0+, include `use builtin rule sanity;` to catch  ← NEW v1.7
    vacuous rules early
+9. **Annotate invariants with `@dev Level: N` and document dependency DAG**  ← NEW v1.9
+   - Prove base invariants (Level 1) first, then higher levels in order
+10. **Validate custom summary accuracy** (if using custom summaries)  ← NEW v1.9
+    - Document whether each summary is exact, overapproximation, or underapproximation
 
 **Validation Execution Order:**
 - Run reachability (`satisfy`) rules FIRST → proves functions are live
+- Run failure-path reachability (`satisfy lastReverted`) → proves revert paths are live  ← NEW v1.9
 - Then run mutation path rules → proves modeling is complete
 - Then run ghost sync rules → proves ghosts track reality
 - Only after ALL PASS → proceed to Phase 7 (real spec)
@@ -1968,9 +2029,11 @@ Reference:
 - certora-master-guide.md section 7 (validation spec template with Rule 0)
 - cvl-language-deep-dive.md Sections 8-9 (ghost declaration, init_state axiom, hook syntax)
 - cvl-language-deep-dive.md §19.1 (builtin rules — sanity, deepSanity)  ← NEW v1.7
-- best-practices-from-certora.md Section 7 (vacuity defense, satisfy for reachability)
+- best-practices-from-certora.md Section 7 (vacuity defense, satisfy for reachability, failure-path satisfy)  ← updated v1.9
 - best-practices-from-certora.md Section 8 (require → requireInvariant lifecycle)
+- best-practices-from-certora.md §8.4 (circular dependency detection)  ← NEW v1.9
 - certora-spec-framework.md Revert/Failure-Path Checklist  ← NEW v1.6
+- certora-spec-framework.md Invariant DAG protocol & custom summary accuracy  ← NEW v1.9
 ```
 
 ## 13.5 For Phase 7 (Validation PASSED → Write Real Spec)
@@ -1994,8 +2057,11 @@ Please help me create the real spec:
    using Pattern B (Complete with biconditional <=>) as the PREFERRED pattern
 8. Add `use builtin rule uncheckedOverflow;` and/or `safeCasting;`  ← NEW v1.7
    if the contract uses unchecked{} blocks or type-narrowing casts
-9. Create certora/specs/{Contract}.spec
-10. Create certora/confs/{Contract}.conf
+9. **Annotate every invariant with `@dev Level: N | Dependencies: ...`**  ← NEW v1.9
+   and prove in level order (Level 1 first, then Level 2, etc.)
+10. **For each custom summary, add accuracy annotation (Exact/Over/Under)**  ← NEW v1.9
+11. Create certora/specs/{Contract}.spec
+12. Create certora/confs/{Contract}.conf
 
 Reference:
 - certora-master-guide.md section 9.0 (Transition from Validation to Real Spec)
@@ -2004,7 +2070,9 @@ Reference:
 - verification-playbooks.md (if ERC-20/721/WETH — follow the complete worked example)
 - certora-spec-framework.md (CVL syntax patterns + Revert/Failure-Path Checklist)  ← updated v1.6
 - certora-spec-framework.md Pattern B: Complete with @withrevert (PREFERRED)  ← NEW v1.6
+- certora-spec-framework.md Invariant DAG protocol & custom summary accuracy  ← NEW v1.9
 - best-practices-from-certora.md Sections 3, 7-9 (invariant patterns, vacuity defense, lifecycle, edge cases)
+- best-practices-from-certora.md §8.4 (circular dependency detection)  ← NEW v1.9
 - quick-reference-v1.3.md (keep open for syntax lookup)
 ```
 
@@ -2115,6 +2183,8 @@ When starting any verification conversation, always include:
 | **Token standard** | ERC-20 / ERC-721 / WETH / None |
 | **Prover version** | v8.8.0+ / older ← NEW v1.7 |
 | **unchecked{}/assembly?** | Yes / No ← NEW v1.7 |
+| **Invariant dependencies?** | Complex chain / Simple / None ← NEW v1.9 |
+| **Custom summaries?** | Yes / No ← NEW v1.9 |
 
 **Optional but helpful:**
 - Known external integrations (ERC20, Chainlink, Uniswap, etc.)
@@ -2124,6 +2194,8 @@ When starting any verification conversation, always include:
 - Assembly usage (low-level calls, inline assembly)
 - Whether the contract uses `unchecked{}` blocks (triggers builtin overflow scan)  ← NEW v1.7
 - Type-narrowing casts like `uint128(x)` (triggers builtin safeCasting scan)  ← NEW v1.7
+- Whether invariants form complex dependency chains (triggers DAG protocol)  ← NEW v1.9
+- Whether custom function summaries are used (triggers accuracy validation)  ← NEW v1.9
 
 ---
 

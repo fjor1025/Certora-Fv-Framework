@@ -146,7 +146,26 @@ assert userTotal <= systemTotal, "User total exceeds system total";
 
 ## Framework Version History
 
-### v1.5 (Current) - RareSkills Integration
+### v1.9 (Current) - Red Team Hardening
+- Failure-path reachability (`satisfy lastReverted`) validation
+- Custom summary accuracy protocol (Exact/Over/Under annotation)
+- Invariant dependency DAG (`@dev Level: N`, cycle detection)
+- Satisfy liveness-vs-effect annotation
+
+### v1.8 - Reachability Validation
+- `satisfy` rules as mandatory pre-step for anti-vacuity
+- Validation execution order: satisfy → mutation paths → ghost sync
+
+### v1.7 - Builtin Safety Scan
+- Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`)
+- Phase 0 builtin scan integration
+
+### v1.6 - Revert/Failure-Path Coverage
+- `@withrevert` + biconditional `<=>` as PREFERRED pattern
+- MUST REVERT WHEN checklist for property discovery
+- Silent pass classification in CE diagnosis
+
+### v1.5 - RareSkills Integration
 - CVL Language Deep Dive (20-section CVL reference)
 - Verification Playbooks (ERC-20/WETH/ERC-721 worked examples)
 - Vacuous truth defense, requireInvariant lifecycle, self-transfer handling

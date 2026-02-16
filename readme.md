@@ -264,10 +264,11 @@ When working with an AI assistant, use these prompts:
 
 ## Version
 
-**Version:** 1.8 (Reachability Validation)  
-**Last Updated:** February 2026
+**Version:** 1.9 (Red Team Hardening)  
+**Last Updated:** February 16, 2026
 
 ### Changelog
+- **v1.9:** Red Team Hardening — Failure-path reachability (`satisfy lastReverted`), custom summary accuracy protocol (Exact/Over/Under), invariant dependency DAG (`@dev Level: N`), cycle detection, satisfy liveness annotation
 - **v1.8:** Reachability Validation — `satisfy` rules as mandatory validation step, Phase 0.5, validation execution order
 - **v1.7.1:** Quick Start Chat Prompts updated for v1.6/v1.7 features
 - **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`), `--assume_no_casting_overflow`, `--method` name-only

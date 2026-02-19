@@ -1,6 +1,6 @@
 # Certora Counterexample Diagnosis Framework
 
-> **Version:** 2.2 (Red Team Hardening)  
+> **Version:** 2.3 (Red Team Hardening + Validation Evidence Gate)  
 > **Purpose:** Determine whether a Certora counterexample represents a REAL BUG or a SPEC BUG  
 > **Philosophy:** A counterexample is not evidence until execution AND causal closure are verified.  
 > **Source:** Enhanced with Certora Tutorial Lesson 02 investigation workflow

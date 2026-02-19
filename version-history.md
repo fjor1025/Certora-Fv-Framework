@@ -1,7 +1,96 @@
 # Framework Version History
 
-> **Current Version:** 1.9 (Red Team Hardening — Principal Engineer Audit Fixes)  
+> **Current Version:** 2.0 (Validation Evidence Gate)  
 > **Last Updated:** February 2026
+
+---
+
+## Version 2.0 (Validation Evidence Gate) - February 2026
+
+### Rationale
+The framework's Phase 3.5 → Phase 7 transition had a critical gap: the engineer self-certified "ALL PASS" without structured verification that the validation actually passed *correctly*. A satisfy rule can "pass" by finding a degenerate witness (amount=0, balance unchanged). A ghost sync rule can "pass" trivially (0 == 0 because the hook never fires). A mutation path rule can pass while missing functions. The `rule_sanity: basic` setting doesn't catch partial vacuity. Without evidence review, the real spec is built on unverified infrastructure.
+
+### The Problem This Solves
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ WITHOUT Validation Evidence Review:                                      │
+│                                                                          │
+│   certoraRun validation.conf → ALL PASS (green dashboard)               │
+│        ↓                                                                 │
+│   Engineer says "PASSED!" and proceeds to Phase 7                       │
+│        ↓                                                                 │
+│   But satisfy found degenerate witness (amount=0, no state change)      │
+│   Ghost sync passed trivially (0 == 0, hook never fired)                │
+│   Mutation path rule missed function3 (incomplete whitelist)             │
+│   rule_sanity: basic didn't catch partial vacuity                       │
+│        ↓                                                                 │
+│   Real spec is built on HOLLOW infrastructure.                          │
+│   Every rule may be vacuously true.                                     │
+│                                                                          │
+│ WITH Validation Evidence Review (v2.0):                                  │
+│                                                                          │
+│   certoraRun validation.conf → ALL PASS                                 │
+│        ↓                                                                 │
+│   Engineer INSPECTS satisfy witnesses → finds amount=0 → STOPS          │
+│   Engineer INSPECTS ghost sync → finds ghost=0 before/after → STOPS     │
+│   Engineer CROSS-REFERENCES mutation whitelist vs Phase 0 → finds gap   │
+│   Engineer RUNS rule_sanity: advanced → catches hidden vacuity          │
+│        ↓                                                                 │
+│   Fixes infrastructure BEFORE writing real rules.                       │
+│   Signs off evidence artifact. Proceeds with confidence.                │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### New Section: 7.5 Validation Evidence Review
+
+Added between Phase 3.5 "Run Validation" (7.4) and Phase 4-6 (Modeling & Sanity):
+
+| Subsection | Content |
+|-----------|---------|
+| **7.5.1 Evidence Collection Template** | Complete markdown template for `causal_validation.md` — Rule Status Table, Satisfy Witness Inspection, Ghost Sync Witness Inspection, Mutation Path Completeness Check, Advanced Sanity Run, Sign-Off |
+| **7.5.2 Common Degenerate Witnesses** | 6-row diagnostic table: amount=0, from==to, ghost=0, single function, same address, msg.value for non-payable |
+| **7.5.3 STOP vs PROCEED Decision Matrix** | Clear criteria for when to halt (degenerate/trivial/incomplete/failed) vs when Phase 7 is safe |
+
+### New Section: 13.4.1 Validation Evidence Review Chat Prompt
+
+Added between 13.4 (Phase 3.5 Causal Validation) and 13.5 (Phase 7 Write Real Spec):
+- 5-step structured review process (satisfy witnesses, ghost sync, mutation completeness, advanced sanity, sign-off)
+- Gate criteria: all 5 must pass before Phase 7 entry is permitted
+- References to Section 7.5 templates and diagnostic tables
+
+### Changes by Document
+
+| Document | Changes |
+|----------|---------|
+| `certora-master-guide.md` | Version 2.0. New §7.5 (Validation Evidence Review with 3 subsections). Updated §7.4 (STOP warning after ALL PASS). Updated validation spec WORKFLOW comment (5 steps, evidence before real spec). Updated §7.1 checklist (5 new evidence items). Updated §8.3 Sanity Gate (6 new evidence checklist items). New §13.4.1 chat prompt. Updated §13.5 (added Evidence Review prerequisite field). Updated §9.0 (added prerequisite warning). Updated FINAL CHECKLIST (2 new items). |
+| `readme.md` | Version 2.0. Updated What's New section. |
+| `version-history.md` | This entry. |
+| `certora-quickstart-template.md` | Version bump to 2.0. |
+| `certora-workflow.md` | Version bump to 2.4. |
+| `certora-ce-diagnosis-framework.md` | Version bump to 2.3. |
+| `certora-spec-framework.md` | Version bump to 2.2. |
+| `cvl-language-deep-dive.md` | Version bump to v2.0. |
+| `verification-playbooks.md` | Version bump to v2.0. |
+| `advanced-cli-reference.md` | Version bump to Framework v2.0. |
+| `index.md` | Version bump to v2.0. |
+
+### Key Concept: Evidence-Based Validation (v2.0)
+
+```
+Previous Flow (v1.9):
+  certoraRun → ALL PASS → Phase 7 (self-certified)
+
+New Flow (v2.0):
+  certoraRun → ALL PASS → Evidence Review → Sign-Off → Phase 7
+
+  Evidence Review:
+  1. Inspect satisfy witnesses  →  Non-degenerate? (amount > 0, state changes)
+  2. Inspect ghost sync witnesses → Non-trivial? (ghost ≠ 0, hook fires)
+  3. Cross-ref mutation whitelists → Complete? (matches Phase 0 entry points)
+  4. Re-run rule_sanity: advanced → No hidden vacuity?
+  5. Sign off in causal_validation.md → Accountability trail
+```
 
 ---
 
@@ -637,58 +726,85 @@ This version is designed for:
 
 ## Feature Comparison Matrix
 
-| Feature | v1.0 | v1.1 | v1.2 | v1.3 | v1.4 | v1.5 |
-|---------|------|------|------|------|------|------|
-| **Core Methodology** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **9-Phase Workflow** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **CVL Syntax Reference** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅✅ |
-| **CE Diagnosis** | ✅ | ✅ | ✅ | ✅✅ | ✅✅ | ✅✅✅ |
-| **Validation Transition** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Chat Prompts** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅✅ |
-| **Dual Mindset** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Test Mining** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Property Prioritization** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Best Practices Document** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅✅ |
-| **Tutorial Integration** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **5-Step CE Investigation** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Invariant Patterns** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Quick Reference Card** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| **Advanced CLI Reference** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| **CVL Language Deep Dive** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Verification Playbooks** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Vacuous Truth Defense** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Ghost Havocing Diagnosis** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **L/E/NSE Pattern** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Feature | v1.0 | v1.1 | v1.2 | v1.3 | v1.4 | v1.5 | v2.0 |
+|---------|------|------|------|------|------|------|------|
+| **Core Methodology** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **9-Phase Workflow** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **CVL Syntax Reference** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅✅ | ✅✅ |
+| **CE Diagnosis** | ✅ | ✅ | ✅ | ✅✅ | ✅✅ | ✅✅✅ | ✅✅✅ |
+| **Validation Transition** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅✅ |
+| **Chat Prompts** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅✅ | ✅✅✅ |
+| **Dual Mindset** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Test Mining** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Property Prioritization** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Best Practices Document** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅✅ | ✅✅ |
+| **Tutorial Integration** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **5-Step CE Investigation** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Invariant Patterns** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Quick Reference Card** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| **Advanced CLI Reference** | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **CVL Language Deep Dive** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Verification Playbooks** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Vacuous Truth Defense** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Ghost Havocing Diagnosis** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **L/E/NSE Pattern** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| **Revert/Failure-Path Coverage** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Reachability Validation (satisfy)** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Red Team Hardening** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Validation Evidence Gate** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
 ## Document Version Status
 
-| Document | v1.0 | v1.1 | v1.2 | v1.3 | v1.4 | v1.5 | Notes |
-|----------|------|------|------|------|------|------|-------|
-| certora-master-guide.md | 1.0 | 1.1 | 1.1 | 1.3 | 1.3 | 1.5 | Added v1.5 doc refs + Section 13 prompts |
-| certora-workflow.md | 1.0 | 1.0 | 2.0 | 2.1 | 2.1 | 2.1 | Stable |
-| certora-spec-framework.md | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.1 | Added definitions + L/E/NSE template |
-| certora-ce-diagnosis-framework.md | 2.0 | 2.0 | 2.0 | 2.1 | 2.1 | 2.2 | Added ghost havocing diagnosis |
-| SPEC AUTHORING (CERTORA).md | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | Stable - principles |
-| categorizing-properties.md | 1.0 | 1.0 | 1.2 | 1.3 | 1.3 | 1.3 | Stable |
-| certora-quickstart-template.md | 1.0 | 1.0 | 1.0 | 1.3 | 1.3 | 1.3 | Stable |
-| readme.md | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 | Version tracking |
-| best-practices-from-certora.md | - | - | - | NEW | 1.0 | 1.1 | Added Sections 7-9 |
-| quick-reference-v1.3.md | - | - | - | NEW | 1.0 | 1.0 | Cheat sheet |
-| tutorial-extraction-summary.md | - | - | - | NEW | 1.0 | 1.0 | Documentation |
-| index.md | - | - | - | NEW | 1.0 | 1.0 | Navigation |
-| version-history.md | - | - | - | NEW | 1.0 | 1.1 | Updated matrices + migration |
-| advanced-cli-reference.md | - | - | - | - | NEW | 1.0 | Performance & CLI |
-| cvl-language-deep-dive.md | - | - | - | - | - | NEW | Complete CVL reference |
-| verification-playbooks.md | - | - | - | - | - | NEW | ERC-20/WETH/ERC-721 worked examples |
-| POC_TEMPLATE_Foundry.md | - | - | - | - | NEW | 1.0 | Foundry PoC template |
-| POC_TEMPLATE_HARDHAT.md | - | - | - | - | NEW | 1.0 | Hardhat PoC template |
-| VULNERABILITY_REPORT_TEMPLATE.md | - | - | - | - | NEW | 1.0 | Vulnerability report template |
+| Document | v1.0 | v1.1 | v1.2 | v1.3 | v1.4 | v1.5 | v2.0 | Notes |
+|----------|------|------|------|------|------|------|------|-------|
+| certora-master-guide.md | 1.0 | 1.1 | 1.1 | 1.3 | 1.3 | 1.5 | 2.0 | §7.5 Evidence Review + §13.4.1 prompt |
+| certora-workflow.md | 1.0 | 1.0 | 2.0 | 2.1 | 2.1 | 2.1 | 2.4 | Version bump |
+| certora-spec-framework.md | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.1 | 2.2 | Version bump |
+| certora-ce-diagnosis-framework.md | 2.0 | 2.0 | 2.0 | 2.1 | 2.1 | 2.2 | 2.3 | Version bump |
+| spec-authoring-certora.md | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | 1.0 | Stable — principles |
+| categorizing-properties.md | 1.0 | 1.0 | 1.2 | 1.3 | 1.3 | 1.3 | 1.3 | Stable |
+| certora-quickstart-template.md | 1.0 | 1.0 | 1.0 | 1.3 | 1.3 | 1.3 | 2.0 | Version bump |
+| readme.md | 1.0 | 1.1 | 1.2 | 1.3 | 1.4 | 1.5 | 2.0 | What's New section |
+| best-practices-from-certora.md | - | - | - | NEW | 1.0 | 1.1 | 1.1 | Stable |
+| quick-reference-v1.3.md | - | - | - | NEW | 1.0 | 1.0 | 1.0 | Cheat sheet |
+| tutorial-extraction-summary.md | - | - | - | NEW | 1.0 | 1.0 | 1.0 | Documentation |
+| index.md | - | - | - | NEW | 1.0 | 1.0 | 2.0 | Version bump |
+| version-history.md | - | - | - | NEW | 1.0 | 1.1 | 2.0 | This entry |
+| advanced-cli-reference.md | - | - | - | - | NEW | 1.0 | 1.0 | Stable |
+| cvl-language-deep-dive.md | - | - | - | - | - | NEW | 2.0 | Version bump |
+| verification-playbooks.md | - | - | - | - | - | NEW | 2.0 | Version bump |
+| poc-template-foundry.md | - | - | - | - | NEW | 1.0 | 1.0 | Stable |
+| poc-template-hardhat.md | - | - | - | - | NEW | 1.0 | 1.0 | Stable |
+| vulnerability-report-template.md | - | - | - | - | NEW | 1.0 | 2.1 | Updated separately |
 
 ---
 
 ## Migration Guide
+
+### From v1.9 to v2.0
+
+**No breaking changes.** All v1.9 features remain compatible.
+
+**To adopt v2.0 enhancements:**
+
+1. **After validation ALL PASS, complete Validation Evidence Review:**
+   - Follow `certora-master-guide.md` Section 7.5 (new)
+   - Inspect satisfy witnesses for non-degeneracy (amount > 0, state changes)
+   - Inspect ghost sync witnesses for non-triviality (ghost ≠ 0, hook fires)
+   - Cross-reference mutation path whitelists against Phase 0 entry points
+   - Re-run with `"rule_sanity": "advanced"` at least once
+   - Fill in the evidence template in `causal_validation.md`
+   - Sign off before proceeding to Phase 7
+
+2. **Use the new chat prompt for evidence review:**
+   - Section 13.4.1 provides a ready-to-use prompt for AI-assisted evidence review
+   - Copy and use it after certoraRun shows ALL PASS
+
+3. **Update Phase 6 Sanity Gate:**
+   - 6 new checklist items under "Validation Evidence Review" section
+   - Must be checked before entering Phase 7
 
 ### From v1.4 to v1.5
 
@@ -788,8 +904,13 @@ This version is designed for:
 ### Completed
 - **v1.4** — Advanced CLI Reference, PoC templates, Vulnerability Report template
 - **v1.5** — RareSkills Certora Book integration, CVL Language Deep Dive, Verification Playbooks (ERC-20/WETH/ERC-721), vacuous truth defense, requireInvariant lifecycle, ghost havocing diagnosis, Liveness/Effect/No-Side-Effect pattern
+- **v1.6** — Revert/failure-path coverage (@withrevert, biconditional, MUST REVERT WHEN)
+- **v1.7** — Prover v8.8.0 builtin rules (uncheckedOverflow, safeCasting)
+- **v1.8** — Reachability validation (satisfy in validation spec)
+- **v1.9** — Red Team Hardening (failure-path satisfy, custom summary accuracy, invariant DAG)
+- **v2.0** — Validation Evidence Gate (witness inspection, advanced sanity, evidence sign-off)
 
-### Planned for v1.8
+### Planned
 - Integration examples from real audit engagements
 - Property library expansion (governance, vaults, staking)
 - Automated property extraction tooling
@@ -826,6 +947,6 @@ For questions or issues:
 
 ---
 
-**Current Stable Version:** 1.7  
+**Current Stable Version:** 2.0  
 **Status:** Production-Ready  
 **Last Updated:** February 2026

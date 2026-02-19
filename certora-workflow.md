@@ -1,6 +1,6 @@
 # Certora Specification Workflow — Complete Guide
 
-> **Version:** 2.3 (Red Team Hardening)  
+> **Version:** 2.4 (Validation Evidence Gate)  
 > **Purpose:** Step-by-step workflow for writing correct Certora specifications  
 > **Philosophy:** Understand completely → Model correctly → Validate reachability → Write once → Debug systematically
 

@@ -1,6 +1,6 @@
 # Framework Index & Navigation Guide
 
-> **Quick navigation for the Certora Formal Verification Framework v1.8**
+> **Quick navigation for the Certora Formal Verification Framework v2.0**
 
 ---
 

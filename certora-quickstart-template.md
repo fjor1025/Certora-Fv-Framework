@@ -2,7 +2,7 @@
 
 > **Use this template to apply the Certora workflow to ANY contract**  
 > **Copy this file and fill in the blanks for each new verification project**  
-> **Version:** 1.9 (Red Team Hardening)
+> **Version:** 2.0 (Validation Evidence Gate)
 
 ---
 

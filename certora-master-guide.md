@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 1.9 (Red Team Hardening)  
+> **Version:** 2.0 ( Red Team Hardening + Validation Evidence Gate)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---
@@ -964,15 +964,20 @@ rule validation_mutation_paths_var1(method f)
 
 ### Checklist
 
-- [ ] **Reachability: `satisfy` rules written for every state-changing function** ← NEW v1.8
-- [ ] **Reachability: ALL `satisfy` rules PASS (no always-reverting functions)** ← NEW v1.8
-- [ ] **Failure-path reachability: `satisfy lastReverted` rules for critical revert conditions** ← NEW v1.9
-- [ ] **Failure-path reachability: ALL failure-path `satisfy` rules PASS** ← NEW v1.9
+- [ ] **Reachability: `satisfy` rules written for every state-changing function**  
+- [ ] **Reachability: ALL `satisfy` rules PASS (no always-reverting functions)**  
+- [ ] **Failure-path reachability: `satisfy lastReverted` rules for critical revert conditions** 
+- [ ] **Failure-path reachability: ALL failure-path `satisfy` rules PASS** 
 - [ ] All mutation paths enumerated
 - [ ] All paths have hooks (if ghost)
 - [ ] Constructor modeled
 - [ ] Validation rule written
 - [ ] Validation rule PASSES ✓
+- [ ] **Evidence Review: satisfy witnesses inspected — non-degenerate**
+- [ ] **Evidence Review: ghost sync witnesses inspected — non-trivial** 
+- [ ] **Evidence Review: mutation whitelists match Phase 0 entry points** 
+- [ ] **Evidence Review: advanced sanity run (rule_sanity: advanced) passed** 
+- [ ] **Evidence Review: sign-off completed in causal_validation.md** 
 ```
 
 ## 7.2 Create `validation_{contract}.spec`
@@ -989,7 +994,8 @@ rule validation_mutation_paths_var1(method f)
  * 1. Run: certoraRun certora/confs/validation_[contract].conf
  * 2. ALL rules must PASS
  * 3. If any FAIL → Fix modeling gap, re-run
- * 4. Only after ALL PASS → Proceed to real spec
+ * 4. Only after ALL PASS → Complete Validation Evidence Review (Section 7.5)
+ * 5. Only after Evidence Review signed off → Proceed to real spec
  * ═══════════════════════════════════════════════════════════════
  */
 
@@ -1197,8 +1203,188 @@ rm -rf .certora_internal
 certoraRun certora/confs/validation_yourcontract.conf
 
 # Check results:
-# ✅ ALL PASS → Proceed to Phase 7
 # ❌ ANY FAIL → Fix the gap and re-run
+# ✅ ALL PASS → Do NOT proceed to Phase 7 yet.
+#              Complete Validation Evidence Review (Section 7.5) first.
+```
+
+> **⚠️ STOP: "ALL PASS" ≠ "CORRECTLY PASSED"**  
+> A green dashboard is necessary but not sufficient. Proceed to Section 7.5
+> to verify the validation is non-degenerate before writing real rules.
+
+## 7.5 Validation Evidence Review 
+
+> **Goal:** Prove that "ALL PASS" means "ALL PASSED CORRECTLY" —  
+> not "ALL PASSED VACUOUSLY" or "ALL PASSED DEGENERATELY"
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                          │
+│   THE PROBLEM THIS SOLVES:                                               │
+│                                                                          │
+│   A junior engineer sees green checkmarks and says "PASSED!"            │
+│   But:                                                                   │
+│   • satisfy rules found degenerate witnesses (amount=0, balance=0)      │
+│   • Ghost sync passed trivially (0 == 0 because hook never fired)       │
+│   • Mutation path rule missed a function (incomplete whitelist)          │
+│   • rule_sanity: basic didn't catch partial vacuity                     │
+│                                                                          │
+│   Without evidence review, the real spec is built on sand.              │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 7.5.1 Evidence Collection Template
+
+Add this section to your `{contract}_causal_validation.md`:
+
+```markdown
+## VALIDATION EVIDENCE REVIEW
+
+> **Prover Job URL:** [paste URL from certoraRun output]
+> **Prover Version:** [version]
+> **Date:** [DATE]
+> **Reviewer:** [NAME]
+
+---
+
+### Rule Status Table
+
+| # | Rule Name | Status | Witness Quality | Notes |
+|---|-----------|--------|-----------------|-------|
+| 1 | validation_reachability_function1 | PASS | ✅ Non-degenerate | amount=500, balance changed |
+| 2 | validation_reachability_function2 | PASS | ⚠️ Edge case | amount=0 — re-check |
+| 3 | validation_revert_reachability_X | PASS | ✅ Non-degenerate | unauthorized caller |
+| 4 | validation_mutation_paths_var1 | PASS | ✅ Complete | 3/3 functions covered |
+| 5 | validation_ghost_sync | PASS | ✅ Non-trivial | ghost=1500, storage=1500 |
+
+---
+
+### Satisfy Witness Inspection
+
+For EACH satisfy rule, open the Prover output and inspect the witness:
+
+| Satisfy Rule | Witness Values | Non-Degenerate? | Action |
+|-------------|---------------|-----------------|--------|
+| reachability_function1 | amount=?, balance_before=?, balance_after=? | Yes/No | [ACCEPT / INVESTIGATE] |
+| reachability_function2 | amount=?, ... | Yes/No | [ACCEPT / INVESTIGATE] |
+| revert_reachability_X | sender=?, ... | Yes/No | [ACCEPT / INVESTIGATE] |
+
+**Non-Degenerate Criteria:**
+- ❌ DEGENERATE: amount=0, from=to, balance unchanged, all zeros
+- ❌ DEGENERATE: Only one possible witness (over-constrained require)
+- ✅ NON-DEGENERATE: Realistic values, meaningful state change
+- ✅ NON-DEGENERATE: Multiple possible witnesses exist
+
+**If degenerate:** The satisfy "passed" but proved nothing useful.
+Fix: Loosen constraints or add `require amount > 0` style bounds.
+
+---
+
+### Ghost Sync Witness Inspection
+
+For EACH ghost sync rule, verify the ghost is alive:
+
+| Ghost | Pre-Value | Post-Value | Hook Fired? | Non-Trivial? |
+|-------|-----------|------------|-------------|-------------|
+| sumVariable | [value] | [value] | Yes/No | Yes/No |
+
+**Non-Trivial Criteria:**
+- ❌ TRIVIAL: ghost=0 before AND after (hook may never fire)
+- ❌ TRIVIAL: ghost == storage only because both are init values
+- ✅ NON-TRIVIAL: ghost changes AND matches storage after mutation
+
+**If trivial:** The ghost may be dead (wrong slot, wrong contract binding).
+Fix: Verify hook target matches actual storage layout.
+
+---
+
+### Mutation Path Completeness Check
+
+For EACH mutation path rule:
+
+| Variable | Functions in Whitelist | Functions in Phase 0 Entry Points | Missing? |
+|----------|----------------------|-----------------------------------|----------|
+| var1 | function1, function2 | function1, function2, function3 | function3! |
+
+**Cross-reference against Phase 0 entry points.**
+If a function CAN modify the variable but is NOT in the whitelist,
+the mutation path rule is incomplete.
+
+---
+
+### Advanced Sanity Run
+
+**Required:** Re-run validation with `"rule_sanity": "advanced"`
+
+```json
+// In validation_{contract}.conf, temporarily change:
+"rule_sanity": "advanced"  // was: "basic"
+```
+
+```bash
+certoraRun certora/confs/validation_yourcontract.conf
+```
+
+| Sanity Check | Status | Notes |
+|-------------|--------|-------|
+| rule_not_vacuous (all rules) | PASS/FAIL | |
+| invariant_not_trivial_postcondition | PASS/FAIL | |
+| [any other flags] | PASS/FAIL | |
+
+**If any advanced sanity check FAILS:** The validation has hidden vacuity.
+Fix the modeling gap before proceeding.
+
+---
+
+### Sign-Off
+
+- [ ] All satisfy witnesses inspected and confirmed non-degenerate
+- [ ] All ghost sync witnesses inspected and confirmed non-trivial
+- [ ] Mutation path whitelists cross-referenced against Phase 0 entry points
+- [ ] Advanced sanity run (`rule_sanity: advanced`) completed with no failures
+- [ ] Prover job URL recorded for audit trail
+
+**Reviewer Sign-Off:** I have reviewed all witnesses and confirm the
+validation infrastructure is sound. Ready to proceed to Phase 7.
+
+**Signed:** [NAME]  
+**Date:** [DATE]
+```
+
+### 7.5.2 Common Degenerate Witnesses
+
+| Symptom | Root Cause | Fix |
+|---------|-----------|-----|
+| amount = 0 in every satisfy | Over-constrained `require` or missing token setup | Add `require amount > 0` or fix DISPATCHER |
+| from == to in transfer satisfy | Prover finds easiest path | Add `require from != to` (or accept and test both) |
+| Ghost = 0 before and after | Hook targets wrong slot or wrong contract | Verify hook Sstore target matches actual storage layout |
+| Only 1 function in mutation witness | Other functions always revert | Check reachability of missing functions |
+| All witnesses use same address | Insufficient address diversity | Add `require addr1 != addr2` where needed |
+| Satisfy passes but witness has msg.value > 0 for non-payable | Modeling allows impossible values | Add `require e.msg.value == 0` for non-payable functions |
+
+### 7.5.3 When to STOP vs PROCEED
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ STOP — Do NOT proceed to Phase 7:                                       │
+│                                                                          │
+│ • Any satisfy witness is degenerate AND no realistic witness exists      │
+│ • Ghost sync passes trivially (0 == 0) and hook never fires             │
+│ • Mutation path whitelist is missing functions from Phase 0              │
+│ • Advanced sanity run has ANY failure                                    │
+│ • You cannot explain WHY a witness has the values it has                │
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│ PROCEED — Phase 7 is safe:                                               │
+│                                                                          │
+│ • All satisfy witnesses show realistic, non-zero state changes          │
+│ • Ghost sync witnesses show ghost values matching storage after mutation │
+│ • Mutation path whitelists match Phase 0 entry points exactly           │
+│ • Advanced sanity run passes all checks                                  │
+│ • Evidence artifact is complete and signed off                          │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -1246,10 +1432,18 @@ For each property marked "Aggregate/History Required?: Yes":
 - [ ] Base invariants (Level 1) proven in isolation first (`--rule`)
 - [ ] Higher-level invariants proven only after their dependencies pass
 
-**Custom Summary Accuracy** ← NEW v1.9
+**Custom Summary Accuracy** 
 - [ ] For each custom summary: behavior documented (overapproximation vs exact)
 - [ ] Custom summaries do not assume determinism the real function doesn't guarantee
 - [ ] Custom summary accuracy justified in `spec_authoring.md`
+
+**Validation Evidence Review** 
+- [ ] Prover job URL recorded in `causal_validation.md`
+- [ ] All satisfy witnesses inspected — confirmed non-degenerate
+- [ ] All ghost sync witnesses inspected — confirmed non-trivial (ghost ≠ 0)
+- [ ] Mutation path whitelists cross-referenced against Phase 0 entry points
+- [ ] Re-run with `rule_sanity: advanced` completed — no failures
+- [ ] Evidence sign-off completed in `causal_validation.md`
 
 **Bounded State**
 - [ ] Array params: require arr.length < 100
@@ -1271,6 +1465,10 @@ For each property marked "Aggregate/History Required?: Yes":
 ## 9.0 Transition from Validation Spec to Real Spec
 
 When your validation spec PASSES, you've proven your **infrastructure is correct**. Now create the real spec by copying and modifying.
+
+> **⚠️ PREREQUISITE:** Before entering Phase 7, you MUST have completed the
+> Validation Evidence Review (Section 7.5). "ALL PASS" alone is not sufficient.
+> Evidence of non-degenerate witnesses and advanced sanity must be recorded.
 
 ### What Validation Passing Guarantees
 
@@ -1841,7 +2039,9 @@ Before considering verification complete:
 □ Phase 2: All security properties discovered
 □ Phase 2.5: Each property classified (INVARIANT/RULE)
 □ Phase 3.5: Causal validation PASSED
-□ Phase 3.5: Function reachability (satisfy) PASSED for all entry points  ← NEW v1.8
+□ Phase 3.5: Function reachability (satisfy) PASSED for all entry points  
+□ Phase 3.5: Validation Evidence Review completed — witnesses non-degenerate  
+□ Phase 3.5: Advanced sanity run (rule_sanity: advanced) — no failures  
 □ Phase 6: Sanity gate ALL CHECKED
 □ Phase 7: CVL spec written
 □ Prover: All rules PASS
@@ -2023,7 +2223,8 @@ Create the validation spec and conf to verify mutation paths are complete:
 - Run failure-path reachability (`satisfy lastReverted`) → proves revert paths are live  ← NEW v1.9
 - Then run mutation path rules → proves modeling is complete
 - Then run ghost sync rules → proves ghosts track reality
-- Only after ALL PASS → proceed to Phase 7 (real spec)
+- Only after ALL PASS → complete Validation Evidence Review (Section 7.5)  ← NEW v2.0
+- Only after Evidence Review signed off → proceed to Phase 7 (real spec)  ← NEW v2.0
 
 Reference:
 - certora-master-guide.md section 7 (validation spec template with Rule 0)
@@ -2036,6 +2237,63 @@ Reference:
 - certora-spec-framework.md Invariant DAG protocol & custom summary accuracy  ← NEW v1.9
 ```
 
+## 13.4.1 For Validation Evidence Review (Validation ALL PASS → Verify Quality)  ← NEW v2.0
+
+```markdown
+My validation spec shows ALL PASS for [ContractName]. Before writing the real
+spec, I need to verify the validation actually passed correctly (not vacuously
+or degenerately).
+
+**Target:** [path/to/ContractName.sol]
+**Validation Spec:** certora/specs/validation_{target}.spec
+**Prover Job URL:** [paste URL]
+**Validation Document:** spec_authoring/{target}_causal_validation.md
+
+Please help me complete the Validation Evidence Review:
+
+1. **Satisfy Witness Inspection:**
+   - For each satisfy rule, inspect the Prover witness (counterexample)
+   - Verify witnesses are NON-DEGENERATE:
+     - ❌ Degenerate: amount=0, from==to, all balances zero, unchanged state
+     - ✅ Non-degenerate: realistic values, meaningful state changes
+   - If any witness is degenerate, investigate whether a realistic witness exists
+
+2. **Ghost Sync Witness Inspection:**
+   - For each ghost sync rule, verify the ghost value is NON-TRIVIAL:
+     - ❌ Trivial: ghost=0 before AND after (hook may never fire)
+     - ✅ Non-trivial: ghost changes AND matches storage after mutation
+   - If trivial, check hook target matches actual storage layout
+
+3. **Mutation Path Completeness:**
+   - Cross-reference each mutation path rule's function whitelist against
+     the Phase 0 entry points table
+   - Identify any functions that CAN modify the variable but are NOT in the whitelist
+   - If any missing, the mutation path model is incomplete
+
+4. **Advanced Sanity Run:**
+   - Re-run with `"rule_sanity": "advanced"` in the .conf
+   - Check for any `rule_not_vacuous` or `invariant_not_trivial_postcondition` failures
+   - If any fail, the validation has hidden vacuity
+
+5. **Evidence Sign-Off:**
+   - Fill in the Validation Evidence Review template in causal_validation.md
+   - Record Prover job URL, rule status table, witness inspections
+   - Produce signed completion statement
+
+**Gate Criteria (ALL must be true to proceed to Phase 7):**
+- All satisfy witnesses confirmed non-degenerate
+- All ghost sync witnesses confirmed non-trivial
+- Mutation path whitelists match Phase 0 entry points
+- Advanced sanity run shows no failures
+- Evidence artifact complete and signed
+
+Reference:
+- certora-master-guide.md section 7.5 (Validation Evidence Review template)
+- certora-master-guide.md section 7.5.2 (Common Degenerate Witnesses table)
+- certora-master-guide.md section 7.5.3 (STOP vs PROCEED decision matrix)
+- cvl-language-deep-dive.md §19 (Invariant Sanity Checks — rule_not_vacuous)
+```
+
 ## 13.5 For Phase 7 (Validation PASSED → Write Real Spec)
 
 ```markdown
@@ -2044,6 +2302,7 @@ My validation spec PASSED for [ContractName]. Ready to write the real spec.
 **Target:** [path/to/ContractName.sol]
 **Token Standard (if any):** [ERC-20 / ERC-721 / WETH / None]
 **Validation Spec:** certora/specs/validation_{target}.spec (PASSED ✅)
+**Validation Evidence Review:** COMPLETED ✅  ← NEW v2.0
 **Candidate Properties:** spec_authoring/{target}_candidate_properties.md
 
 Please help me create the real spec:

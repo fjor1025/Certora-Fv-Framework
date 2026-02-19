@@ -1,24 +1,29 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 1.9 (Red Team Hardening)
+> **Version:** 2.0 (Validation Evidence Gate)
 
 ---
 
-## What's New in v1.9
+## What's New in v2.0
 
-**Red Team Hardening — Principal Engineer Audit Fixes:**
+**Validation Evidence Gate — Structured Proof That Validation Passed Correctly:**
 
-The framework was subjected to a full Red Team audit against 4 Pillars of Failure (Vacuity, Ghost Integrity, Revert Precision, Invariant Lifecycle). v1.9 closes the gaps identified:
+The framework had a critical gap: after `certoraRun` shows ALL PASS, the engineer self-certified "PASSED" and jumped to writing real rules. But "ALL PASS" ≠ "CORRECTLY PASSED." v2.0 adds a mandatory **Validation Evidence Review** between Phase 3.5 and Phase 7.
 
-- **Satisfy Annotation (P1-A):** `satisfy !lastReverted` template now explicitly documents it proves *liveness*, not *effect* — mutation path rules prove effect. Both are required.
-- **Failure-Path Reachability (Q2):** New **Validation Rule 0b** — `satisfy lastReverted` templates for critical revert conditions. Prevents biconditional `<=>` rules from passing vacuously when revert scenarios are unreachable.
-- **Custom Summary Accuracy Validation (P2-B):** New checklist and mandatory annotations for custom summaries (Exact / Overapproximation / Underapproximation). Custom summaries are trusted by construction — they now require explicit accuracy justification.
-- **Invariant Cycle Detection Protocol (P4-A):** New `@dev Level: N` annotation requirement, dependency DAG documentation, and level-by-level proving protocol. Prevents circular `requireInvariant` chains that create logical loops without proof.
+- **Satisfy Witness Inspection:** Every `satisfy` rule's witness must be inspected for non-degeneracy. A witness with `amount=0` or unchanged state proves nothing meaningful — the function "ran" but did nothing.
+- **Ghost Sync Witness Inspection:** Every ghost sync rule must show the ghost at a non-trivial value. `ghost=0 == storage=0` can mean the hook never fired (dead ghost).
+- **Mutation Path Completeness:** Mutation path whitelists are cross-referenced against Phase 0 entry points. If a function CAN modify the variable but isn't in the whitelist, the model is incomplete.
+- **Advanced Sanity Run:** Required re-run with `rule_sanity: advanced` to catch partial vacuity that `basic` misses.
+- **Evidence Sign-Off:** Complete evidence artifact recorded in `causal_validation.md` with Prover job URL, witness inspections, and reviewer signature.
 
-- Updated checklists in `certora-master-guide.md`, `spec-authoring-certora.md`, `certora-spec-framework.md`, `certora-ce-diagnosis-framework.md`, `best-practices-from-certora.md`
+- New Section 7.5 (Validation Evidence Review) in `certora-master-guide.md`
+- New Section 13.4.1 (Validation Evidence Review chat prompt)
+- Updated Phase 6 Sanity Gate with 6 new evidence checklist items
+- Updated FINAL CHECKLIST with evidence requirements
 
-**Previous releases (v1.6–v1.8):**
+**Previous releases (v1.6–v1.9):**
+- **v1.9:** Red Team Hardening (satisfy annotation, failure-path reachability, custom summary accuracy, invariant cycle detection)
 - **v1.8:** Reachability Validation (`satisfy` in validation spec, Phase 0.5)
 - **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`, `--assume_no_casting_overflow`, `--method` name-only filtering)
 - **v1.6:** Revert/failure-path coverage (`@withrevert`, biconditional `<=>`, MUST REVERT WHEN, SILENT PASS diagnosis)
@@ -29,6 +34,7 @@ See [version-history.md](version-history.md) for the complete changelog.
 
 ## Previous Enhancements
 
+**v1.9:** Red Team Hardening (Principal Engineer Audit Fixes)  
 **v1.8:** Reachability Validation (satisfy in validation spec, Phase 0.5)  
 **v1.7.1:** Quick Start Chat Prompts updated for v1.6/v1.7  
 **v1.7:** Prover v8.8.0 Built-in Rules (uncheckedOverflow, safeCasting)  

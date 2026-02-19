@@ -1,6 +1,6 @@
 # Certora Specification Framework — Execution-Closed & Causally-Closed Universe
 
-> **Version:** 2.1  
+> **Version:** 2.2 (Validation Evidence Gate)  
 > **CVL Syntax Reference:** CVL 2.0 (Certora Prover)  
 > **Philosophy:** You are not verifying a contract. You are verifying a *closed EVM universe* with that contract inside it.
 

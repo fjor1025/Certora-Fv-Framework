@@ -35,6 +35,10 @@
 | **cvl-language-deep-dive.md** | Complete CVL language reference | ← **NEW in v1.5** |
 | **verification-playbooks.md** | Worked examples (ERC-20, WETH, ERC-721) | ← **NEW in v1.5** |
 | **advanced-cli-reference.md** | Performance optimization & advanced flags | ← **NEW in v1.4** |
+| **impact-spec-template.md** | Anti-invariant & profit threshold rules | ← **NEW in v3.0** |
+| **multi-step-attacks-template.md** | Flash loan, sandwich, staged, cross-contract patterns | ← **NEW in v3.0** |
+| **offensive-pipeline.md** | CI/CD pipeline, CE triage, attack prioritization | ← **NEW in v3.0** |
+| **poc-template-foundry.md** | CE → Foundry exploit PoC conversion | ← **ENHANCED in v3.0** |
 | **SPEC AUTHORING (CERTORA).md** | Deep methodology & theory | Understanding WHY |
 | **categorizing-properties.md** | Property discovery guidance | Phase 2 |
 | **certora-spec-framework.md** | CVL 2.0 syntax & templates | Writing actual CVL |

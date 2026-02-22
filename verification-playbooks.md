@@ -1,6 +1,6 @@
 # Verification Playbooks — Complete Worked Examples
 
-> **Framework Version:** v2.0 (Validation Evidence Gate)
+> **Framework Version:** v3.0 (Offensive Verification + Red Team Hardening)
 > **Source:** Derived from the RareSkills Certora Book capstone projects and OpenZeppelin verification methodology
 > **Purpose:** Provide complete, battle-tested specification templates for ERC-20, WETH, and ERC-721 tokens — ready to adapt for any project.
 
@@ -1601,4 +1601,4 @@ rule nonceChangeRestriction(env e) {
 
 ---
 
-*This document is part of the Certora-Fv-Framework v1.6 (Revert/Failure-Path Coverage). Knowledge sourced from the RareSkills Certora Book — a collaboration between RareSkills and Certora.*
+*This document is part of the Certora-Fv-Framework v3.0 (Offensive Verification + Red Team Hardening). Knowledge sourced from the RareSkills Certora Book — a collaboration between RareSkills and Certora. For offensive verification patterns, see `impact-spec-template.md`, `multi-step-attacks-template.md`, and `offensive-pipeline.md`.*

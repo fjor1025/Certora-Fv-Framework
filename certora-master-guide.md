@@ -2304,6 +2304,7 @@ Before declaring verification complete:
 **Reference:** 
 - [impact-spec-template.md](impact-spec-template.md) — Complete economic impact tracking infrastructure
 - [multi-step-attacks-template.md](multi-step-attacks-template.md) — Flash loan, sandwich, staged attack patterns
+- [offensive-pipeline.md](offensive-pipeline.md) — Sample `.conf`, CI pipeline, CE severity triage, attack prioritization
 
 ---
 
@@ -2468,6 +2469,7 @@ The framework documents are already in my project root.
 - categorizing-properties.md — MUST REVERT WHEN checklist for property discovery
 - impact-spec-template.md — Economic impact tracking (persistent ghosts, anti-invariants, hook liveness)  ← NEW v3.0
 - multi-step-attacks-template.md — Flash loan, sandwich, staged, cross-contract attack patterns  ← NEW v3.0
+- offensive-pipeline.md — Sample .conf files, CI pipeline script, CE severity triage, attack prioritization  ← NEW v3.0
 - categorizing-properties.md §0 — Economic Impact Categories & Attacker Objective Checklist  ← NEW v3.0
 ```
 
@@ -2885,6 +2887,7 @@ References:
 - certora-master-guide.md Section 9.5 (Phase 8: Attack Synthesis)
 - impact-spec-template.md (value tracking infrastructure + hook liveness + completeness checklist)
 - multi-step-attacks-template.md (attack pattern library + cross-contract + depth guidance)
+- offensive-pipeline.md (sample .conf, CI pipeline, CE severity triage, attack prioritization)
 - poc-template-foundry.md (CE → executable PoC)
 - categorizing-properties.md §0 (Economic Impact Categories)
 ```

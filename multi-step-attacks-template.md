@@ -19,6 +19,67 @@ Real DeFi exploits are rarely single-transaction. This template provides pattern
 
 ---
 
+## CVL State Model: How Multi-Step Attacks Work
+
+> **Critical Understanding:** In CVL, sequential function calls within a rule
+> operate on **evolved state**. When you write:
+> ```cvl
+> f1(e1, args1);
+> f2(e2, args2);
+> f3(e3, args3);
+> ```
+> After `f1` executes, ALL storage is updated. `f2` sees the post-`f1` state.
+> `f3` sees the post-`f2` state. This is how the Prover models sequential
+> blockchain transactions natively.
+
+### State Carry-Over Guarantee
+
+| State Type | Carries Over? | Mechanism |
+|------------|---------------|----------|
+| Contract storage (slots) | ✅ Yes | Prover models EVM storage automatically |
+| `ghost` variables | ✅ Yes (if no external calls) | Updated by hooks, reverted on revert |
+| `persistent ghost` variables | ✅ **Always** | Survives HAVOC and reverts |
+| `env` variables between calls | ❌ Independent | Each `env` is a free variable; constrain via `require` |
+| `calldataarg` between calls | ❌ Independent | Each `calldataarg` is a free variable |
+
+### Why Persistent Ghosts Matter for Multi-Step Attacks
+
+If Step 1 calls an **external contract** (e.g., flash loan provider), the Prover
+cannot see its implementation. Without `persistent`:
+
+```
+Step 1: f1 calls external → HAVOC → ghost resets to arbitrary value
+Step 2: f2 reads ghost → sees garbage, not Step 1's delta
+```
+
+With `persistent`:
+
+```
+Step 1: f1 calls external → ghost SURVIVES HAVOC
+Step 2: f2 reads ghost → sees Step 1's actual delta
+```
+
+This is why **every ghost in this template is `persistent`** — multi-step
+attacks inherently involve cross-contract calls.
+
+### Intermediate State Snapshots
+
+To capture state between steps for comparison, use local variables:
+
+```cvl
+// Capture post-step-1 state
+mathint after_step1 = actor_value[attacker];
+
+f2(e2, args2);
+
+// Compare: what did step 2 change?
+mathint step2_delta = actor_value[attacker] - after_step1;
+```
+
+The Prover tracks these automatically — no explicit snapshot mechanism needed.
+
+---
+
 ## Flash Loan Attack Pattern
 
 Flash loans enable atomic multi-step attacks within a single transaction.

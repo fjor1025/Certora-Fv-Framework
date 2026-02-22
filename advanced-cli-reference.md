@@ -1,7 +1,7 @@
 # ADVANCED CLI OPTIONS & PERFORMANCE OPTIMIZATION
 
-> **Version:** 1.0 (Framework v2.0)  
-> **Purpose:** Advanced CLI flags, timeout mitigation, and performance optimization strategies  
+> **Version:** 1.1 (Framework v3.0 — Offensive Verification + Red Team Hardening)  
+> **Purpose:** Advanced CLI flags, timeout mitigation, performance optimization, and offensive verification strategies  
 > **Audience:** Users experiencing timeouts, complex projects, or seeking advanced debugging  
 > **Updated:** February 16, 2026 (based on Certora Documentation latest updates)
 
@@ -17,6 +17,7 @@
 6. [Harness Patterns](#6-harness-patterns)
 7. [Practical Tips & Tricks](#7-practical-tips--tricks)
 8. [Quick Command Reference](#8-quick-command-reference)
+9. [Offensive Verification CLI Strategies (v3.0)](#9-offensive-verification-cli-strategies-v30)
 
 ---
 
@@ -1669,13 +1670,107 @@ Is your verification...
 
 ---
 
+---
+
+# 9. OFFENSIVE VERIFICATION CLI STRATEGIES (v3.0)
+
+> **New in Framework v3.0:** CLI patterns specifically for anti-invariant rules, multi-step attack proofs, and profit-threshold searches.
+
+## 9.1 Running Anti-Invariant Rules
+
+Anti-invariant rules (from `impact-spec-template.md`) intentionally search for profitable attack paths. They use `satisfy` instead of `assert`, so the Prover searches for a *witness* rather than a proof.
+
+```bash
+# Run a single anti-invariant rule
+certoraRun src/Vault.sol --verify Vault:specs/offensive_vault.spec \
+    --rule attacker_cannot_profit \
+    --multi_assert_check \
+    --smt_timeout 600 \
+    --msg "Anti-invariant: searching for profitable attack"
+```
+
+**Key flags for offensive rules:**
+
+| Flag | Purpose | Offensive Use Case |
+|------|---------|--------------------|
+| `--rule <name>` | Target a single anti-invariant rule | Isolate `attacker_cannot_profit` or `find_max_profit_threshold` |
+| `--smt_timeout 600` | Allow longer solver time | Multi-step attacks need more exploration time |
+| `--multi_assert_check` | Check each assert independently | Find partial attack paths even if full chain times out |
+| `--prover_args '-depth 20'` | Increase search depth | Multi-step sequences need deeper unrolling |
+| `--independent_satisfy true` | Check each `satisfy` independently | Find multiple distinct attack witnesses |
+
+## 9.2 Multi-Step Attack Timeout Strategy
+
+Multi-step attack rules (from `multi-step-attacks-template.md`) chain 3+ function calls. These are expensive:
+
+```bash
+# Strategy: increase timeout + parallel splitting
+certoraRun src/Vault.sol --verify Vault:specs/multi_step_offensive.spec \
+    --rule three_step_attack_sequence \
+    --smt_timeout 900 \
+    --prover_args '-depth 25 -splitParallel true -mediumTimeout 30' \
+    --msg "Multi-step: 3-call attack sequence"
+```
+
+**Decision tree for offensive rule timeouts:**
+
+```
+Offensive rule timing out?
+│
+├─► Single-step anti-invariant → increase --smt_timeout to 600s
+│
+├─► Multi-step (3+ calls) → increase depth + splitParallel
+│   └─► Still timing out? → Split rule into 2-step sub-proofs
+│
+└─► Profit threshold search → Use iterative binary search approach
+    (see impact-spec-template.md: find_max_profit_threshold)
+```
+
+## 9.3 Iterative Profit Threshold Search
+
+The `find_max_profit_threshold` pattern (from `impact-spec-template.md`) requires iterative runs with different thresholds:
+
+```bash
+# Step 1: Start with high threshold
+certoraRun ... --rule find_max_profit_threshold \
+    --prover_args '-threshold 1000000000000000000' \
+    --msg "Threshold search: 1 ETH"
+
+# Step 2: If SATISFIED → attacker can extract ≥ threshold → raise it
+# Step 3: If VIOLATED → threshold is too high → lower it
+# Step 4: Binary search to convergence
+```
+
+## 9.4 Offensive `.conf` Pattern
+
+See `offensive-pipeline.md` for complete `.conf` templates. Quick reference:
+
+```json
+{
+  "files": ["src/Vault.sol", "src/Token.sol"],
+  "verify": "Vault:specs/offensive_vault.spec",
+  "msg": "Offensive: anti-invariant + multi-step",
+  "rule": ["attacker_cannot_profit", "three_step_attack_sequence"],
+  "smt_timeout": "600",
+  "multi_assert_check": true,
+  "independent_satisfy": true,
+  "prover_args": ["-depth 20"],
+  "rule_sanity": "basic"
+}
+```
+
+---
+
 **End of Advanced CLI Reference**
 
 > "The best performance optimization is the one you don't need because you designed your verification strategy correctly from the start."
 
 For more information, see:
 - certora-master-guide.md (Main workflow)
-- cvl-language-deep-dive.md (CVL language reference — NEW v1.5)
-- verification-playbooks.md (Worked examples — NEW v1.5)
+- cvl-language-deep-dive.md (CVL language reference)
+- verification-playbooks.md (Worked examples)
 - best-practices-from-certora.md (Tutorial techniques)
 - quick-reference-v1.3.md (Quick lookup)
+- impact-spec-template.md (Anti-invariant & profit threshold rules — NEW v3.0)
+- multi-step-attacks-template.md (Multi-step attack sequences — NEW v3.0)
+- offensive-pipeline.md (CI/CD pipeline & CE triage — NEW v3.0)

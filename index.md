@@ -47,6 +47,7 @@
 |----------|----------|
 | [impact-spec-template.md](impact-spec-template.md) | Economic impact tracking, anti-invariants |
 | [multi-step-attacks-template.md](multi-step-attacks-template.md) | Flash loan, sandwich, staged attack patterns |
+| [offensive-pipeline.md](offensive-pipeline.md) | CI/CD pipeline, .conf files, CE triage, attack prioritization |
 | [certora-master-guide.md Section 9.5](certora-master-guide.md) | Attack synthesis workflow |
 
 ### Debugging (When Rules Fail)
@@ -115,13 +116,17 @@
 ### Phase 8: Attack Synthesis (Offensive) ⭐ NEW v3.0
 **Primary:** [impact-spec-template.md](impact-spec-template.md)  
 **Attack Patterns:** [multi-step-attacks-template.md](multi-step-attacks-template.md)  
+**Pipeline & Tooling:** [offensive-pipeline.md](offensive-pipeline.md)  
 **Guide:** [certora-master-guide.md](certora-master-guide.md) Section 9.5  
 **Checklist:**
-- [ ] Import impact tracking ghosts
+- [ ] Create `offensive.conf` (sample in [offensive-pipeline.md](offensive-pipeline.md))
+- [ ] Import impact tracking ghosts (all `persistent`)
+- [ ] Run hook liveness gate first
 - [ ] Run `attacker_cannot_profit` rule
 - [ ] Run `system_value_conserved` rule
 - [ ] Run multi-step attack patterns
-- [ ] Convert any CEs to Foundry PoCs
+- [ ] Triage CEs using severity matrix (see [offensive-pipeline.md](offensive-pipeline.md))
+- [ ] Convert any CEs to Foundry PoCs (see [poc-template-foundry.md](poc-template-foundry.md))
 
 ### Debugging: Counterexamples
 **Primary:** [certora-ce-diagnosis-framework.md](certora-ce-diagnosis-framework.md)  

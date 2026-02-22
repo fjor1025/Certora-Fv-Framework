@@ -52,6 +52,7 @@ The framework previously focused on proving correctness of known designs. v3.0 a
 New files:
 - `impact-spec-template.md` — Economic impact tracking infrastructure
 - `multi-step-attacks-template.md` — Flash loan, sandwich, staged attack patterns
+- `offensive-pipeline.md` — CI/CD pipeline, sample .conf, CE severity triage, attack prioritization
 
 ---
 

@@ -397,6 +397,34 @@ rule find_insolvency_path(env e, method f)
 }
 
 /**
+ * ════════════════════════════════════════════════════════════════
+ * SMT SOLVER BEHAVIOR NOTE
+ * ════════════════════════════════════════════════════════════════
+ *
+ * The Certora Prover uses an SMT solver under the hood. Key implications:
+ *
+ * 1. `assert profit <= 0` (anti-invariant):
+ *    When VIOLATED, the CE gives you ONE counterexample where profit > 0.
+ *    This is NOT necessarily the MAXIMUM profit — just a satisfying assignment.
+ *
+ * 2. `satisfy profit > 0`:
+ *    When SAT, the witness gives you ONE set of inputs for profitable attack.
+ *    Again, NOT the maximum — just an existence proof.
+ *
+ * 3. The Prover CANNOT maximize an objective function directly.
+ *    There is no `maximize profit` keyword in CVL.
+ *
+ * WORKAROUND: The iterative threshold protocol below provides an
+ * approximate binary search for maximum exploit size.
+ *
+ * 4. The Prover IS complete for the modeled state space:
+ *    If `assert profit <= 0` VERIFIES, there genuinely is no single-tx
+ *    profit path within the modeled contract scope.
+ *    (But: missing hooks = blind spots — check with liveness rules.)
+ * ════════════════════════════════════════════════════════════════
+ */
+
+/**
  * @title Iterative Threshold Profit Search
  * @notice Finds approximate MAXIMUM profit via binary search thresholds
  * @dev Run repeatedly with increasing thresholds:

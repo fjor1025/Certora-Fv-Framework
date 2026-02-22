@@ -45,6 +45,7 @@ v3.0 adds **offensive verification mode** that actively searches for economicall
 |------|---------|
 | **impact-spec-template.md** | Economic impact tracking infrastructure — attacker value ghosts, system value tracking, value extraction counters, anti-invariants, satisfy-based attack search |
 | **multi-step-attacks-template.md** | Multi-transaction attack patterns — flash loan, sandwich, staged, governance, reentrancy attack templates |
+| **offensive-pipeline.md** | CI/CD pipeline, sample `.conf` files, CE severity classification, attack goal enumeration, gas cost analysis, harness templates |
 
 ### New Section: 9.5 Phase 8: Attack Synthesis
 

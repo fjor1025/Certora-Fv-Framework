@@ -2,18 +2,22 @@
 
 > **Use this template to apply the Certora workflow to ANY contract**  
 > **Copy this file and fill in the blanks for each new verification project**  
-> **Version:** 2.0 (Validation Evidence Gate)
+> **Version:** 3.0 (Offensive Verification + Red Team Hardening)
 
 ---
 
-## WHAT'S NEW IN v1.9
+## WHAT'S NEW IN v3.0
 
-- **Failure-path reachability:** `satisfy lastReverted` rules validate revert paths are reachable before biconditional `<=>` rules
-- **Custom summary accuracy:** Mandatory annotation (Exact/Over/Under) and justification for every custom summary
-- **Invariant dependency DAG:** `@dev Level: N` annotations, cycle detection protocol, level-by-level proving
-- **Satisfy liveness annotation:** Explicit warning that `satisfy !lastReverted` proves liveness, not effect
+- **Offensive verification (Phase 8):** Anti-invariant rules that prove the *absence* of profitable attack paths
+- **Persistent ghost enforcement:** All economic tracking ghosts must be `persistent ghost` to survive unresolved external calls
+- **Anti-invariant liveness checks:** Every `assert attacker_profit <= 0` paired with `satisfy attacker_profit == 0` to prevent vacuity
+- **Multi-step attack templates:** 3+ call sequences with state carry-over guarantees
+- **Profit threshold search:** Iterative `find_max_profit_threshold` binary search protocol
+- **CE-to-PoC pipeline:** Systematic conversion of counterexample witnesses to Foundry exploit PoCs
+- **Offensive CI/CD:** Dedicated `.conf` files, CE severity triage matrix, automated pipeline
 
 ### Previous Enhancements
+- **v1.9:** Failure-path reachability, custom summary accuracy, invariant dependency DAG
 - **v1.8:** Reachability validation (`satisfy` rules as mandatory pre-step)
 - **v1.7:** Prover v8.8.0 builtin rules (`uncheckedOverflow`, `safeCasting`)
 - **v1.6:** Revert/failure-path coverage (`@withrevert`, biconditional `<=>`, MUST REVERT WHEN)
@@ -34,8 +38,9 @@
 5. [Phase 3.5: Causal Validation](#5-phase-35-causal-validation)
 6. [Phase 4-6: Modeling & Sanity](#6-phase-4-6-modeling--sanity)
 7. [Phase 7: Write CVL](#7-phase-7-write-cvl)
-8. [Running & Debugging](#8-running--debugging)
-9. [Quick Reference Commands](#9-quick-reference-commands)
+8. [Phase 8: Offensive Verification (v3.0)](#8-phase-8-offensive-verification-v30)
+9. [Running & Debugging](#9-running--debugging)
+10. [Quick Reference Commands](#10-quick-reference-commands)
 
 ---
 
@@ -663,21 +668,101 @@ touch certora/confs/{Contract}.conf
 
 ---
 
-## 8. RUNNING & DEBUGGING
+## 8. PHASE 8: OFFENSIVE VERIFICATION (v3.0)
 
-### Step 8.1: Run Validation First (ALWAYS)
+> **New in v3.0:** After defensive specs pass, write offensive specs that prove the *absence* of profitable attack paths.
+
+### Step 8.1: Identify Value Flows
+
+```markdown
+Value enters via: [ deposit(), stake(), ... ]
+Value exits via:  [ withdraw(), redeem(), claim(), ... ]
+Attacker goals:   [ drain tokens, dilute shares, extract fees, manipulate oracle ]
+```
+
+### Step 8.2: Write Anti-Invariant Rules
+
+Use `impact-spec-template.md` as your starting point:
+
+```cvl
+// Anti-invariant: prove no attacker can extract profit
+persistent ghost mathint attacker_profit;
+
+hook Sstore balances[KEY address a] uint256 newVal (uint256 oldVal) {
+    if (a == attacker) {
+        attacker_profit = attacker_profit + (newVal - oldVal);
+    }
+}
+
+rule attacker_cannot_profit(env e, method f) {
+    require attacker_profit == 0;
+    calldataarg args;
+    f(e, args);
+    assert attacker_profit <= 0;
+}
+
+// MANDATORY LIVENESS CHECK — prevents vacuous pass
+rule attacker_profit_is_reachable(env e) {
+    require attacker_profit == 0;
+    // ... perform a legitimate operation ...
+    satisfy attacker_profit == 0;
+}
+```
+
+### Step 8.3: Write Multi-Step Attack Rules (if applicable)
+
+Use `multi-step-attacks-template.md` for 3+ call sequences:
+
+```cvl
+rule three_step_attack(env e1, env e2, env e3) {
+    require attacker_profit == 0;
+    // Step 1: Setup
+    calldataarg args1; f1(e1, args1);
+    // Step 2: Exploit
+    calldataarg args2; f2(e2, args2);
+    // Step 3: Extract
+    calldataarg args3; f3(e3, args3);
+    assert attacker_profit <= 0;
+}
+```
+
+### Step 8.4: Create Offensive `.conf`
+
+```bash
+touch certora/confs/offensive_{contract}.conf
+```
+
+See `offensive-pipeline.md` for complete `.conf` templates.
+
+### Step 8.5: Run & Triage
+
+```bash
+certoraRun certora/confs/offensive_{contract}.conf
+```
+
+**Result interpretation:**
+- `VERIFIED` → No attack found at this depth (good)
+- `VIOLATED` → `assert` failed → real bug
+- `SATISFIED` (on `satisfy` anti-invariant) → **Attack witness found** → convert to PoC
+- `TIMEOUT` → Increase `--smt_timeout` or split rule (see `advanced-cli-reference.md` Section 9)
+
+---
+
+## 9. RUNNING & DEBUGGING
+
+### Step 9.1: Run Validation First (ALWAYS)
 
 ```bash
 certoraRun certora/confs/validation_{contract}.conf
 ```
 
-### Step 8.2: Run Real Spec
+### Step 9.2: Run Real Spec
 
 ```bash
 certoraRun certora/confs/{Contract}.conf
 ```
 
-### Step 8.3: Debug Compilation Errors
+### Step 9.3: Debug Compilation Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
@@ -686,7 +771,7 @@ certoraRun certora/confs/{Contract}.conf
 | `could not find method` | Wrong function signature | Check contract for exact signature |
 | `Type mismatch` | Hook type doesn't match storage | Use exact Solidity type |
 
-### Step 8.4: Debug Counterexamples
+### Step 9.4: Debug Counterexamples
 
 Use `certora-ce-diagnosis-framework.md`:
 
@@ -696,7 +781,7 @@ Use `certora-ce-diagnosis-framework.md`:
 
 ---
 
-## 9. QUICK REFERENCE COMMANDS
+## 10. QUICK REFERENCE COMMANDS
 
 ### Setup Commands
 
@@ -798,7 +883,14 @@ solc --version
 │     └─► NOW write {Contract}.spec                               │
 │     └─► RUN: certoraRun real config                             │
 │                                                                  │
-│  8. DEBUG (if needed)                                           │
+│  8. OFFENSIVE VERIFICATION (Phase 8) ← NEW v3.0                  │
+│     └─► Write anti-invariant rules (impact-spec-template.md)    │
+│     └─► Write multi-step attack rules (multi-step-attacks.md)   │
+│     └─► Create offensive .conf (offensive-pipeline.md)           │
+│     └─► RUN: certoraRun offensive config                        │
+│     └─► Triage CEs: SATISFIED = real attack, convert to PoC     │
+│                                                                  │
+│  9. DEBUG (if needed)                                           │
 │     └─► Use CE_DIAGNOSIS_FRAMEWORK.md                           │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -847,15 +939,19 @@ certoraRun certora/confs/EmergencyProtectedTimelock.conf
 your-project/
 ├── certora-quickstart-template.md    ← THIS FILE (how to apply)
 ├── certora-master-guide.md           ← Complete step-by-step instructions
-├── cvl-language-deep-dive.md         ← CVL language reference ⭐ NEW v1.5
-├── verification-playbooks.md         ← Worked examples ⭐ NEW v1.5
+├── cvl-language-deep-dive.md         ← CVL language reference
+├── verification-playbooks.md         ← Worked examples
 ├── certora-workflow.md               ← Step-by-step process
 ├── certora-spec-framework.md         ← CVL templates & patterns
 ├── certora-ce-diagnosis-framework.md ← Debugging counterexamples
 ├── SPEC AUTHORING (CERTORA).md       ← Deep methodology
 ├── categorizing-properties.md        ← Property discovery
 ├── best-practices-from-certora.md    ← Proven techniques
-├── advanced-cli-reference.md         ← CLI & performance ⭐ NEW v1.4
+├── advanced-cli-reference.md         ← CLI & performance
+├── impact-spec-template.md           ← Anti-invariant & profit rules ⭐ NEW v3.0
+├── multi-step-attacks-template.md    ← Multi-step attack sequences ⭐ NEW v3.0
+├── offensive-pipeline.md             ← CI/CD pipeline & CE triage ⭐ NEW v3.0
+├── poc-template-foundry.md           ← CE-to-PoC conversion ⭐ ENHANCED v3.0
 ├── quick-reference-v1.3.md           ← Printable cheat sheet
 ├── index.md                          ← Navigation guide
 ├── version-history.md                ← Version tracking

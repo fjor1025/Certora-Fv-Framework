@@ -1,6 +1,6 @@
 # CVL Language Deep Dive — Complete Reference
 
-> **Framework Version:** v2.0 (Validation Evidence Gate)
+> **Framework Version:** v3.0 (Offensive Verification + Red Team Hardening)
 > **Source:** Extracted from the RareSkills Certora Book (60,000+ words, 35 chapters, official Certora collaboration)
 > **Purpose:** Fill every CVL language gap — from foundational semantics to advanced patterns used in production OpenZeppelin/Solmate/Solady specifications.
 
@@ -737,6 +737,8 @@ hook CALL(uint gas, address to, uint value,
 ```
 
 **Warning:** Do NOT use `persistent` as a quick fix when verification fails due to havoc from unresolved external calls. The correct fix is to link the actual contract implementation into the verification scene.
+
+> **v3.0 Offensive Verification Note:** For anti-invariant and multi-step attack rules, `persistent ghost` is **mandatory** for all economic tracking ghosts (profit accumulators, balance deltas, fee trackers). Regular ghosts get havoced on unresolved external calls, which silently destroys profit tracking and causes anti-invariant rules to pass vacuously. See `impact-spec-template.md` and `multi-step-attacks-template.md` for complete patterns.
 
 ### Initialization: `init_state axiom` vs `axiom`
 
@@ -1656,4 +1658,4 @@ definition nonzerosender(env e) returns bool = e.msg.sender != 0;
 
 ---
 
-*This document is part of the Certora-Fv-Framework v1.9 (Red Team Hardening). Knowledge sourced from the RareSkills Certora Book — a collaboration between RareSkills and Certora.*
+*This document is part of the Certora-Fv-Framework v3.0 (Offensive Verification + Red Team Hardening). Knowledge sourced from the RareSkills Certora Book — a collaboration between RareSkills and Certora. For offensive verification patterns, see `impact-spec-template.md`, `multi-step-attacks-template.md`, and `offensive-pipeline.md`.*

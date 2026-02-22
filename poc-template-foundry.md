@@ -128,6 +128,147 @@ IMPACT:
 ### Step 3: Choose PoC Template
 
 - If Certora shows balance/supply violation → Use **Template 1 (Value Extraction)**
+
+---
+
+## Converting Anti-Invariant CEs to Exploit PoCs (v3.0)
+
+When an **offensive verification anti-invariant** (from `impact-spec-template.md`) produces a counterexample, the CE contains concrete exploit parameters. This section maps each anti-invariant to a PoC structure.
+
+### Anti-Invariant CE → PoC Mapping
+
+| Anti-Invariant Rule | CE Contains | PoC Template | Key Assertion |
+|---------------------|-------------|--------------|---------------|
+| `attacker_cannot_profit` | Function, args, `actor_value` before/after | Template 1 (Value Extraction) | `assertGt(profit, 0)` |
+| `system_value_conserved` | Function, args, `total_system_value` delta | Template 1 (Value Extraction) | `assertLt(vaultAfter, vaultBefore)` |
+| `zero_sum_transfers` | Two addresses, value changes, net imbalance | Template 1 (Value Extraction) | `assertGt(callerDelta + otherDelta + systemDelta, 0)` |
+| `flash_loan_attack_search` | 3 envs, function, borrow amount, profit | Template 1 + flash loan pattern | `assertGt(profit, flashLoanFee)` |
+| `sandwich_attack_search` | 3 txs, attacker/victim addresses, profit/loss | Template 1 + multi-tx pattern | `assertGt(attackerProfit, 0)` |
+| `staged_attack_accumulation` | 3 envs across blocks, phase deltas, total profit | Template 1 + multi-tx pattern | `assertGt(totalProfit, 0)` |
+
+### Step-by-Step: `attacker_cannot_profit` CE → Foundry PoC
+
+This is the most common anti-invariant to produce actionable CEs.
+
+**1. Extract from CE call trace:**
+
+```
+CE Output:
+  Rule: attacker_cannot_profit
+  Status: VIOLATED
+  
+  Environment:
+    e.msg.sender = 0x1234...  (attacker)
+    e.msg.value  = 0
+    e.block.number = 19500000
+  
+  Function called: withdraw(uint256)
+  Arguments: [2000000000000000000000]  (2000 * 10^18)
+  
+  Ghost values:
+    actor_value[0x1234...] BEFORE = 1000000000000000000000  (1000 * 10^18)
+    actor_value[0x1234...] AFTER  = 3000000000000000000000  (3000 * 10^18)
+  
+  Profit = 2000 * 10^18
+```
+
+**2. Translate to Foundry PoC:**
+
+```solidity
+function testExploit_attacker_cannot_profit() external {
+    // Setup: replicate CE initial state
+    address attacker = makeAddr("attacker");
+    deal(address(token), attacker, 1000e18);  // CE initial balance
+
+    vm.startPrank(attacker);
+    token.approve(address(vault), type(uint256).max);
+    vault.deposit(1000e18);  // Establish position
+
+    // Snapshot before exploit
+    uint256 balanceBefore = token.balanceOf(attacker);
+
+    // Execute: replicate CE function call with CE arguments
+    vault.withdraw(2000e18);  // CE argument: 2000 * 10^18
+
+    vm.stopPrank();
+
+    // Assert: replicate CE profit
+    uint256 balanceAfter = token.balanceOf(attacker);
+    uint256 profit = balanceAfter - balanceBefore;
+
+    console2.log("Profit:", profit / 1e18, "tokens");
+    assertGt(profit, 0, "Exploit: attacker profited");
+}
+```
+
+**3. If PoC fails on fork:**
+
+| PoC Failure | Root Cause | Fix |
+|-------------|-----------|-----|
+| Reverts at withdraw | CE used over-approximate state | Check if CE requires specific storage setup |
+| Profit is 0 | Hooks were incomplete (capture different token) | Verify hook liveness passed for this function |
+| Different profit amount | CE used `mathint` (no overflow); Solidity uses `uint256` | Check for overflow at boundary values |
+| Gas exceeds block limit | CE doesn't model gas | Measure gas; check if attack is economical |
+
+### Step-by-Step: Multi-Step CE → Foundry PoC
+
+For `flash_loan_attack_search` or `sandwich_attack_search` CEs:
+
+```solidity
+function testExploit_flash_loan_attack() external {
+    address attacker = makeAddr("attacker");
+
+    // CE: 3 steps in same block
+    vm.startPrank(attacker);
+
+    // Step 1: Flash loan (from CE e_borrow)
+    flashLoanProvider.flashLoan(
+        address(this),
+        address(token),
+        1000000e18,  // CE: borrow_amount
+        ""
+    );
+    // Inside callback:
+    //   Step 2: Attack (from CE f called with args)
+    //   vault.withdraw(2000000e18);
+    //   Step 3: Repay flash loan
+
+    vm.stopPrank();
+
+    // Verify profit after flash loan repaid
+    assertGt(token.balanceOf(attacker), 0, "Flash loan attack profitable");
+}
+
+// Flash loan callback
+function onFlashLoan(
+    address initiator,
+    address tkn,
+    uint256 amount,
+    uint256 fee,
+    bytes calldata
+) external returns (bytes32) {
+    // Step 2: CE attack function with CE args
+    IERC20(tkn).approve(address(vault), type(uint256).max);
+    vault.deposit(amount);
+    vault.withdraw(amount * 2);  // CE argument
+
+    // Step 3: Repay
+    IERC20(tkn).approve(msg.sender, amount + fee);
+    return keccak256("ERC3156FlashBorrower.onFlashLoan");
+}
+```
+
+### `satisfy` Witness → Foundry PoC
+
+When `find_profitable_inputs` returns SAT, the **witness** (not counterexample) contains exploit parameters:
+
+| CE vs Witness | Source | Meaning |
+|---------------|--------|---------|
+| **Counterexample** (from `assert`) | Rule VIOLATED | Proof of bug — concrete values that break the property |
+| **Witness** (from `satisfy`) | Rule SAT | Existence proof — concrete values that satisfy the condition |
+
+Both contain the same fields (env, function, args, ghost values). The PoC conversion process is identical.
+
 - If Certora shows access control bypass → Use **Template 2 (Invariant Break)**
 
 ### Step 4: Map Call Trace to PoC

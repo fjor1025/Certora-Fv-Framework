@@ -1,5 +1,6 @@
 # CERTORA BEST PRACTICES & TECHNIQUES
 
+> **Version:** 1.1 (Framework v3.0 — Offensive Verification + Red Team Hardening)  
 > **Extracted from official Certora Tutorials**  
 > **Integrated with your framework phases**
 
@@ -13,6 +14,7 @@
 4. [Harness Best Practices](#4-harness-best-practices)
 5. [Loop Handling](#5-loop-handling)
 6. [Common Pitfalls](#6-common-pitfalls)
+7. [Offensive Property Discovery (v3.0)](#7-offensive-property-discovery-v30)
 
 ---
 
@@ -836,11 +838,15 @@ require e.msg.sender != currentContract;  // Modeling constraint, not revert con
 | **Phase 2** | Sections 1.1, 1.2, 1.3 (Property Discovery, Prioritization) |
 | **Phase 3.5** | Section 3.1, 3.2 (Invariant Patterns) |
 | **Phase 7** | Section 3.3, 6.2, 7, 8, 9 (Preserved Blocks, Vacuity, Lifecycle, Edge Cases) |
+| **Phase 8 (Offensive)** | Section 7 (Offensive Property Discovery — v3.0) |
 | **CE Debugging** | Section 2 (CE Investigation Process) |
 | **Harness Design** | Section 4 (Harness Best Practices) |
 | **Loop Handling** | Section 5 (Loop Configuration) |
 | **CVL Deep Dive** | `cvl-language-deep-dive.md` (Complete CVL Reference) |
 | **Worked Examples** | `verification-playbooks.md` (ERC-20, WETH, ERC-721) |
+| **Offensive Specs** | `impact-spec-template.md` (Anti-invariant & profit threshold — v3.0) |
+| **Multi-Step Attacks** | `multi-step-attacks-template.md` (Attack sequences — v3.0) |
+| **Offensive Pipeline** | `offensive-pipeline.md` (CI/CD & CE triage — v3.0) |
 
 ---
 
@@ -866,7 +872,54 @@ require e.msg.sender != currentContract;  // Modeling constraint, not revert con
 □ Failure conditions documented for each function?           ← NEW v1.6
 □ `use builtin rule uncheckedOverflow` for unchecked blocks? ← NEW v1.7
 □ `use builtin rule safeCasting` for explicit casts?         ← NEW v1.7
+□ Anti-invariant rules written for high-value properties?    ← NEW v3.0
+□ Persistent ghosts used for economic tracking ghosts?       ← NEW v3.0
+□ Liveness checks added after anti-invariant assertions?     ← NEW v3.0
+□ CE triage severity assigned (Critical/High/Medium/Low)?   ← NEW v3.0
+□ Offensive .conf file created? (see offensive-pipeline.md)  ← NEW v3.0
 ```
+
+---
+
+# 7. OFFENSIVE PROPERTY DISCOVERY (v3.0)
+
+> **New in Framework v3.0:** Techniques for discovering properties that prove the *absence* of profitable attack paths, not just correctness.
+
+## 7.1 From Defensive to Offensive Properties
+
+Traditional property discovery asks: "Does the function do what it should?"
+Offensive property discovery asks: **"Can an attacker extract profit?"**
+
+### The Adversarial Discovery Cycle
+
+1. **Identify value flows:** Where does value enter/exit? (deposits, withdrawals, fees, rewards)
+2. **Enumerate attacker goals:** What would an attacker maximize? (token drain, share dilution, fee extraction, oracle manipulation)
+3. **Write anti-invariants:** `satisfy attacker_profit > threshold` — if the Prover finds a witness, the attack is real
+4. **Convert CEs to PoCs:** Any witness from step 3 is a constructive exploit trace (see `poc-template-foundry.md`)
+
+### Offensive Property Categories
+
+| Category | Defensive Property | Offensive Anti-Invariant |
+|----------|-------------------|-------------------------|
+| Token Drain | `totalSupply == sum(balances)` | `satisfy attacker_balance_after > attacker_balance_before + deposited` |
+| Share Dilution | `shares * totalAssets >= assets * totalShares` | `satisfy redeemed_assets < deposited_assets` for honest depositor |
+| Fee Extraction | `fee <= maxFee` | `satisfy protocol_fee_collected < expected_fee` |
+| First Depositor | `vault not vulnerable to inflation attack` | `satisfy victim_shares == 0 && victim_deposited > 0` |
+
+## 7.2 Anti-Invariant Best Practices
+
+1. **Always pair with liveness check:** After `assert attacker_profit <= 0`, add `satisfy attacker_profit == 0` to verify the assertion isn't vacuously true
+2. **Use `persistent ghost` for economic accumulators:** Regular ghosts get havoced on unresolved external calls, destroying profit tracking
+3. **Track attacker vs. protocol separately:** Use distinct ghost variables for attacker-controlled and protocol-controlled value flows
+4. **Start with `satisfy`, graduate to `assert`:** Find the attack first, then prove it's impossible after mitigation
+
+## 7.3 Cross-References
+
+- **Anti-invariant rule templates:** `impact-spec-template.md`
+- **Multi-step attack sequences:** `multi-step-attacks-template.md`
+- **CE-to-PoC conversion:** `poc-template-foundry.md` (Section: Converting Anti-Invariant CEs)
+- **CI/CD pipeline & CE triage:** `offensive-pipeline.md`
+- **CLI strategies for offensive rules:** `advanced-cli-reference.md` Section 9
 
 ---
 

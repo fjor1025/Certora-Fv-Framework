@@ -1,7 +1,57 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 2.0 (Validation Evidence Gate)
+> **Version:** 3.0 (Offensive Verification + Red Team Hardening)
+
+---
+
+## Framework Mission (v3.0)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           FRAMEWORK MISSION                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   OLD (v2.x):                                                               │
+│   "Prove the code matches the spec."                                        │
+│                                                                              │
+│   NEW (v3.0):                                                               │
+│   "Assume the design is hostile.                                            │
+│    Search for economically profitable counterexamples.                      │
+│    Prove safety only AFTER failing to break it."                            │
+│                                                                              │
+│   This framework operates in two modes:                                     │
+│                                                                              │
+│   | Mode        | Purpose                          | Primary Tools         | │
+│   |-------------|----------------------------------|-----------------------| │
+│   | OFFENSIVE   | Discover profitable attack paths | Anti-invariants,      | │
+│   |             |                                  | satisfy profit > 0,   | │
+│   |             |                                  | multi-step rules      | │
+│   | DEFENSIVE   | Prove discovered attacks fixed   | Standard invariants,  | │
+│   |             |                                  | assert rules          | │
+│                                                                              │
+│   START OFFENSIVE. SWITCH TO DEFENSIVE ONLY AFTER EXHAUSTING ATTACK SURFACE.│
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## What's New in v3.0
+
+**Offensive Verification — Hunt for Profitable Attacks Before Attackers Do:**
+
+The framework previously focused on proving correctness of known designs. v3.0 adds **offensive verification mode** that actively searches for economically impactful exploits.
+
+- **Phase 8: Attack Synthesis** — Runs in parallel with Phase 7 after Phase 6 sanity gate passes
+- **Impact Tracking Ghosts** — First-class primitives for attacker profit, system value, value extraction
+- **Anti-Invariants** — Rules expected to FAIL; counterexamples = exploit parameters
+- **Multi-Step Attack Patterns** — Flash loan, sandwich, staged, and governance attack templates
+- **CE → Exploit Conversion** — Workflow for converting counterexamples to Foundry PoCs
+
+New files:
+- `impact-spec-template.md` — Economic impact tracking infrastructure
+- `multi-step-attacks-template.md` — Flash loan, sandwich, staged attack patterns
 
 ---
 
@@ -53,6 +103,8 @@ See [version-history.md](version-history.md) for the complete changelog.
 |------|---------|-------------|
 | **index.md** | Navigation guide & quick access | ← **START HERE for navigation** |
 | **certora-master-guide.md** | Complete step-by-step instructions | ← **START HERE for verification** |
+| **impact-spec-template.md** | Economic impact tracking & anti-invariants | ← **NEW v3.0** - Offensive verification |
+| **multi-step-attacks-template.md** | Flash loan, sandwich, staged attack patterns | ← **NEW v3.0** - Attack synthesis |
 | **cvl-language-deep-dive.md** | Complete CVL language reference | ← **NEW in v1.5** - CVL mastery |
 | **verification-playbooks.md** | Worked examples (ERC-20, WETH, ERC-721) | ← **NEW in v1.5** - Copy & adapt |
 | **advanced-cli-reference.md** | Performance & advanced flags | ← **NEW in v1.4** - Timeouts/optimization |

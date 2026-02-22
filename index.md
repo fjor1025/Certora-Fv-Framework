@@ -1,6 +1,6 @@
 # Framework Index & Navigation Guide
 
-> **Quick navigation for the Certora Formal Verification Framework v2.0**
+> **Quick navigation for the Certora Formal Verification Framework v3.0**
 
 ---
 
@@ -8,10 +8,11 @@
 
 **If you're new to this framework:**
 
-1. **READ FIRST:** [readme.md](readme.md) - Framework overview and what's new
+1. **READ FIRST:** [readme.md](readme.md) - Framework overview and mission
 2. **METHODOLOGY:** [SPEC AUTHORING (CERTORA).md](spec-authoring-certora.md) - Understand the WHY
 3. **WORKFLOW:** [certora-master-guide.md](certora-master-guide.md) - Complete step-by-step process
 4. **START VERIFICATION:** [certora-quickstart-template.md](certora-quickstart-template.md) - Copy and fill
+5. **OFFENSIVE MODE:** [impact-spec-template.md](impact-spec-template.md) - Hunt for exploits ⭐ NEW v3.0
 
 ---
 
@@ -40,6 +41,13 @@
 | [verification-playbooks.md](verification-playbooks.md) | Copy-paste worked examples (ERC-20, WETH, ERC-721) ⭐ |
 | [best-practices-from-certora.md](best-practices-from-certora.md) | Invariant patterns & harness design |
 | [quick-reference-v1.3.md](quick-reference-v1.3.md) | Quick syntax lookup |
+
+### Offensive Verification (Phase 8) ⭐ NEW v3.0
+| Document | Use When |
+|----------|----------|
+| [impact-spec-template.md](impact-spec-template.md) | Economic impact tracking, anti-invariants |
+| [multi-step-attacks-template.md](multi-step-attacks-template.md) | Flash loan, sandwich, staged attack patterns |
+| [certora-master-guide.md Section 9.5](certora-master-guide.md) | Attack synthesis workflow |
 
 ### Debugging (When Rules Fail)
 | Document | Use When |
@@ -103,6 +111,17 @@
 **Guide:** [certora-master-guide.md](certora-master-guide.md) Section 9  
 **Patterns:** [best-practices-from-certora.md](best-practices-from-certora.md) Sections 3-5  
 **Checklist:** Pre-verification checklist in QUICK_REFERENCE
+
+### Phase 8: Attack Synthesis (Offensive) ⭐ NEW v3.0
+**Primary:** [impact-spec-template.md](impact-spec-template.md)  
+**Attack Patterns:** [multi-step-attacks-template.md](multi-step-attacks-template.md)  
+**Guide:** [certora-master-guide.md](certora-master-guide.md) Section 9.5  
+**Checklist:**
+- [ ] Import impact tracking ghosts
+- [ ] Run `attacker_cannot_profit` rule
+- [ ] Run `system_value_conserved` rule
+- [ ] Run multi-step attack patterns
+- [ ] Convert any CEs to Foundry PoCs
 
 ### Debugging: Counterexamples
 **Primary:** [certora-ce-diagnosis-framework.md](certora-ce-diagnosis-framework.md)  

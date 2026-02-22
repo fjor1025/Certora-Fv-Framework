@@ -700,6 +700,37 @@ Before CVL is written:
 
 ---
 
+# PHASE 8 — ATTACK SYNTHESIS (OFFENSIVE) ← NEW v3.0
+
+> **Enter after Phase 6 sanity gate passes (modeling validated).**  
+> **Can run IN PARALLEL with Phase 7 — they share the same infrastructure.**  
+> **Purpose:** Actively search for profitable attack paths before attackers do.
+
+**Philosophy Shift:**
+```
+─────────────────────────────────────────────────────────────────────
+DEFENSIVE (Phases 0-7): "Prove the code matches the spec."
+OFFENSIVE (Phase 8):    "Search for inputs that profit the attacker."
+─────────────────────────────────────────────────────────────────────
+```
+
+**Workflow:**
+1. **Economic Impact Assessment:** List assets, values, entry/exit points
+2. **Create impact.spec:** Ghost tracking for actor_value, total_system_value
+3. **Write Anti-Invariants:** Rules expected to FAIL if exploit exists
+4. **Run Attack Search:** If anti-invariant fails, CE contains exploit params
+5. **CE→Exploit Conversion:** Convert CE to Foundry PoC, validate on fork
+6. **Multi-Step Attacks:** Flash loan, sandwich, staged, governance patterns
+
+**Key Templates:**
+- `impact-spec-template.md` — Value tracking infrastructure
+- `multi-step-attacks-template.md` — Attack pattern library
+- `poc-template-foundry.md` — CE→PoC conversion
+
+**Reference:** `certora-master-guide.md` Section 9.5 (Phase 8: Attack Synthesis)
+
+---
+
 ## ✅ RESULT OF THIS CONTRACT
 
 A valid spec must end with:

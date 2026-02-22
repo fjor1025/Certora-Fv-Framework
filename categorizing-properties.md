@@ -2,6 +2,8 @@
 
 *(Pre-Spec, Syntax-Free Phase)*
 
+> **Version:** 3.0 (Offensive Verification + Impact-First Framing)
+
 ## Purpose
 
 This phase enumerates **candidate security properties** that may later become invariants or rules.
@@ -13,7 +15,86 @@ At this stage, we **do not** decide:
 
 We are only answering:
 
-> **“If this property were violated, would it cause real harm?”**
+> **"If this property were violated, would it cause real harm?"**
+
+**NEW v3.0 — Impact-First Framing:**
+
+> Don't start with "what should be true."  
+> Start with "what would an attacker want?"  
+> Then forbid that outcome.
+
+---
+
+## 0. ECONOMIC IMPACT CATEGORIES (NEW v3.0)
+
+> **Philosophy:** Hunt for impact, not mistakes. The largest DeFi hacks had no 
+> reentrancy, no arithmetic bugs, no access control issues — just bad economic assumptions.
+
+Before categorizing properties by *type*, first categorize by *economic impact*.
+
+### Impact Taxonomy
+
+| Impact Category | Definition | Example | Severity |
+|-----------------|------------|---------|----------|
+| **Value Extraction** | Attacker gains tokens/ETH from protocol | Flash loan + oracle manipulation | CRITICAL |
+| **Insolvency** | Protocol owes more than it holds | Undercollateralized after liquidation | CRITICAL |
+| **Share Dilution** | Attacker inflates their claim vs others | Mint shares without backing | HIGH |
+| **Debt Socialization** | Losses pushed onto other users | Bad debt spread to pool | HIGH |
+| **Liquidity Freeze** | Users blocked from withdrawing | Permanent fund lock | HIGH |
+| **Governance Capture** | Attacker controls protocol decisions | Flash loan voting | MEDIUM |
+| **Front-Running** | Value extracted via tx ordering | Sandwich attacks | MEDIUM |
+| **Griefing** | Attacker causes cost without profit | DoS without extraction | LOW |
+
+### Impact Property Template (NEW v3.0)
+
+```markdown
+### [ID]. [Short Name]
+
+**Attacker Goal:** [What the attacker wants to achieve]
+**Impact Category:** [Value Extraction / Insolvency / Share Dilution / etc.]
+**Estimated Impact:** [$X loss potential / Percentage of TVL]
+**Irreversible?:** [Yes — funds gone / No — admin can fix]
+
+**Attack Scenario:**
+1. [Step 1]
+2. [Step 2]  
+3. [Profit extracted]
+
+**Plain English Property:**
+> "[What must never happen to prevent this attack]"
+
+**Variables Involved:** [List storage variables and their owners]
+**Multi-Step Required?:** [Yes — needs multi_step_attacks template / No]
+```
+
+### Attacker Objective Checklist (NEW v3.0)
+
+Ask these questions for EVERY function:
+
+| Question | If Yes → Property Needed |
+|----------|--------------------------|
+| Can caller profit from this call? | `attacker_cannot_profit` |
+| Can caller extract more than they deposited? | Value extraction guard |
+| Can caller inflate their share/claim? | Share dilution guard |
+| Can caller push losses onto others? | Debt socialization guard |
+| Can caller block others from withdrawing? | Liquidity freeze guard |
+| Can caller front-run other users? | MEV resistance property |
+| Can caller manipulate price/oracle? | Oracle manipulation guard |
+| Can caller bypass time locks? | Timelock enforcement |
+
+### Example: Impact-First Property Discovery
+
+**Protocol:** Lending Pool  
+**Function:** `withdraw(uint256 amount)`
+
+**Impact Analysis:**
+
+| Attacker Goal | Possible? | Property |
+|---------------|-----------|----------|
+| Withdraw more than deposited | Check | `user can never withdraw more than their proportional share` |
+| Withdraw during insolvency (taking others' funds) | Check | `withdrawal must fail if pool would become insolvent` |
+| Front-run liquidations to extract value | Check | `liquidation profit bounded by protocol parameters` |
+| Grief by causing others' withdrawals to fail | Check | `withdrawal cannot be blocked by malicious actor` |
 
 ---
 ## Integration with Workflow

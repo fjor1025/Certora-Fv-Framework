@@ -1,8 +1,8 @@
 # Certora Specification Workflow — Complete Guide
 
-> **Version:** 2.4 (Validation Evidence Gate)  
+> **Version:** 3.0 (Offensive Verification)  
 > **Purpose:** Step-by-step workflow for writing correct Certora specifications  
-> **Philosophy:** Understand completely → Model correctly → Validate reachability → Write once → Debug systematically
+> **Philosophy:** Understand completely → Model correctly → Validate reachability → Write once → Attack search → Debug systematically
 
 ---
 
@@ -12,7 +12,7 @@ This workflow integrates **five** core documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CERTORA SPECIFICATION WORKFLOW v1.9                       │
+│                    CERTORA SPECIFICATION WORKFLOW v3.0                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────┐    ┌───────────────────────┐    ┌─────────────┐ │
@@ -60,6 +60,7 @@ graph TD
     M -->|No| N[Fix gaps]
     N --> L
     M -->|Yes| O[Phase 7: Write CVL<br/>Use SPEC_FRAMEWORK.md]
+    M -->|Yes| W[Phase 8: Attack Synthesis<br/>Use impact-spec-template.md]
     O --> P[Run Certora Prover]
     P --> Q{Counterexamples?}
     Q -->|Yes| R[Use CE_DIAGNOSIS_FRAMEWORK.md]
@@ -67,7 +68,18 @@ graph TD
     S -->|Yes| T[Fix spec per diagnosis]
     T --> P
     S -->|No - REAL BUG| U[Report to developers]
-    Q -->|No| V[✅ Verification Complete]
+    Q -->|No| V[✅ Defensive Verification Complete]
+    W --> X[Run Anti-Invariants +<br/>Hook Liveness Checks]
+    X --> Y{Anti-invariant fails?}
+    Y -->|Yes| Z[CE→Exploit Conversion<br/>poc-template-foundry.md]
+    Z --> AA[🎯 Exploit Found]
+    Y -->|No| AB[✅ Offensive Verification Complete]
+    V --> AC{Offensive also complete?}
+    AB --> AD{Defensive also complete?}
+    AC -->|Yes| AE[✅ Full Verification Complete]
+    AD -->|Yes| AE
+    AC -->|No| AE
+    AD -->|No| AE
 ```
 
 ---
@@ -756,6 +768,8 @@ If prover returns counterexamples:
 | `advanced-cli-reference.md` | Performance optimization, timeouts ⭐ NEW v1.4 |
 | `best-practices-from-certora.md` | Proven techniques & patterns |
 | `certora-workflow.md` | Following the process |
+| `impact-spec-template.md` | Economic impact tracking, anti-invariants ⭐ NEW v3.0 |
+| `multi-step-attacks-template.md` | Flash loan, sandwich, staged attacks ⭐ NEW v3.0 |
 
 ### File Purpose
 
@@ -781,6 +795,7 @@ If prover returns counterexamples:
 | 5 | Do we need ghosts? | Ghost analysis |
 | 6 | Are we ready? | All sanity checks PASSED |
 | 7 | Write the spec | CVL spec file |
+| 8 | Can we break it? (Offensive) | Anti-invariants, CE→exploits ← **NEW v3.0** |
 
 ---
 

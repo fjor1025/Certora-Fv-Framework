@@ -1,6 +1,6 @@
 # Certora Counterexample Diagnosis Framework
 
-> **Version:** 2.3 (Red Team Hardening + Validation Evidence Gate)  
+> **Version:** 3.0 (Offensive Verification + CE→Exploit Conversion)  
 > **Purpose:** Determine whether a Certora counterexample represents a REAL BUG or a SPEC BUG  
 > **Philosophy:** A counterexample is not evidence until execution AND causal closure are verified.  
 > **Source:** Enhanced with Certora Tutorial Lesson 02 investigation workflow
@@ -16,8 +16,9 @@
 5. [Phase A: Counterexample Classification](#phase-a-counterexample-classification)
 6. [Phase B: Spec Repair](#phase-b-spec-repair-only-if-spec-bug)
 7. [Pattern Reference](#pattern-reference)
-8. [Quick Decision Tree](#quick-decision-tree)
-9. [Non-Negotiable Rules](#non-negotiable-rules)
+8. [CE→Exploit Conversion (Phase 8)](#ceexploit-conversion-phase-8) ← **NEW v3.0**
+9. [Quick Decision Tree](#quick-decision-tree)
+10. [Non-Negotiable Rules](#non-negotiable-rules)
 
 ---
 
@@ -27,7 +28,7 @@ Determine whether the Certora counterexample represents:
 
 | Classification | Meaning | Action |
 |----------------|---------|--------|
-| **REAL BUG** | Reachable on-chain exploit under valid threat model | Report to development team |
+| **REAL BUG** | Reachable on-chain exploit under valid threat model | Report to development team OR Convert to PoC (Phase 8) |
 | **SPEC BUG** | Violation of execution reality or causal closure due to incomplete modeling | Fix the spec |
 | **OUT OF SCOPE** | Requires trusted role misbehavior within their powers | Document and exclude |
 | **SILENT PASS** | Rule passes because revert paths were pruned, not because behavior is correct | Add `@withrevert` | 
@@ -796,6 +797,114 @@ After fix is validated:
 ---
 
 ## Non-Negotiable Rules
+
+---
+
+## CE→Exploit Conversion (Phase 8) ← NEW v3.0
+
+> When an anti-invariant fails or a REAL BUG is found, convert the CE to an executable exploit.
+
+### Why Convert CEs to PoCs?
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│   A counterexample proves an exploit EXISTS.                        │
+│   A Foundry PoC proves the exploit WORKS ON MAINNET.                │
+│                                                                     │
+│   The CE contains:                                                  │
+│   • Function call sequence                                         │
+│   • Input values that trigger the violation                        │
+│   • State values before/after                                      │
+│                                                                     │
+│   Extract these to build executable attack code.                   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+### CE→Foundry Conversion Template
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "forge-std/Test.sol";
+
+/**
+ * @title CE_Exploit_[RuleName]
+ * @notice Converted from Certora CE: [Prover Job URL]
+ * @dev Rule: [rule name that failed]
+ */
+contract CEExploitTest is Test {
+    // Protocol contracts
+    TargetContract target;
+    
+    function setUp() public {
+        // Fork mainnet at relevant block
+        vm.createSelectFork(vm.rpcUrl("mainnet"), BLOCK_NUMBER);
+        
+        // Get deployed contracts
+        target = TargetContract(DEPLOYED_ADDRESS);
+    }
+    
+    function test_exploit_from_CE() public {
+        // ========================================================
+        // Extract from CE: Initial State
+        // ========================================================
+        // attacker_balance_before = [CE value]
+        // target_balance_before = [CE value]
+        
+        address attacker = address(this);
+        uint256 attackerBalanceBefore = token.balanceOf(attacker);
+        
+        // ========================================================
+        // Extract from CE: Attack Sequence
+        // ========================================================
+        // Step 1: [CE function call 1]
+        // Step 2: [CE function call 2]
+        // ...
+        
+        // [Implement extracted call sequence]
+        
+        // ========================================================
+        // Extract from CE: Expected Profit
+        // ========================================================
+        // attacker_balance_after = [CE value]
+        // profit = [CE value]
+        
+        uint256 attackerBalanceAfter = token.balanceOf(attacker);
+        assertGt(attackerBalanceAfter, attackerBalanceBefore, "Exploit should profit");
+        
+        console.log("Profit:", attackerBalanceAfter - attackerBalanceBefore);
+    }
+}
+```
+
+### CE Value Extraction Checklist
+
+| CE Field | Where to Find | Foundry Equivalent |
+|----------|---------------|--------------------|
+| `e.msg.sender` | Call Trace → Entry Point | `vm.prank(address)` |
+| `e.msg.value` | Call Trace → Entry Point | `target.func{value: X}()` |
+| `e.block.timestamp` | Environment | `vm.warp(timestamp)` |
+| Input args | Call Trace → Arguments | Function parameters |
+| Storage before | Call Trace → Pre-state | `setUp()` initialization |
+| Storage after | Call Trace → Post-state | Test assertions |
+| Ghost values | Variables panel | Compute from storage |
+
+### When CE Won't Convert
+
+| Symptom | Cause | Action |
+|---------|-------|--------|
+| CE uses HAVOC values | Missing modeling | Fix spec, not CE |
+| CE state impossible on mainnet | Over-abstraction | Tighten model constraints |
+| CE requires future timestamp | Block manipulation | Use `vm.warp()` or document limitation |
+| CE requires admin action | Trusted role | Document as "requires compromised admin" |
+
+**References:**
+- certora-master-guide.md Section 9.5.8 (CE→Foundry Conversion)
+- poc-template-foundry.md (full PoC template library)
+- impact-spec-template.md (anti-invariant patterns that generate useful CEs)
+
+---
 
 ### The Final Rule
 

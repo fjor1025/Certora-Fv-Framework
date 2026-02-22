@@ -284,7 +284,8 @@ certoraRun config.conf --rule failing_rule --multi_example
 
 ---
 
-**Framework Version:** 1.9 (Red Team Hardening)  
-**Last Updated:** February 16, 2026
+**Framework Version:** 3.0 (Offensive Verification + Red Team Hardening)  
+**Last Updated:** February 22, 2026
 
-**v1.5 Additions:** See `cvl-language-deep-dive.md` for complete CVL reference, `verification-playbooks.md` for production-ready worked examples.
+**v1.5 Additions:** See `cvl-language-deep-dive.md` for complete CVL reference, `verification-playbooks.md` for production-ready worked examples.  
+**v3.0 Additions:** See `impact-spec-template.md` for economic impact tracking, `multi-step-attacks-template.md` for attack patterns.

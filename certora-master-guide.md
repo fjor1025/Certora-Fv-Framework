@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 2.0 ( Red Team Hardening + Validation Evidence Gate)  
+> **Version:** 3.0 (Offensive Verification + Red Team Hardening + Validation Evidence Gate)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---
@@ -17,6 +17,7 @@
 7. [Phase 3.5: Causal Validation](#7-phase-35-causal-validation)
 8. [Phase 4-6: Modeling & Sanity](#8-phase-4-6-modeling--sanity)
 9. [Phase 7: Write CVL](#9-phase-7-write-cvl)
+9.5. [Phase 8: Attack Synthesis (Offensive)](#95-phase-8-attack-synthesis-offensive) ← **NEW v3.0**
 10. [Running & Debugging](#10-running--debugging)
 11. [Templates](#11-templates)
 12. [Quick Reference](#12-quick-reference)
@@ -1953,6 +1954,359 @@ definition MAX_UINT128() returns uint256 = 0xffffffffffffffffffffffffffffffff;
 
 ---
 
+# 9.5. PHASE 8: ATTACK SYNTHESIS (OFFENSIVE)
+
+> **v3.0 — Offensive Verification Mode**  
+> This phase runs AFTER Phase 6 sanity gate passes (modeling validated).  
+> Can run IN PARALLEL with Phase 7 — both share the same ghosts, hooks, and methods block.  
+> Purpose: Actively search for profitable attack paths before attackers do.
+
+## 9.5.1 Philosophy Shift
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       DEFENSIVE vs OFFENSIVE VERIFICATION                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   DEFENSIVE (Phases 0-7):                                                   │
+│   "Prove the code matches the spec."                                        │
+│   - Write properties describing correct behavior                            │
+│   - Run prover to confirm properties hold                                   │
+│   - If PASS → spec satisfied                                                │
+│                                                                              │
+│   OFFENSIVE (Phase 8):                                                      │
+│   "Assume the design is hostile. Discover profitable counterexamples."      │
+│   - Write anti-invariants (rules expected to FAIL)                          │
+│   - Run prover searching for attacks                                        │
+│   - If FAIL → EXPLOIT FOUND (counterexample = attack parameters)            │
+│   - If PASS → No attack path found (or model incomplete)                    │
+│                                                                              │
+│   The order matters: START OFFENSIVE, END DEFENSIVE.                        │
+│   Run Phase 8 in PARALLEL with Phase 7 after Phase 6 passes.               │
+│   Prove safety only AFTER failing to break it.                              │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## 9.5.2 Economic Impact Baseline
+
+For each asset in the protocol, establish:
+
+| Asset | Total Value | Contract(s) Holding | Entry Points | Exit Points |
+|-------|-------------|---------------------|--------------|-------------|
+| ETH | $X | Vault, Escrow | deposit, receive | withdraw, transfer |
+| Token | $Y | Staking, Treasury | stake, deposit | unstake, withdraw, redeem |
+| Shares | N shares | Pool | mint | burn, redeem |
+
+## 9.5.3 Attacker Objective Definition
+
+Define what a successful attack looks like:
+
+```cvl
+// ═══════════════════════════════════════════════════════════════
+// ATTACKER VALUE TRACKING
+// ═══════════════════════════════════════════════════════════════
+
+// Track value controlled by each address
+persistent ghost mapping(address => mathint) actor_value {
+    init_state axiom forall address a. actor_value[a] == 0;
+}
+
+// Track total system value
+ghost mathint total_system_value {
+    init_state axiom total_system_value == 0;
+}
+
+// Hook on balance changes to track value flows
+hook Sstore balanceOf[KEY address account] uint256 newBal (uint256 oldBal) {
+    mathint delta = to_mathint(newBal) - to_mathint(oldBal);
+    actor_value[account] = actor_value[account] + delta;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ATTACKER OBJECTIVE DEFINITIONS
+// ═══════════════════════════════════════════════════════════════
+
+// Attacker goal: extract value without providing equivalent input
+definition profitable_attack(address attacker, mathint before, mathint after) 
+    returns bool = after > before;
+
+// System impact: protocol loses value
+definition harmful_extraction(mathint sys_before, mathint sys_after) 
+    returns bool = sys_after < sys_before;
+```
+
+## 9.5.4 Anti-Invariant Construction
+
+Write rules that **SHOULD FAIL**. If they pass, no attack found. If they fail, you've discovered an exploit:
+
+```cvl
+/**
+ * @title Attacker Profit Search
+ * @notice Searches for any function that allows caller to profit
+ * @dev EXPECTED TO FAIL if exploit exists
+ * 
+ * If this rule is VIOLATED:
+ *   - The counterexample contains the attack parameters
+ *   - The function called is the attack vector
+ *   - The profit amount is the exploit impact
+ */
+rule attacker_cannot_profit(env e, method f) 
+    filtered { f -> !f.isView && !f.isFallback }
+{
+    require e.msg.sender != 0;
+    require e.msg.value == 0;  // Adjust for payable functions
+    
+    address attacker = e.msg.sender;
+    mathint value_before = actor_value[attacker];
+    
+    calldataarg args;
+    f(e, args);
+    
+    mathint value_after = actor_value[attacker];
+    
+    // THIS SHOULD FAIL IF THERE'S A PROFIT PATH
+    assert !profitable_attack(attacker, value_before, value_after), 
+        "EXPLOIT FOUND: Caller profited from this call";
+}
+
+/**
+ * @title System Value Conservation
+ * @notice Verifies protocol value doesn't leak
+ * @dev EXPECTED TO FAIL if value can be extracted
+ */
+rule system_value_conserved(env e, method f)
+    filtered { f -> !f.isView && !f.isFallback }
+{
+    require e.msg.sender != 0;
+    
+    mathint system_before = total_system_value;
+    
+    calldataarg args;
+    f@withrevert(e, args);
+    
+    mathint system_after = total_system_value;
+    
+    assert system_after == system_before, 
+        "EXPLOIT FOUND: System value changed unexpectedly";
+}
+```
+
+## 9.5.5 Attack Search Process
+
+### Step 1: Run Anti-Invariants
+
+```bash
+# Run profit search across all state-changing functions
+certoraRun config.conf --rule attacker_cannot_profit
+
+# Run system value conservation check
+certoraRun config.conf --rule system_value_conserved
+```
+
+### Step 2: Interpret Results
+
+| Result | Meaning | Action |
+|--------|---------|--------|
+| **VERIFIED** | No profit path found for this rule | Good — or model incomplete |
+| **VIOLATED** | Attack path found | ⚠️ EXPLOIT — examine CE immediately |
+| **TIMEOUT** | Search space too large | Add constraints, simplify model |
+
+### Step 3: Use `satisfy` for Active Attack Search
+
+```cvl
+/**
+ * @title Find Profitable Inputs
+ * @notice Actively searches for inputs that create profit
+ * @dev If this VERIFIES, the witness contains exploit parameters
+ */
+rule find_profitable_inputs(env e, method f)
+    filtered { f -> !f.isView && !f.isFallback }
+{
+    address attacker = e.msg.sender;
+    mathint value_before = actor_value[attacker];
+    
+    calldataarg args;
+    f@withrevert(e, args);
+    
+    mathint value_after = actor_value[attacker];
+    mathint profit = value_after - value_before;
+    
+    // FIND inputs that create profit > threshold
+    // If VERIFIED, the witness contains attack parameters
+    satisfy profit > 1000000;  // Profit > 1M units
+}
+```
+
+## 9.5.6 Multi-Step Attack Patterns
+
+Real exploits are rarely single-transaction. Use these patterns:
+
+### Flash Loan Pattern
+
+```cvl
+rule flash_loan_attack_search(env e1, env e2) {
+    address attacker = e1.msg.sender;
+    require e2.msg.sender == attacker;
+    require e1.block.number == e2.block.number;  // Same block (atomic)
+    
+    mathint initial = actor_value[attacker];
+    
+    // Step 1: Borrow + manipulate
+    calldataarg args1;
+    method f1;
+    f1(e1, args1);
+    
+    // Step 2: Extract + repay
+    calldataarg args2;
+    method f2;
+    f2(e2, args2);
+    
+    mathint final_val = actor_value[attacker];
+    
+    // Should not profit from flash loan sequence
+    assert final_val <= initial,
+        "FLASH LOAN EXPLOIT: Attacker profited";
+}
+```
+
+### Sandwich Pattern
+
+```cvl
+rule sandwich_attack_search(env e_front, env e_victim, env e_back) {
+    address attacker = e_front.msg.sender;
+    address victim = e_victim.msg.sender;
+    
+    require e_back.msg.sender == attacker;
+    require attacker != victim;
+    
+    // Same block
+    require e_front.block.number == e_victim.block.number;
+    require e_victim.block.number == e_back.block.number;
+    
+    mathint attacker_initial = actor_value[attacker];
+    mathint victim_initial = actor_value[victim];
+    
+    // Frontrun → Victim → Backrun
+    method f; calldataarg args1; calldataarg args2; calldataarg args3;
+    f(e_front, args1);
+    f(e_victim, args2);
+    f(e_back, args3);
+    
+    mathint attacker_final = actor_value[attacker];
+    mathint victim_final = actor_value[victim];
+    
+    mathint attacker_profit = attacker_final - attacker_initial;
+    
+    assert attacker_profit <= 0,
+        "SANDWICH EXPLOIT: Attacker profited from ordering";
+}
+```
+
+## 9.5.7 Counterexample → Exploit Conversion
+
+When an anti-invariant fails, convert the CE to a Foundry PoC:
+
+### Extraction Template
+
+```markdown
+## Exploit Report: [Rule Name]
+
+**Date:** [YYYY-MM-DD]
+**Rule:** `attacker_cannot_profit`
+**Severity:** [CRITICAL/HIGH/MEDIUM]
+
+### Attack Parameters (from CE)
+
+| Parameter | Value |
+|-----------|-------|
+| Function | `withdraw(uint256)` |
+| Caller | `0xAttacker` |
+| Argument | `999999999999999999` |
+| Pre-state balance | `100` |
+| Post-state balance | `1000000000000000099` |
+| Profit | `999999999999999999` |
+
+### Root Cause
+
+[Explain why this is possible — e.g., missing check, arithmetic error]
+
+### Foundry PoC
+
+```solidity
+function test_exploit() public {
+    // Setup: attacker has initial balance
+    deal(address(token), attacker, 100);
+    
+    // Attack: call function with CE parameters
+    vm.prank(attacker);
+    vault.withdraw(999999999999999999);
+    
+    // Verify profit
+    assertGt(token.balanceOf(attacker), 100);
+}
+```
+```
+
+## 9.5.8 Integration with Defensive Verification
+
+Offensive verification (Phase 8) integrates with defensive verification (Phases 0-7):
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         COMPLETE VERIFICATION WORKFLOW                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   Phases 0-6: Analysis & Modeling                                           │
+│   ├── Map execution surface                                                 │
+│   ├── Discover properties                                                   │
+│   └── Validate causal closure                                               │
+│                                                                              │
+│   ┌────────────────────────────── PARALLEL ─────────────────────────────┐   │
+│   │                                                                          │   │
+│   │  Phase 7: Defensive Verification          Phase 8: Offensive Verification│   │
+│   │  ├── Write correctness invariants      ├── Import impact ghosts             │   │
+│   │  ├── Prove properties hold             ├── Write anti-invariants            │   │
+│   │  └── Debug any violations              ├── Run profit search rules          │   │
+│   │                                        ├── Run multi-step attacks           │   │
+│   │                                        ├── Convert CEs to PoCs              │   │
+│   │                                        └── Fix exploits & re-verify         │   │
+│   │                                                                          │   │
+│   └───────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+│   Complete: Both defensive AND offensive verification pass                  │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## 9.5.9 Phase 8 Checklist
+
+Before declaring verification complete:
+
+- [ ] Imported impact tracking ghosts from `impact-spec-template.md` (ALL must be `persistent`)
+- [ ] Adapted value flow hooks to protocol's storage layout
+- [ ] Completed Value Flow Completeness Checklist (all assets covered)
+- [ ] Ran `impact_hook_liveness` for ALL state-changing functions ← **NEW**
+- [ ] Ran `system_value_hook_liveness` for value-moving functions ← **NEW**
+- [ ] Fixed any hooks where liveness `satisfy` was VIOLATED ← **NEW**
+- [ ] Ran `attacker_cannot_profit` across all functions
+- [ ] Ran `system_value_conserved` 
+- [ ] Ran `find_profitable_inputs` satisfy rule
+- [ ] Ran `find_max_profit_threshold` with iterative tightening ← **NEW**
+- [ ] Applied flash loan pattern (if protocol holds value)
+- [ ] Applied sandwich pattern (if protocol has price-sensitive ops)
+- [ ] Applied cross-contract pattern (if protocol interacts with external contracts) ← **NEW**
+- [ ] Converted any CEs to Foundry PoCs
+- [ ] All PoCs reproduce the exploit
+- [ ] All exploits fixed and re-verified
+- [ ] Re-ran defensive verification after fixes
+
+**Reference:** 
+- [impact-spec-template.md](impact-spec-template.md) — Complete economic impact tracking infrastructure
+- [multi-step-attacks-template.md](multi-step-attacks-template.md) — Flash loan, sandwich, staged attack patterns
+
+---
+
 # 12. QUICK REFERENCE
 
 ## 12.1 Command Cheat Sheet
@@ -2050,6 +2404,20 @@ Before considering verification complete:
 □ Revert Coverage: Every state-changing function has @withrevert verification  ← NEW v1.6
 □ Liveness Assertions: Use <=> (biconditional) not just => (implication)    ← NEW v1.6
 □ No Silent Revert Pruning: No rule relies on default revert-ignore behavior ← NEW v1.6
+
+□ ════════════════════════════════════════════════════════════════════════════
+□ PHASE 8: OFFENSIVE VERIFICATION (NEW v3.0) — Runs in parallel with Phase 7
+□ ════════════════════════════════════════════════════════════════════════════
+□ Phase 8: Economic impact baseline documented (assets, values, entry/exit)  ← NEW v3.0
+□ Phase 8: Impact ghosts created (actor_value, total_system_value) — ALL persistent  ← UPDATED
+□ Phase 8: Value Flow Completeness Checklist completed                       ← NEW
+□ Phase 8: Hook liveness checked (impact_hook_liveness for all functions)    ← NEW
+□ Phase 8: Anti-invariants written (rules expected to FAIL)                  ← NEW v3.0
+□ Phase 8: Profit search rules executed (satisfy-based attack search)        ← NEW v3.0
+□ Phase 8: Iterative threshold protocol run (find_max_profit_threshold)      ← NEW
+□ Phase 8: Multi-step attacks tested (flash loan, sandwich, staged, cross-contract) ← UPDATED
+□ Phase 8: Any failing anti-invariant → CE converted to Foundry PoC          ← NEW v3.0
+□ Phase 8: All anti-invariants PASS (no profitable attack found)             ← NEW v3.0
 ```
 
 ---
@@ -2090,7 +2458,7 @@ Please help me follow the certora-master-guide.md workflow:
 
 The framework documents are already in my project root.
 
-**Key references to use throughout (v1.9):**
+**Key references to use throughout (v3.0):**
 - cvl-language-deep-dive.md — Complete CVL language reference (types, ghosts, hooks, operators, builtin rules §19.1)
 - verification-playbooks.md — Worked examples for ERC-20, WETH, ERC-721 + Phase 0 builtin scan
 - best-practices-from-certora.md — Sections 7-9 (vacuity defense, requireInvariant lifecycle, edge cases)
@@ -2098,6 +2466,9 @@ The framework documents are already in my project root.
 - certora-spec-framework.md — Revert/failure-path patterns (Pattern B: @withrevert PREFERRED)
 - certora-spec-framework.md — Custom summary accuracy protocol & invariant DAG protocol  ← NEW v1.9
 - categorizing-properties.md — MUST REVERT WHEN checklist for property discovery
+- impact-spec-template.md — Economic impact tracking (persistent ghosts, anti-invariants, hook liveness)  ← NEW v3.0
+- multi-step-attacks-template.md — Flash loan, sandwich, staged, cross-contract attack patterns  ← NEW v3.0
+- categorizing-properties.md §0 — Economic Impact Categories & Attacker Objective Checklist  ← NEW v3.0
 ```
 
 ## 13.2 For Continuing Phase 0 / Phase -1
@@ -2131,6 +2502,8 @@ Continue Certora verification for [ContractName]:
 **Current Phase:** 2 (Property Discovery)
 
 Based on the Phase 0/-1 analysis, help me discover security properties using categorizing-properties.md:
+- **Economic Impact Categories** — categorizing-properties.md §0 (Value Extraction, Insolvency,  ← NEW v3.0
+  Share Dilution, Debt Socialization, Liquidity Freeze, Governance Capture, Front-Running, Griefing)
 - Valid States (range constraints)
 - State Transitions (function effects)
 - System-Level (aggregates, sums)
@@ -2138,6 +2511,7 @@ Based on the Phase 0/-1 analysis, help me discover security properties using cat
 - **Revert Behavior (MUST REVERT WHEN)**  ← NEW v1.6
 
 **Apply these techniques:**
+- **Attacker Objective Checklist** — categorizing-properties.md §0 (what can an attacker profit from?)  ← NEW v3.0
 - Property prioritization (HIGH/MEDIUM/LOW) - categorizing-properties.md Section 7
 - Dual mindset (Should Always / Should Never) - Section 5
 - Test mining (extract from existing tests) - Section 6
@@ -2183,10 +2557,16 @@ Please help me discover properties using the DUAL MINDSET approach:
      - MUST REVERT WHEN: "If X, the call must revert"  ← NEW v1.6
 
 **3. Categorize all properties:**
-   - Valid States / State Transitions / System-Level / Threat-Driven / Revert Behavior
+   - Economic Impact / Valid States / State Transitions / System-Level / Threat-Driven / Revert Behavior
+
+**4. Economic Impact Discovery (v3.0):**
+   - For each asset: Can an attacker extract value? Cause insolvency? Dilute shares?
+   - Use categorizing-properties.md §0 Attacker Objective Checklist
+   - Document findings in candidate_properties.md under new "Impact" category
 
 Reference:
 - categorizing-properties.md sections 5 and 6 (Dual Checklist & Test Mining)
+- categorizing-properties.md §0 Economic Impact Categories & Attacker Objective Checklist  ← NEW v3.0
 - categorizing-properties.md MUST REVERT WHEN checklist (6 questions)  ← NEW v1.6
 ```
 
@@ -2321,6 +2701,8 @@ Please help me create the real spec:
 10. **For each custom summary, add accuracy annotation (Exact/Over/Under)**  ← NEW v1.9
 11. Create certora/specs/{Contract}.spec
 12. Create certora/confs/{Contract}.conf
+13. **Begin Phase 8 (Attack Synthesis) in parallel** — set up impact ghosts  ← NEW v3.0
+    and anti-invariants in a separate impact spec file while defensive spec runs
 
 Reference:
 - certora-master-guide.md section 9.0 (Transition from Validation to Real Spec)
@@ -2400,10 +2782,15 @@ Please help me diagnose using the systematic approach:
    - Does the rule use @norevert (default) and silently skip failure cases?
    - Would adding @withrevert reveal a hidden revert path?
    - Is an implication (=>) masking a missing biconditional (<=>)?
+6. **If this is an anti-invariant CE (Phase 8), convert to exploit:**  ← NEW v3.0
+   - Extract function, caller, args, state from CE
+   - Use poc-template-foundry.md to generate Foundry PoC
+   - Validate on mainnet fork
 
 Reference:
 - certora-ce-diagnosis-framework.md (comprehensive 5-phase diagnosis + ghost havocing guide)
 - certora-ce-diagnosis-framework.md SILENT PASS classification  ← NEW v1.6
+- certora-ce-diagnosis-framework.md CE→Exploit Conversion section  ← NEW v3.0
 - best-practices-from-certora.md Section 2 (5-step investigation workflow from Tutorial Lesson 02)
 - cvl-language-deep-dive.md Section 4 (vacuous truth — is the rule trivially passing?)
 - cvl-language-deep-dive.md Section 8 (ghost havocing — when/why ghosts get arbitrary values)
@@ -2428,7 +2815,83 @@ Please help me resolve using loop handling strategies:
 Reference: best-practices-from-certora.md Section 5 (Loop Handling from Tutorial Lesson 11)
 ```
 
-## 13.7 Essential Information to Provide
+## 13.7 For Phase 8 (Attack Synthesis / Offensive Verification) ← NEW v3.0
+
+```markdown
+Phase 6 sanity gate PASSED for [ContractName]. I'm starting Phase 8 offensive
+verification IN PARALLEL with Phase 7 defensive spec writing.
+
+**Target:** [path/to/ContractName.sol]
+**Phase 6 Sanity Gate:** PASSED ✅
+**Phase:** 8 (Attack Synthesis) — runs parallel with Phase 7
+**Protocol Type:** [AMM / Lending / Staking / Governance / Vault / Other]
+**Assets at Risk:** [ETH, ERC-20 tokens, shares, LP tokens, etc.]
+**External Integrations:** [oracles, other protocols, flash loan providers, etc.]
+
+Please help me set up Phase 8 offensive verification:
+
+1. **Economic Impact Assessment:**
+   - What assets are at risk? (ETH, tokens, shares, etc.)
+   - What is the total value at stake?
+   - What would a successful exploit look like?
+   - Complete the Phase 0 Asset Flow Trace cross-reference
+
+2. **Create Attack Search Spec (impact.spec):**
+   - Copy ghosts from impact-spec-template.md
+   - ⚠️ ALL ghosts MUST be `persistent` (survives HAVOC from external calls)
+   - Set up `actor_value` persistent ghost to track value per address
+   - Set up `total_system_value` persistent ghost for protocol health
+   - Hook on ALL value-bearing state changes (not just `_balances`)
+   - Complete the **Value Flow Completeness Checklist** — cross-reference every
+     asset from Phase 0 against hooks (ERC-20, ETH, shares, LP, rebasing, fees)
+
+3. **Run Hook Liveness Checks FIRST:**
+   - Run `impact_hook_liveness` for every state-changing function
+   - Run `system_value_hook_liveness` for value-moving functions
+   - If any `satisfy` is VIOLATED → hooks are blind to that function's effects
+   - Fix hooks BEFORE trusting any anti-invariant result
+   - A passing anti-invariant with dead hooks proves NOTHING
+
+4. **Write Anti-Invariants:**
+   - `attacker_cannot_profit` — fails if caller can profit
+   - `system_value_conserved` — fails if value leaks
+   - `zero_sum_transfers` — fails if value created from nothing
+   - Use `satisfy` with `find_profitable_inputs` for active attack search
+
+5. **Run Iterative Threshold Protocol (find maximum exploit size):**
+   - `satisfy profit > 0` → SAT? Continue
+   - `satisfy profit > 10^6` → SAT? Continue
+   - `satisfy profit > 10^9` → SAT? Continue
+   - `satisfy profit > 10^12` → UNSAT → Max exploit ≈ 10^9–10^12 range
+   - Certora's SMT solver finds ANY witness, not the maximum — this iterative
+     tightening protocol provides the workaround
+
+6. **Multi-Step Attack Patterns (choose by protocol type):**
+   - Flash loan attack search (if protocol holds value)
+   - Sandwich attack search (if protocol has price-sensitive operations)
+   - Staged attack accumulation (if protocol has time-dependent state)
+   - Governance attack patterns (if protocol has governance)
+   - **Cross-contract attack search** (if protocol interacts with external contracts)
+   - Use `filtered` clauses for multi-step rules to avoid TIMEOUT
+   - See combinatorial explosion guidance in multi-step-attacks-template.md
+
+7. **CE → Exploit Conversion:**
+   - If anti-invariant fails, extract attack parameters from CE
+   - Convert to Foundry PoC using poc-template-foundry.md
+   - Validate exploit on mainnet fork
+   - If exploit confirmed → fix code → re-run both defensive AND offensive specs
+
+References:
+- certora-master-guide.md Section 9.5 (Phase 8: Attack Synthesis)
+- impact-spec-template.md (value tracking infrastructure + hook liveness + completeness checklist)
+- multi-step-attacks-template.md (attack pattern library + cross-contract + depth guidance)
+- poc-template-foundry.md (CE → executable PoC)
+- categorizing-properties.md §0 (Economic Impact Categories)
+```
+
+---
+
+## 13.8 Essential Information to Provide
 
 When starting any verification conversation, always include:
 
@@ -2438,12 +2901,14 @@ When starting any verification conversation, always include:
 | **Target contract** | `contracts/core/Vault.sol` |
 | **Contract name** | `Vault` (as declared in Solidity) |
 | **Dependencies** | `imports Token.sol, Oracle.sol, Utils.sol` |
-| **Current phase** | Phase 0 / -1 / 2 / 2.5 / 3.5 / 7 |
+| **Current phase** | Phase 0 / -1 / 2 / 2.5 / 3.5 / 7 / 7+8 parallel / 8 (Offensive) |
 | **Token standard** | ERC-20 / ERC-721 / WETH / None |
+| **Protocol type** | AMM / Lending / Staking / Governance / Vault / Other ← NEW v3.0 |
 | **Prover version** | v8.8.0+ / older ← NEW v1.7 |
 | **unchecked{}/assembly?** | Yes / No ← NEW v1.7 |
 | **Invariant dependencies?** | Complex chain / Simple / None ← NEW v1.9 |
 | **Custom summaries?** | Yes / No ← NEW v1.9 |
+| **External integrations?** | Oracles / Flash loans / Other protocols / None ← NEW v3.0 |
 
 **Optional but helpful:**
 - Known external integrations (ERC20, Chainlink, Uniswap, etc.)
@@ -2455,6 +2920,9 @@ When starting any verification conversation, always include:
 - Type-narrowing casts like `uint128(x)` (triggers builtin safeCasting scan)  ← NEW v1.7
 - Whether invariants form complex dependency chains (triggers DAG protocol)  ← NEW v1.9
 - Whether custom function summaries are used (triggers accuracy validation)  ← NEW v1.9
+- Protocol type (AMM/Lending/Staking/Governance/Vault) for Phase 8 pattern selection  ← NEW v3.0
+- External protocol integrations (oracles, flash loan providers, other DeFi)  ← NEW v3.0
+- All asset types held by the protocol (for Value Flow Completeness Checklist)  ← NEW v3.0
 
 ---
 

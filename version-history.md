@@ -1,7 +1,146 @@
 # Framework Version History
 
-> **Current Version:** 2.0 (Validation Evidence Gate)  
+> **Current Version:** 3.0 (Offensive Verification + Red Team Hardening)  
 > **Last Updated:** February 2026
+
+---
+
+## Version 3.0 (Offensive Verification) - February 2026
+
+### Rationale
+
+The framework excelled at proving correctness of known designs but was **structurally misaligned** for discovering economic exploits. A Principal Engineer red-team review identified that:
+
+1. **No first-class concept of attacker profit** — Zero ghost variables tracking economic position
+2. **`satisfy` used for reachability, not attack synthesis** — Never "maximize harm"
+3. **Single-transaction mental model** — No multi-step attack patterns
+4. **Counterexamples not executable** — No CE → exploit artifact generation
+5. **Assertion-centric worldview** — "Prove correct" instead of "prove unexploitable"
+
+v3.0 adds **offensive verification mode** that actively searches for economically impactful exploits before attackers do.
+
+### Philosophy Shift
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           FRAMEWORK MISSION                              │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   OLD (v2.x):                                                            │
+│   "Prove the code matches the spec."                                     │
+│                                                                          │
+│   NEW (v3.0):                                                            │
+│   "Assume the design is hostile.                                         │
+│    Search for economically profitable counterexamples.                   │
+│    Prove safety only AFTER failing to break it."                         │
+│                                                                          │
+│   START OFFENSIVE. SWITCH TO DEFENSIVE ONLY AFTER EXHAUSTING ATTACKS.   │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| **impact-spec-template.md** | Economic impact tracking infrastructure — attacker value ghosts, system value tracking, value extraction counters, anti-invariants, satisfy-based attack search |
+| **multi-step-attacks-template.md** | Multi-transaction attack patterns — flash loan, sandwich, staged, governance, reentrancy attack templates |
+
+### New Section: 9.5 Phase 8: Attack Synthesis
+
+Runs in parallel with Phase 7 (after Phase 6 sanity gate passes):
+
+| Subsection | Content |
+|-----------|---------|
+| **9.5.1 Philosophy Shift** | Defensive vs Offensive verification comparison |
+| **9.5.2 Economic Impact Baseline** | Asset enumeration template |
+| **9.5.3 Attacker Objective Definition** | CVL patterns for profit tracking |
+| **9.5.4 Anti-Invariant Construction** | Rules expected to FAIL (CE = exploit) |
+| **9.5.5 Attack Search Process** | Step-by-step guide with `satisfy` |
+| **9.5.6 Multi-Step Attack Patterns** | Flash loan, sandwich CVL templates |
+| **9.5.7 CE → Exploit Conversion** | Foundry PoC generation workflow |
+| **9.5.8 Integration** | How offensive + defensive work together |
+| **9.5.9 Phase 8 Checklist** | 11-item completion checklist |
+
+### New CVL Primitives
+
+**Impact Category Ghosts:**
+```cvl
+persistent ghost mapping(address => mathint) actor_value;  // Per-actor value
+persistent ghost mathint total_system_value;                          // Protocol holdings
+persistent ghost mathint total_value_extracted;                       // Extraction counter
+persistent ghost bool insolvent_state;                                // Insolvency flag
+persistent ghost mathint dilution_factor;                             // Share dilution
+persistent ghost mapping(address => mathint) socialized_loss;         // Debt spreading
+persistent ghost bool liquidity_frozen;                               // Withdrawal blocked
+persistent ghost bool irreversible_loss_occurred;                     // Permanent extraction
+```
+
+**Anti-Invariant Patterns:**
+```cvl
+// Rule expected to FAIL — counterexample = exploit parameters
+rule attacker_cannot_profit(env e, method f) {
+    mathint before = actor_value[e.msg.sender];
+    f(e, args);
+    mathint after = actor_value[e.msg.sender];
+    assert after <= before, "EXPLOIT: Caller profited";
+}
+```
+
+**Satisfy-Based Attack Search:**
+```cvl
+rule find_profitable_inputs(env e, method f) {
+    mathint profit = actor_value[e.msg.sender]_after - actor_value[e.msg.sender]_before;
+    satisfy profit > 0;  // Find exploit parameters
+}
+```
+
+### Changes by Document
+
+| Document | Changes |
+|----------|---------|
+| `certora-master-guide.md` | Version 3.0. New §9.5 (Phase 8: Attack Synthesis with 9 subsections). New §13.7 (Phase 8 Chat Prompt). Updated TOC to include Phase 8. Updated §13.8 to include Phase 8 in current phase list. |
+| `certora-spec-framework.md` | Version 3.0. New Impact Category Ghosts section. New Impact Tracking Hooks section. New Impact Definitions section. New Anti-Invariant Templates section. New Impact-Driven Invariants section. |
+| `certora-workflow.md` | Version 3.0. Updated workflow diagram with Phase 8 nodes. Added Phase 8 to phase summary table. Added impact/attack templates to document reference table. |
+| `certora-ce-diagnosis-framework.md` | Version 3.0. New CE→Exploit Conversion section. Updated classification table (REAL BUG → Convert to PoC). New CE→Foundry conversion template. |
+| `spec-authoring-certora.md` | Added Phase 8 (Attack Synthesis) section after Phase 7. Offensive verification philosophy and workflow. |
+| `categorizing-properties.md` | Version 3.0. New §0 Economic Impact Categories. Impact taxonomy table. Impact property template. Attacker objective checklist. |
+| `readme.md` | Version 3.0. New Framework Mission section. New What's New in v3.0 section. Updated Framework Files table with new documents. |
+| `index.md` | Version 3.0. New Offensive Verification (Phase 8) section. Updated Core Learning Path with impact template. |
+| `version-history.md` | This entry. |
+
+### Migration from v2.0
+
+1. **Add impact-spec-template.md** to your verification workflow
+2. **Add multi-step-attacks-template.md** for DeFi protocols
+3. **After Phase 6 sanity gate passes**, run Phase 8 offensive verification IN PARALLEL with Phase 7
+4. **Run anti-invariants** expecting them to fail
+5. **Run hook liveness checks** before trusting anti-invariant results
+6. **Convert any CEs** to Foundry PoCs for validation
+
+### Key Concept: Offensive-First Verification (v3.0)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    OFFENSIVE-FIRST VERIFICATION                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│   Phases 0-6: Analysis & Modeling                                        │
+│      Map execution surface → Discover properties → Validate closure      │
+│                                                                          │
+│   After Phase 6 sanity gate passes, run IN PARALLEL:                     │
+│                                                                          │
+│   DEFENSIVE (Phase 7):              OFFENSIVE (Phase 8):                 │
+│   Write correctness invariants      Write anti-invariants (expect FAIL)  │
+│   Prove properties hold             Run profit search + liveness checks  │
+│   Debug violations                  Run multi-step attack patterns       │
+│                                     If FAIL → EXPLOIT FOUND              │
+│                                     If PASS → No attack (or incomplete)  │
+│                                                                          │
+│   COMPLETE: Both defensive AND offensive verification pass               │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 

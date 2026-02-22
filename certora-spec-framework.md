@@ -1,10 +1,12 @@
 # Certora Specification Framework — Execution-Closed & Causally-Closed Universe
 
-> **Version:** 2.2 (Validation Evidence Gate)  
+> **Version:** 3.0 (Offensive Verification + Validation Evidence Gate)  
 > **CVL Syntax Reference:** CVL 2.0 (Certora Prover)  
 > **Philosophy:** You are not verifying a contract. You are verifying a *closed EVM universe* with that contract inside it.
 
-**v1.5 Companion Documents:**
+**v3.0 Companion Documents:**
+- **impact-spec-template.md** — Economic impact tracking & anti-invariants ⭐ NEW v3.0
+- **multi-step-attacks-template.md** — Flash loan, sandwich, staged attack patterns ⭐ NEW v3.0
 - **cvl-language-deep-dive.md** — Complete CVL language reference (types, ghosts, hooks, invariants) ⭐ NEW v1.5
 - **verification-playbooks.md** — Production-ready worked examples (ERC-20, WETH, ERC-721) ⭐ NEW v1.5
 - **best-practices-from-certora.md** — Official tutorial techniques for invariants, CE investigation, loop handling
@@ -530,6 +532,259 @@ ghost mathint holderCount {
 ghost uint256 arrayLengthMirror {
     init_state axiom arrayLengthMirror == 0;
 }
+```
+
+### Impact Category Ghosts (NEW v3.0 — Offensive Verification)
+
+> **Purpose:** First-class primitives for economic impact tracking and attack discovery.
+> **Reference:** See `impact-spec-template.md` for complete infrastructure.
+
+```cvl
+// ═══════════════════════════════════════════════════════════════
+// IMPACT CATEGORY GHOSTS — Required for offensive verification
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @title Per-Actor Value Tracking
+ * @notice Tracks total value controlled by each address
+ * @dev Essential for detecting attacker profit
+ */
+persistent ghost mapping(address => mathint) actor_value {
+    init_state axiom forall address a. actor_value[a] == 0;
+}
+
+/**
+ * @title Total System Value
+ * @notice Sum of all value held by protocol contracts
+ * @dev For detecting value leakage
+ */
+ghost mathint total_system_value {
+    init_state axiom total_system_value == 0;
+}
+
+/**
+ * @title Value Extraction Counter
+ * @notice Cumulative value extracted from protocol
+ * @dev Only increases; represents potential attacker profit
+ */
+ghost mathint total_value_extracted {
+    init_state axiom total_value_extracted == 0;
+}
+
+/**
+ * @title Insolvency Flag
+ * @notice True if protocol obligations exceed holdings
+ */
+ghost bool insolvent_state {
+    init_state axiom insolvent_state == false;
+}
+
+/**
+ * @title Share Dilution Factor
+ * @notice Tracks unexpected inflation of claims/shares
+ * @dev Non-zero indicates dilution attack possible
+ */
+ghost mathint dilution_factor {
+    init_state axiom dilution_factor == 0;
+}
+
+/**
+ * @title Debt Socialization Tracking
+ * @notice Tracks losses pushed onto innocent users
+ */
+ghost mapping(address => mathint) socialized_loss {
+    init_state axiom forall address a. socialized_loss[a] == 0;
+}
+
+/**
+ * @title Liquidity Freeze Flag
+ * @notice True if users blocked from withdrawing
+ */
+ghost bool liquidity_frozen {
+    init_state axiom liquidity_frozen == false;
+}
+
+/**
+ * @title Irreversible Loss Flag
+ * @notice True if extraction cannot be recovered
+ */
+ghost bool irreversible_loss_occurred {
+    init_state axiom irreversible_loss_occurred == false;
+}
+```
+
+### Impact Tracking Hooks (NEW v3.0)
+
+```cvl
+// ═══════════════════════════════════════════════════════════════
+// IMPACT TRACKING HOOKS
+// Adapt to your protocol's storage layout
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @title Balance Change Hook for Actor Value
+ * @notice Updates actor_value when balances change
+ * @dev Change `balances` to match your storage variable
+ */
+hook Sstore balances[KEY address account] uint256 newBal (uint256 oldBal) {
+    mathint delta = to_mathint(newBal) - to_mathint(oldBal);
+    actor_value[account] = actor_value[account] + delta;
+}
+
+/**
+ * @title ETH Transfer Hook
+ * @notice Tracks native ETH flows between addresses
+ */
+hook CALL(uint g, address target, uint value, uint argsOffset, uint argsLength, uint retOffset, uint retLength) uint retval {
+    if (value > 0) {
+        actor_value[currentContract] = actor_value[currentContract] - to_mathint(value);
+        actor_value[target] = actor_value[target] + to_mathint(value);
+    }
+}
+```
+
+### Impact Definitions (NEW v3.0)
+
+```cvl
+// ═══════════════════════════════════════════════════════════════
+// IMPACT DEFINITIONS
+// Helper definitions for attack detection rules
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @title Profitable Attack Detection
+ * @notice Returns true if actor gained value
+ */
+definition profitable_attack(address attacker, mathint before, mathint after) 
+    returns bool = after > before;
+
+/**
+ * @title Harmful Extraction Detection
+ * @notice Returns true if system lost value
+ */
+definition harmful_extraction(mathint sys_before, mathint sys_after) 
+    returns bool = sys_after < sys_before;
+
+/**
+ * @title Position Delta
+ * @notice Calculates change in actor's position
+ */
+definition position_delta(address actor, mathint before, mathint after) 
+    returns mathint = after - before;
+```
+
+### Anti-Invariant Templates (NEW v3.0)
+
+> **Philosophy:** These rules are EXPECTED TO FAIL. A failure = exploit found.
+> If they pass, no attack path was discovered (or model is incomplete).
+
+```cvl
+// ═══════════════════════════════════════════════════════════════
+// ANTI-INVARIANTS — Rules expected to FAIL
+// Counterexample = exploit parameters
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @title Attacker Profit Search
+ * @notice Searches for profitable function calls
+ * @dev EXPECTED TO FAIL if exploit exists
+ */
+rule attacker_cannot_profit(env e, method f) 
+    filtered { f -> !f.isView && !f.isFallback }
+{
+    require e.msg.sender != 0;
+    require e.msg.value == 0;  // Adjust for payable
+    
+    address attacker = e.msg.sender;
+    mathint value_before = actor_value[attacker];
+    
+    calldataarg args;
+    f(e, args);
+    
+    mathint value_after = actor_value[attacker];
+    
+    // SHOULD FAIL if there's a profit path
+    assert !profitable_attack(attacker, value_before, value_after), 
+        "EXPLOIT: Caller profited from this call";
+}
+
+/**
+ * @title System Value Conservation
+ * @notice Verifies protocol value doesn't leak
+ * @dev EXPECTED TO FAIL if value extractable
+ */
+rule system_value_conserved(env e, method f)
+    filtered { f -> !f.isView && !f.isFallback }
+{
+    require e.msg.sender != 0;
+    
+    mathint system_before = total_system_value;
+    
+    calldataarg args;
+    f@withrevert(e, args);
+    
+    mathint system_after = total_system_value;
+    
+    assert system_after == system_before, 
+        "EXPLOIT: System value changed unexpectedly";
+}
+
+/**
+ * @title Profit Path Discovery
+ * @notice Uses satisfy to find profitable inputs
+ * @dev If VERIFIED, witness contains attack parameters
+ */
+rule find_profitable_inputs(env e, method f)
+    filtered { f -> !f.isView && !f.isFallback }
+{
+    address attacker = e.msg.sender;
+    mathint value_before = actor_value[attacker];
+    
+    calldataarg args;
+    f@withrevert(e, args);
+    
+    mathint value_after = actor_value[attacker];
+    mathint profit = value_after - value_before;
+    
+    // Find inputs that create profit
+    satisfy profit > 0;
+}
+```
+
+### Impact-Driven Invariants (NEW v3.0)
+
+```cvl
+// ═══════════════════════════════════════════════════════════════
+// IMPACT INVARIANTS — Standard safety properties
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * @title No Value Extraction
+ * @notice Protocol should never have value extracted
+ */
+invariant no_value_extraction()
+    total_value_extracted == 0
+
+/**
+ * @title Always Solvent
+ * @notice Protocol must always be solvent
+ */
+invariant always_solvent()
+    !insolvent_state
+
+/**
+ * @title No Share Dilution
+ * @notice Share supply should not be inflatable
+ */
+invariant no_share_dilution()
+    dilution_factor == 0
+
+/**
+ * @title No Liquidity Freeze
+ * @notice Users must always be able to exit
+ */
+invariant no_liquidity_freeze()
+    !liquidity_frozen
 ```
 
 ### Hooks

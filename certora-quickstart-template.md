@@ -2,7 +2,7 @@
 
 > **Use this template to apply the Certora workflow to ANY contract**  
 > **Copy this file and fill in the blanks for each new verification project**  
-> **Version:** 3.1 (Adversarial Verification Loop)
+> **Version:** 3.2 (Optimization Pressure + Temporal Depth + Design Hostility)
 
 ---
 
@@ -501,7 +501,17 @@ certoraRun certora/confs/validation_{contract}.conf
 **Expected Results:**
 - ✅ All rules PASS → Proceed to Phase 7
 - ❌ Any rule FAILS → You missed a mutation path, fix and re-run
+### Step 5.7: Multi-Epoch Attack Awareness
 
+Before proceeding, identify whether the protocol has features requiring **multi-epoch analysis**:
+
+- [ ] Time-delayed withdrawals or unlocking periods?
+- [ ] Governance voting with token accumulation?
+- [ ] Interest or reward accrual over time?
+- [ ] Oracle price feeds that update between blocks?
+
+If YES to any → flag for multi-epoch attack patterns in Phase 8.
+**Reference:** `certora-master-guide.md` Section 7.6 (Multi-Epoch Attack Modeling)
 ---
 
 ## 6. PHASE 4-6: MODELING & SANITY
@@ -550,6 +560,23 @@ For each external contract:
 - [ ] Hook types match Solidity types exactly
 - [ ] No ghost mirrors directly-readable storage
 ```
+
+### Step 6.5: Adversarial Design Interrogation
+
+> **MANDATORY before Phase 7.** The code may be correct and the design may still be extractable.
+
+Answer at least one:
+
+| # | Question |
+|---|----------|
+| 1 | Who benefits most if the protocol behaves *as specified*? |
+| 2 | What invariant would users *assume* exists but is not enforced? |
+| 3 | Does the protocol reward adversarial strategy by design? |
+| 4 | Can "optimal behavior" be economically malicious? |
+| 5 | What happens if all actors behave selfishly and rationally? |
+
+**Output:** Candidate attacker objectives, profit metrics, and state variables of leverage.
+**Reference:** `certora-master-guide.md` Section 8.4 (Adversarial Design Interrogation)
 
 ---
 
@@ -745,6 +772,17 @@ certoraRun certora/confs/offensive_{contract}.conf
 - `VIOLATED` → `assert` failed → real bug
 - `SATISFIED` (on `satisfy` anti-invariant) → **Attack witness found** → convert to PoC
 - `TIMEOUT` → Increase `--smt_timeout` or split rule (see `advanced-cli-reference.md` Section 9)
+
+### Step 8.6: Profit Escalation Protocol
+
+Do NOT stop at a single SAT result. Establish the maximum extractable value:
+
+1. If any anti-invariant is SAT at threshold X, **increase the threshold**
+2. Run escalating thresholds: `≥ 10^3`, `≥ 10^6`, `≥ 10^9`, `≥ 10^12`, `≥ 10^18`
+3. Record the SAT→UNSAT boundary — this is the dominant exploit value
+4. If ALL thresholds are SAT → **UNBOUNDED vulnerability** (CRITICAL)
+
+**Reference:** `certora-master-guide.md` Section 9.5.10 (Attacker Optimization & Profit Escalation)
 
 ---
 

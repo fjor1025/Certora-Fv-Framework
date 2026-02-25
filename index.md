@@ -1,6 +1,6 @@
 # Framework Index & Navigation Guide
 
-> **Quick navigation for the Certora Formal Verification Framework v3.1**
+> **Quick navigation for the Certora Formal Verification Framework v3.2**
 
 ---
 
@@ -99,11 +99,22 @@
 **Reference:** [certora-workflow.md](certora-workflow.md) Step 5  
 **Checklist:** Reachability (`satisfy`) PASSED + Validation spec PASSED  
 **Key (v1.8):** Write `satisfy` rules BEFORE assert rules — proves functions are live (anti-vacuity)
+**Multi-Epoch (v3.2):** Flag protocols with time-delayed ops, interest accrual, or oracle feeds for §7.6 patterns
 
 ### Phase 4-6: Modeling & Sanity
 **Primary:** [certora-master-guide.md](certora-master-guide.md) Section 8  
 **Patterns:** [best-practices-from-certora.md](best-practices-from-certora.md) Section 3 & 4  
 **Checklist:** Sanity gate all checked
+
+### Adversarial Design Interrogation ⭐ NEW v3.2
+> **MANDATORY before writing any spec.** Question the design itself as a source of exploitability.
+
+**Primary:** [certora-master-guide.md](certora-master-guide.md) Section 8.4  
+**Checklist:**
+- [ ] 5 mandatory questions answered (who benefits, missing invariants, adversarial incentives)
+- [ ] Candidate attacker objectives documented
+- [ ] Candidate profit metrics defined
+- [ ] Candidate state variables of leverage identified
 
 ### Adversarial Verification Loop (Phases 7 ⇄ 8) ⭐ NEW v3.0
 
@@ -127,6 +138,8 @@
 - [ ] Run `attacker_cannot_profit` rule
 - [ ] Run `system_value_conserved` rule
 - [ ] Run multi-step attack patterns
+- [ ] Run profit escalation protocol — establish SAT→UNSAT boundary (§9.5.10) ⭐ NEW v3.2
+- [ ] Verify multi-epoch attack patterns where applicable (§7.6) ⭐ NEW v3.2
 - [ ] Triage CEs using severity matrix (see [offensive-pipeline.md](offensive-pipeline.md))
 - [ ] Convert any CEs to Foundry PoCs (see [poc-template-foundry.md](poc-template-foundry.md))
 - [ ] Feedback loop converged — SAT/UNSAT results reviewed
@@ -218,7 +231,10 @@ The framework integrates techniques from:
 - [ ] **Phase 3.5** - Reachability (`satisfy`) PASSED (MASTER_GUIDE Section 7) ← v1.8
 - [ ] **Phase 3.5** - Validation spec PASSED (MASTER_GUIDE Section 7)
 - [ ] **Phase 4-6** - Modeling complete, sanity checks passed (MASTER_GUIDE Section 8)
+- [ ] **Design Interrogation** - Adversarial design questions answered (MASTER_GUIDE §8.4) ← NEW v3.2
 - [ ] **Adversarial Loop** - Offensive ⇄ defensive feedback loop converged (MASTER_GUIDE §1.4, §9.5)
+- [ ] **Profit Boundary** - Escalation protocol completed, SAT→UNSAT boundary established (§9.5.10) ← NEW v3.2
+- [ ] **Multi-Epoch** - Cross-epoch attacks verified where applicable (§7.6) ← NEW v3.2
 - [ ] **Final Proof** - Full defensive spec written and passing (MASTER_GUIDE Section 9) — LAST
 - [ ] **Debug** - Counterexamples investigated (CE_DIAGNOSIS_FRAMEWORK)
 - [ ] **Done** - All properties verified ✅
@@ -332,7 +348,7 @@ Total: **19 documents** (v1.5)
 
 ---
 
-**Framework Version:** 3.1 (Adversarial Verification Loop)  
+**Framework Version:** 3.2 (Optimization Pressure + Temporal Depth + Design Hostility)  
 **Status:** Production-Ready  
 **Last Updated:** February 25, 2026
 

@@ -510,6 +510,17 @@ rule preservation_test_[invariant_name](method f, address user)
 | Preservation rule fails | Missing dependency | Add requireInvariant for the dependency |
 
 🚫 **Do NOT proceed until ALL validation rules pass.**
+### Multi-Epoch Attack Awareness
+
+Before proceeding, check whether the protocol requires multi-epoch analysis:
+
+* Time-delayed operations (withdrawals, unlocking, vesting)?
+* Interest/reward accrual over time?
+* Oracle price feeds that update between blocks?
+* Governance voting with token accumulation?
+
+If YES → flag for `multi-step-attacks-template.md` multi-epoch patterns in Phase 8.
+**Reference:** `certora-master-guide.md` Section 7.6 (Multi-Epoch Attack Modeling)
 ---
 
 ## REALITY CONSTRAINTS (ANTI-FALSE-POSITIVE FILTER)
@@ -677,6 +688,26 @@ Before CVL is written:
 
 ---
 
+## ADVERSARIAL DESIGN INTERROGATION
+
+> **MANDATORY before Phase 7.** The code may be correct and the design may still be extractable.
+
+Answer these questions and record in `spec_authoring/design_interrogation.md`:
+
+1. Who benefits most if the protocol behaves *as specified*?
+2. What invariant would users *assume* exists but is not enforced?
+3. Does the protocol reward adversarial strategy by design?
+4. Can "optimal behavior" be economically malicious?
+5. What happens if all actors behave selfishly and rationally?
+
+**Output:** Candidate attacker objectives, profit metrics, state variables of leverage.
+
+These outputs directly inform offensive specifications in Phase 8.
+
+**Reference:** `certora-master-guide.md` Section 8.4
+
+---
+
 # PHASE 7 — CVL SPECIFICATION WRITING
 
 > **Only enter this phase after Phase 6 sanity gate passes.**  
@@ -704,9 +735,9 @@ Before CVL is written:
 
 # PHASE 8 — ATTACK SYNTHESIS (OFFENSIVE) ← NEW v3.0
 
-> **Enter after Phase 6 sanity gate passes (shared causal model established).**  
-> **Offensive and defensive specs evolve together in a BIDIRECTIONAL FEEDBACK LOOP.**  
-> **Final defensive proof comes LAST, after the attack surface is exhausted.**  
+> **Enter after Phase 6 sanity gate AND adversarial design interrogation (\u00a78.4) pass.**  
+> **Offensive and defensive specs are mutually adversarial hypotheses over the same causal model.**  
+> **Final defensive proof comes LAST, after the attack surface is exhausted and profit boundary established.**  
 > **See `certora-master-guide.md` Section 1.4 for the Adversarial Verification Model.**
 
 **Adversarial Verification Loop:**
@@ -733,6 +764,17 @@ FINAL PROOF:           Defensive verification — ALWAYS LAST.
 - `poc-template-foundry.md` — CE→PoC conversion
 
 **Reference:** `certora-master-guide.md` Section 9.5 (Phase 8: Attack Synthesis)
+
+### Profit Escalation (v3.2)
+
+Do not stop at existence. For every SAT anti-invariant:
+
+1. Record the profit value from the CE
+2. Increase the threshold: `satisfy attacker_profit >= higher_value`
+3. Repeat until UNSAT — this establishes the maximum extractable value
+4. If ALL thresholds SAT → UNBOUNDED vulnerability (CRITICAL)
+
+**Reference:** `certora-master-guide.md` Section 9.5.10 (Attacker Optimization & Profit Escalation)
 
 ---
 

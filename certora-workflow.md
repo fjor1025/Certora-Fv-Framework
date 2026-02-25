@@ -1,6 +1,6 @@
 # Certora Specification Workflow — Complete Guide
 
-> **Version:** 3.1 (Adversarial Verification Loop)  
+> **Version:** 3.2 (Optimization Pressure + Temporal Depth + Design Hostility)  
 > **Purpose:** Step-by-step workflow for writing correct Certora specifications  
 > **Philosophy:** Understand completely → Model correctly → Validate reachability → Attack ⇄ Defend (feedback loop) → Prove last
 
@@ -12,7 +12,7 @@ This workflow integrates **five** core documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CERTORA SPECIFICATION WORKFLOW v3.1                       │
+│                    CERTORA SPECIFICATION WORKFLOW v3.2                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────┐    ┌───────────────────────┐    ┌─────────────┐ │
@@ -53,23 +53,26 @@ graph TD
     G --> H{All validations pass?<br/>satisfy + assert}
     H -->|No| I[Fix modeling gaps]
     I --> G
-    H -->|Yes| J[Phase 4: Modeling Decisions]
+    H -->|Yes| MEA[Multi-Epoch Awareness<br/>Flag time-delayed / accrual / oracle]
+    MEA --> J[Phase 4: Modeling Decisions]
     J --> K[Phase 5: Ghost Analysis]
     K --> L[Phase 6: Final Sanity Gate]
     L --> M{All checks pass?}
     M -->|No| N[Fix gaps]
     N --> L
-    M -->|Yes| CM[Shared Causal Model<br/>Established]
+    M -->|Yes| ADI[§8.4 Adversarial Design<br/>Interrogation — MANDATORY]
+    ADI --> CM[Shared Causal Model<br/>Established]
     CM --> DH[Minimal Defensive<br/>Hypothesis]
     CM --> OE[Offensive Existential<br/>Spec]
     DH --> FL{Feedback Loop}
     OE --> FL
-    FL -->|SAT offensive| EX{Meaningful<br/>exploit?}
-    EX -->|Yes| Z[CE→Exploit Conversion<br/>poc-template-foundry.md]
-    Z --> AA[🎯 Exploit Found → Fix]
+    FL -->|SAT offensive| PE[§9.5.10 Profit Escalation<br/>Increase threshold]
+    PE --> EX{Max extractable<br/>value found?}
+    EX -->|Bounded| Z[CE→Exploit Conversion<br/>poc-template-foundry.md]
+    EX -->|Unbounded| CRIT[🔴 CRITICAL<br/>Unbounded vulnerability]
+    Z --> AA[Exploit Found → Fix]
+    CRIT --> AA
     AA --> FL
-    EX -->|No| UD[Update defensive<br/>hypothesis]
-    UD --> FL
     FL -->|UNSAT offensive| WA{Assumptions<br/>too strong?}
     WA -->|Yes| WK[Weaken assumptions<br/>or expand model]
     WK --> FL
@@ -797,8 +800,9 @@ If prover returns counterexamples:
 | 4 | How do we model externals? | Modeling decisions |
 | 5 | Do we need ghosts? | Ghost analysis |
 | 6 | Are we ready? | All sanity checks PASSED |
+| 6→7 | Design hostile? | Adversarial design interrogation — attacker objectives, profit metrics ← **NEW v3.2** |
 | 7 | Write the spec | CVL spec file |
-| 8 | Can we break it? (Offensive) | Anti-invariants, CE→exploits ← **NEW v3.0** |
+| 8 | Can we break it? (Offensive) | Anti-invariants, CE→exploits, profit escalation ← **UPDATED v3.2** |
 
 ---
 

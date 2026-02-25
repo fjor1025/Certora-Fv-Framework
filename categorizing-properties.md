@@ -2,7 +2,7 @@
 
 *(Pre-Spec, Syntax-Free Phase)*
 
-> **Version:** 3.1 (Adversarial Verification Loop + Impact-First Framing)
+> **Version:** 3.2 (Optimization Pressure + Profit Escalation Categories)
 
 ## Purpose
 
@@ -65,6 +65,7 @@ Before categorizing properties by *type*, first categorize by *economic impact*.
 
 **Variables Involved:** [List storage variables and their owners]
 **Multi-Step Required?:** [Yes — needs multi_step_attacks template / No]
+**Multi-Epoch Required?:** [Yes — attack spans multiple blocks/time periods (see §7.6) / No]
 ```
 
 ### Attacker Objective Checklist (NEW v3.0)
@@ -81,6 +82,21 @@ Ask these questions for EVERY function:
 | Can caller front-run other users? | MEV resistance property |
 | Can caller manipulate price/oracle? | Oracle manipulation guard |
 | Can caller bypass time locks? | Timelock enforcement |
+
+### Profit Escalation Categories (NEW v3.2)
+
+After identifying attacker objectives, classify the **severity of extractable value**:
+
+| Category | Description | Escalation Action |
+|----------|-------------|-------------------|
+| **Bounded extraction** | Profit capped by protocol parameters (e.g., max fee) | Document boundary, verify cap holds |
+| **Unbounded extraction** | No upper bound on attacker profit | CRITICAL — immediate mitigation |
+| **Compounding extraction** | Small profit accumulates over time/epochs | Model multi-epoch pattern (§7.6) |
+| **Amplified extraction** | Flash loan or leverage multiplies profit | Test at realistic leverage ratios |
+| **Cross-protocol extraction** | Profit via interaction with external protocols | Expand causal model to include externals |
+
+> **Rule:** Every attacker objective must have its profit boundary established.
+> See `certora-master-guide.md` Section 9.5.10 for the escalation protocol.
 
 ### Example: Impact-First Property Discovery
 

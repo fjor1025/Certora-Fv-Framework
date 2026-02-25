@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 3.1 (Adversarial Verification Loop + Offensive Verification + Red Team Hardening)  
+> **Version:** 3.2 (Adversarial Verification Loop + Optimization Pressure + Temporal Depth + Design Hostility)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---
@@ -16,9 +16,12 @@
 5. [Phase 2: Property Discovery](#5-phase-2-property-discovery)
 6. [Phase 2.5: Classification](#6-phase-25-classification)
 7. [Phase 3.5: Causal Validation](#7-phase-35-causal-validation)
+   7.6. [Multi-Epoch Attack Modeling](#76-multi-epoch-attack-modeling) ← **NEW v3.2**
 8. [Phase 4-6: Modeling & Sanity](#8-phase-4-6-modeling--sanity)
+   8.4. [Adversarial Design Interrogation](#84-adversarial-design-interrogation) ← **NEW v3.2**
 9. [Phase 7: Write CVL](#9-phase-7-write-cvl)
 9.5. [Phase 8: Attack Synthesis (Offensive)](#95-phase-8-attack-synthesis-offensive) ← **NEW v3.0**
+   9.5.10. [Attacker Optimization & Profit Escalation](#9510-attacker-optimization--profit-escalation) ← **NEW v3.2**
 10. [Running & Debugging](#10-running--debugging)
 11. [Templates](#11-templates)
 12. [Quick Reference](#12-quick-reference)
@@ -209,13 +212,29 @@
 ### The Canonical Loop
 
 1. **Causal Validation** (Phases 0–6) establishes the reachable state space
-2. **Minimal Defensive Hypothesis**: State the design intent — what must never happen
-3. **Offensive Existential Spec**: Search for economically profitable counterexamples
-4. **Bidirectional Feedback**:
+2. **Adversarial Design Interrogation** (§8.4): Question the design itself before writing any spec
+3. **Minimal Defensive Hypothesis**: State the design intent — what must never happen
+4. **Offensive Existential Spec**: Search for economically profitable counterexamples
+5. **Bidirectional Feedback**:
    - SAT offensive result → either a true exploit, or the defensive hypothesis needs updating
    - UNSAT offensive result → either the attack is impossible, or offensive assumptions need weakening
-5. **Loop** until both specs converge on the shared causal model
-6. **Final Defensive Verification** — prove safety only after exhausting the attack surface
+6. **Profit Escalation** (§9.5.10): Establish the maximum extractable value boundary, not just existence
+7. **Multi-Epoch Analysis** (§7.6): Verify that attacks requiring state priming or delayed extraction are covered
+8. **Loop** until both specs converge on the shared causal model
+9. **Final Defensive Verification** — prove safety only after exhausting the attack surface
+
+### Mutual Adversarial Hypothesis
+
+> Defensive specifications and offensive specifications are **not sequential stages**.
+> They are **mutually adversarial hypotheses** over the same causal model.
+>
+> * Defensive specifications express intended prohibitions.
+> * Offensive specifications challenge whether those prohibitions meaningfully prevent economic impact.
+>
+> A defensive proof is considered **valid** only if:
+> * Offensive specifications fail **without artificial assumptions**
+> * Attacker profit cannot be escalated beyond the established boundary
+> * Multi-epoch attacks are accounted for
 
 ### Vulnerability Definition
 
@@ -1481,6 +1500,51 @@ validation infrastructure is sound. Ready to proceed to Phase 7.
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+## 7.6 Multi-Epoch Attack Modeling
+
+Many economically significant exploits do not occur in a single transaction or atomic execution.
+Instead, they emerge through **state priming, distortion, and delayed extraction**.
+
+The framework treats **multi-epoch attacks as first-class citizens**.
+
+### Epoch Model
+
+An attack may consist of multiple epochs:
+
+| Epoch | Name | Purpose | Example |
+|-------|------|---------|---------|
+| **0** | **Setup** | Accumulate positions, approvals, or liquidity | Deposit large amount, get governance token |
+| **1** | **Distortion** | Manipulate prices, ratios, or accounting state | Oracle manipulation, share inflation |
+| **2** | **Extraction** | Realize profit via withdrawal, liquidation, or mint | Withdraw inflated shares, liquidate underwater positions |
+| **3** | **Exit / Cleanup** | Reset state or externalize gains | Return flash loan, transfer profits out |
+
+### Specification Guidance
+
+Offensive specifications SHOULD:
+
+1. **Explicitly allow state transitions across epochs** — use `persistent ghost` variables that survive across function calls and external interactions
+2. **Avoid assumptions of atomicity** unless the protocol design enforces it (e.g., single-block flash loans)
+3. **Treat delayed profit realization as valid impact** — attacker profit may only materialize in Epoch 2 or 3
+4. **Model inter-block state** when relevant — some attacks require waiting for price updates, time locks, or oracle refreshes
+
+### When Multi-Epoch Modeling Is Required
+
+| Protocol Feature | Why Single-TX Is Insufficient |
+|------------------|-------------------------------|
+| Time-delayed withdrawals | Attacker primes state, waits, then extracts |
+| Governance voting | Accumulate votes over time, execute at quorum |
+| Interest accrual | Small manipulations compound over periods |
+| Oracle price feeds | Distort price in block N, exploit in block N+1 |
+| Liquidity pools | Front-run large trades across blocks |
+
+### Rationale
+
+> Restricting analysis to single-transaction models systematically excludes the
+> most damaging business-logic vulnerabilities. Any attack that requires "wait
+> and extract" is invisible to single-TX analysis.
+
+**Reference:** [multi-step-attacks-template.md](multi-step-attacks-template.md) for implementation patterns.
+
 ---
 
 # 8. PHASE 4-6: MODELING & SANITY
@@ -1549,6 +1613,57 @@ For each property marked "Aggregate/History Required?: Yes":
 - [ ] No property requires honest admin
 - [ ] Every property maps to real exploit
 ```
+
+---
+
+## 8.4 Adversarial Design Interrogation
+
+> **MANDATORY CHECKPOINT** — Before writing any defensive or offensive specification,
+> the engineer must interrogate the *design itself* as a potential source of exploitability.
+
+This step assumes:
+
+> The code may be correct, and the design may still be extractable.
+
+### Why This Step Exists
+
+Business-logic vulnerabilities arise when designs are *internally consistent but externally exploitable*.
+Formal verification that does not question design intent risks proving the safety of an extractive system.
+
+Top-tier auditors ask: **"Who benefits from this design, and why?"**
+
+### Mandatory Questions
+
+At least one of the following MUST be explicitly answered before entering Phase 7:
+
+| # | Question | What It Detects |
+|---|----------|-----------------|
+| 1 | Who benefits most if the protocol behaves *as specified*? | Privileged-actor extraction |
+| 2 | What invariant would users *assume* exists but is not enforced? | Missing safety rails |
+| 3 | Does the protocol reward adversarial strategy by design? | Incentive misalignment |
+| 4 | Can "optimal behavior" be economically malicious? | Game-theoretic attack surfaces |
+| 5 | What happens if all actors behave selfishly and rationally? | Tragedy-of-the-commons risks |
+
+### Output
+
+This step produces three artifacts that directly inform offensive specifications:
+
+1. **Candidate attacker objectives** — what an attacker would optimize for
+2. **Candidate profit metrics** — how to measure extraction (value delta, share dilution, fee capture)
+3. **Candidate state variables of leverage** — which storage slots an attacker would manipulate
+
+> Record these in `spec_authoring/design_interrogation.md` before proceeding.
+
+### Example
+
+**Protocol:** Vault with fee-on-transfer tokens
+
+| Question | Answer |
+|----------|--------|
+| Who benefits as specified? | Vault owner (earns fees). But depositors assume 1:1 deposit-to-shares ratio. |
+| Missing invariant? | No enforced relationship between `deposit amount` and `shares minted` after fee deduction. |
+| Adversarial optimal strategy? | Deposit dust, inflate share price, front-run large deposits for dilution profit. |
+| Design-level output → | Anti-invariant: `satisfy shares_minted_for_attacker * total_assets > attacker_deposit * total_shares` |
 
 ---
 
@@ -2051,7 +2166,7 @@ definition MAX_UINT128() returns uint256 = 0xffffffffffffffffffffffffffffffff;
 
 # 9.5. PHASE 8: ATTACK SYNTHESIS (OFFENSIVE)
 
-> **v3.1 — Adversarial Verification Loop**  
+> **v3.2 — Adversarial Verification Loop**  
 > After Phase 6 sanity gate passes, the **shared causal model** is established.  
 > From this model, offensive and defensive specs evolve together in a  
 > **bidirectional feedback loop** — not in parallel, not in sequence.  
@@ -2104,6 +2219,12 @@ definition MAX_UINT128() returns uint256 = 0xffffffffffffffffffffffffffffffff;
 > or "prove correctness while checking for attacks" (parallel). Both are wrong.
 > The correct model: **offensive findings refine the defensive hypothesis, and
 > defensive intent constrains the offensive search.** They are coupled, not independent.
+>
+> **Validity Criterion:** A defensive proof is only valid when:
+> 1. Offensive specs fail without artificial assumptions
+> 2. Profit escalation reaches an UNSAT boundary (§9.5.10)
+> 3. Multi-epoch attack patterns are accounted for (§7.6)
+> 4. Adversarial design interrogation has been completed (§8.4)
 
 ## 9.5.2 Economic Impact Baseline
 
@@ -2370,6 +2491,10 @@ function test_exploit() public {
 Offensive and defensive verification evolve together from the shared causal model.
 This is NOT a parallel execution — it is a **feedback loop** where each informs the other.
 
+> Defensive specifications express intended prohibitions.
+> Offensive specifications challenge whether those prohibitions meaningfully prevent economic impact.
+> **Neither is trusted. The causal model is truth. Both are hypotheses tested against it.**
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    BIDIRECTIONAL VERIFICATION LOOP                           │
@@ -2441,6 +2566,68 @@ Before declaring verification complete:
 - [impact-spec-template.md](impact-spec-template.md) — Complete economic impact tracking infrastructure
 - [multi-step-attacks-template.md](multi-step-attacks-template.md) — Flash loan, sandwich, staged attack patterns
 - [offensive-pipeline.md](offensive-pipeline.md) — Sample `.conf`, CI pipeline, CE severity triage, attack prioritization
+
+## 9.5.10 Attacker Optimization & Profit Escalation
+
+Offensive specifications must not stop at proving the *existence* of a profitable execution.
+In adversarial environments, the attacker's objective is to **maximize extractable value**, not merely demonstrate feasibility.
+
+Therefore, offensive verification must include **profit escalation pressure**.
+
+### Definition
+
+An **optimized attack** is an execution trace such that:
+
+* Attacker profit is maximized under the causal model
+* No strictly greater profit trace exists under equivalent assumptions
+
+### Required Practice
+
+Offensive specifications SHOULD:
+
+1. **Parameterize attacker profit thresholds** (e.g., `≥ X`)
+2. **Iteratively increase thresholds** until the Prover returns UNSAT
+3. **Detect unbounded or monotonic profit growth** — if every threshold is SAT, the vulnerability is unbounded
+4. **Record the SAT→UNSAT boundary** — this is the maximum extractable value under the causal model
+
+### Escalation Protocol
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PROFIT ESCALATION PROTOCOL                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. Run:  satisfy attacker_profit >= 1                          │
+│     SAT?  → Attack exists. Record witness.                      │
+│                                                                  │
+│  2. Run:  satisfy attacker_profit >= 10^3                       │
+│     SAT?  → Escalate.                                           │
+│                                                                  │
+│  3. Run:  satisfy attacker_profit >= 10^6                       │
+│     SAT?  → Escalate.                                           │
+│                                                                  │
+│  4. Continue: 10^9, 10^12, 10^15, 10^18                        │
+│     First UNSAT = maximum extractable value boundary.           │
+│                                                                  │
+│  5. If ALL thresholds SAT → UNBOUNDED VULNERABILITY             │
+│     Report as CRITICAL. Immediate mitigation required.          │
+│                                                                  │
+│  Note: The SAT→UNSAT boundary defines the "dominant exploit"   │
+│  — the attack an attacker would actually execute in practice.   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Rationale
+
+A specification that proves `profit ≥ 1` while missing `profit ≥ 100` is **not sufficient**
+for real-world security conclusions or competitive CTF performance.
+
+* Existence-only proofs detect *vulnerabilities*
+* Optimization-driven proofs detect *dominant exploits*
+
+> **Rule:** No offensive verification is complete until the profit boundary is established
+> or the Prover proves no profitable execution exists at any threshold.
 
 ---
 
@@ -2536,6 +2723,14 @@ Before considering verification complete:
 □ Phase 6: Sanity gate ALL CHECKED
 
 □ ════════════════════════════════════════════════════════════════════════════
+□ ADVERSARIAL DESIGN INTERROGATION — BEFORE any spec writing             ← NEW v3.2
+□ ════════════════════════════════════════════════════════════════════════════
+□ §8.4: Design interrogation complete (5 mandatory questions answered)
+□ §8.4: Candidate attacker objectives documented
+□ §8.4: Candidate profit metrics defined
+□ §8.4: Candidate state variables of leverage identified
+
+□ ════════════════════════════════════════════════════════════════════════════
 □ SHARED CAUSAL MODEL ESTABLISHED
 □ ════════════════════════════════════════════════════════════════════════════
 □ Minimal defensive hypothesis stated (design intent — what must never happen)
@@ -2550,6 +2745,9 @@ Before considering verification complete:
 □ Phase 8: Hook liveness checked (impact_hook_liveness for all functions)    ← NEW
 □ Phase 8: Anti-invariants written (rules expected to FAIL)                  ← NEW v3.0
 □ Phase 8: Profit search rules executed (satisfy-based attack search)        ← NEW v3.0
+□ Phase 8: Profit escalation protocol completed (§9.5.10)                     ← NEW v3.2
+□ Phase 8: SAT→UNSAT boundary established (max extractable value)            ← NEW v3.2
+□ Phase 8: Multi-epoch attack patterns verified (§7.6)                        ← NEW v3.2
 □ Phase 8: Iterative threshold protocol run (find_max_profit_threshold)      ← NEW
 □ Phase 8: Multi-step attacks tested (flash loan, sandwich, staged, cross-contract) ← UPDATED
 □ Phase 8: Any failing anti-invariant → CE converted to Foundry PoC          ← NEW v3.0
@@ -2611,7 +2809,7 @@ Please help me follow the certora-master-guide.md workflow:
 
 The framework documents are already in my project root.
 
-**Key references to use throughout (v3.1):**
+**Key references to use throughout (v3.2):**
 - cvl-language-deep-dive.md — Complete CVL language reference (types, ghosts, hooks, operators, builtin rules §19.1)
 - verification-playbooks.md — Worked examples for ERC-20, WETH, ERC-721 + Phase 0 builtin scan
 - best-practices-from-certora.md — Sections 7-9 (vacuity defense, requireInvariant lifecycle, edge cases)
@@ -2713,7 +2911,7 @@ Please help me discover properties using the DUAL MINDSET approach:
 **3. Categorize all properties:**
    - Economic Impact / Valid States / State Transitions / System-Level / Threat-Driven / Revert Behavior
 
-**4. Economic Impact Discovery (v3.1):**
+**4. Economic Impact Discovery (v3.2):**
    - For each asset: Can an attacker extract value? Cause insolvency? Dilute shares?
    - Use categorizing-properties.md §0 Attacker Objective Checklist
    - Document findings in candidate_properties.md under new "Impact" category
@@ -2838,7 +3036,10 @@ verification loop (see Section 1.4 — Adversarial Verification Model).
 **Token Standard (if any):** [ERC-20 / ERC-721 / WETH / None]
 **Validation Spec:** certora/specs/validation_{target}.spec (PASSED ✅)
 **Validation Evidence Review:** COMPLETED ✅  ← NEW v2.0
+**Design Interrogation (§8.4):** COMPLETED ✅  ← NEW v3.2
 **Candidate Properties:** spec_authoring/{target}_candidate_properties.md
+**Attacker Objectives (from §8.4):** [list from design interrogation]              ← NEW v3.2
+**Profit Metrics (from §8.4):** [value delta / share dilution / fee capture / etc] ← NEW v3.2
 
 **⚠️ IMPORTANT: This is NOT "write full defensive spec, then check for attacks."**
 **This is a BIDIRECTIONAL FEEDBACK LOOP — offensive and defensive evolve together.**
@@ -2994,6 +3195,7 @@ established. I'm entering the adversarial verification loop (Section 1.4).
 
 **Target:** [path/to/ContractName.sol]
 **Phase 6 Sanity Gate:** PASSED ✅
+**Adversarial Design Interrogation (§8.4):** COMPLETED ✅                        ← NEW v3.2
 **Phase:** Adversarial Verification Loop (offensive ⇄ defensive feedback)
 **Minimal Defensive Hypothesis:** [stated / not yet stated]
 **Protocol Type:** [AMM / Lending / Staking / Governance / Vault / Other]
@@ -3077,12 +3279,15 @@ Please help me run the adversarial verification loop:
 
 References:
 - certora-master-guide.md Section 1.4 (Adversarial Verification Model — the canonical loop)
+- certora-master-guide.md Section 7.6 (Multi-Epoch Attack Modeling)                         ← NEW v3.2
+- certora-master-guide.md Section 8.4 (Adversarial Design Interrogation)                    ← NEW v3.2
 - certora-master-guide.md Section 9.5 (Phase 8: Attack Synthesis)
+- certora-master-guide.md Section 9.5.10 (Attacker Optimization & Profit Escalation)        ← NEW v3.2
 - impact-spec-template.md (value tracking infrastructure + hook liveness + completeness checklist)
-- multi-step-attacks-template.md (attack pattern library + cross-contract + depth guidance)
+- multi-step-attacks-template.md (attack pattern library + cross-contract + depth guidance + multi-epoch)
 - offensive-pipeline.md (sample .conf, CI pipeline, CE severity triage, attack prioritization)
 - poc-template-foundry.md (CE → executable PoC)
-- categorizing-properties.md §0 (Economic Impact Categories)
+- categorizing-properties.md §0 (Economic Impact Categories + Profit Escalation Categories)
 ```
 
 ---

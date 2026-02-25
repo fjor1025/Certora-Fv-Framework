@@ -1,7 +1,66 @@
 # Framework Version History
 
-> **Current Version:** 3.1 (Adversarial Verification Loop)  
+> **Current Version:** 3.2 (Optimization Pressure + Temporal Depth + Design Hostility)  
 > **Last Updated:** February 2026
+
+---
+
+## Version 3.2 (Optimization Pressure + Temporal Depth + Design Hostility) - February 2026
+
+### Rationale
+
+v3.1 correctly established the bidirectional offensive ⇄ defensive feedback loop, eliminating 
+linear/parallel bias. However, a red-team assessment identified **three missing pieces** that 
+limit effectiveness in real CTFs and production audits:
+
+1. **No optimization pressure** — Offensive specs proved existence of attacks but not the 
+   *maximum extractable value*. Real attackers optimize for the dominant exploit, not any exploit.
+2. **No temporal depth** — Multi-epoch attacks (setup → distortion → extraction → exit) were 
+   referenced but not structurally first-class. Single-TX bias persisted.
+3. **No design hostility** — The framework assumed design goals are legitimate. Top-tier auditors 
+   question the design itself: "Who benefits? What invariant do users assume but isn't enforced?"
+
+### Key Changes
+
+**§8.4 Adversarial Design Interrogation (NEW)**
+- Mandatory pre-spec checkpoint: 5 questions about design-level exploitability
+- Produces: candidate attacker objectives, profit metrics, state variables of leverage
+- Positioned between sanity gate and Phase 7 — forces design questioning before writing any spec
+
+**§9.5.10 Attacker Optimization & Profit Escalation (NEW)**
+- Iterative threshold protocol: escalate profit thresholds until UNSAT
+- SAT→UNSAT boundary = maximum extractable value under causal model
+- All-SAT = unbounded vulnerability (CRITICAL)
+- Rule: "No offensive verification is complete until the profit boundary is established"
+
+**§7.6 Multi-Epoch Attack Modeling (NEW)**
+- Formal epoch model: Setup → Distortion → Extraction → Exit
+- First-class support for attacks spanning multiple transactions/blocks
+- `persistent ghost` variables track cumulative attacker value across epochs
+- Protocol feature → attack pattern mapping table
+
+**Modification: Defensive Proof Validity Tightened**
+- §1.4 Canonical Loop: Now includes design interrogation, profit escalation, and multi-epoch steps
+- §1.4 Mutual Adversarial Hypothesis: Explicit validity criteria for defensive proofs
+- §9.5.1 Key Insight: Validity criterion added (4 conditions)
+- §9.5.8 Opening prose: Strengthened coupling language
+
+### Changes by Document
+
+| Document | Changes |
+|----------|---------|
+| `certora-master-guide.md` | New §7.6 (Multi-Epoch Attack Modeling), §8.4 (Adversarial Design Interrogation), §9.5.10 (Attacker Optimization & Profit Escalation). §1.4 Canonical Loop extended (9 steps). Mutual Adversarial Hypothesis block added. §9.5.1 Key Insight validity criterion. §9.5.8 prose tightened. Final Checklist: design interrogation + profit escalation + multi-epoch items. TOC updated. |
+| `certora-quickstart-template.md` | Step 5.7 (Multi-Epoch Awareness), Step 6.5 (Adversarial Design Interrogation), Step 8.6 (Profit Escalation Protocol). |
+| `spec-authoring-certora.md` | Adversarial Design Interrogation section, Multi-Epoch Attack Awareness section, Profit Escalation section. Phase 8 entry criteria tightened. |
+| `index.md` | Adversarial Design Interrogation phase + checklist. Profit escalation + multi-epoch checklist items. Verification Workflow Checklist: 3 new items. Phase 3.5 multi-epoch flag. |
+| `certora-workflow.md` | Mermaid diagram: ADI, MEA, and PE nodes added. Phase Summary table: design interrogation row, Phase 8 output updated. |
+| `best-practices-from-certora.md` | §7.3 Profit Escalation Techniques. Discovery Cycle: 3 new steps. §7.4 Cross-References: 3 new entries. |
+| `offensive-pipeline.md` | Pipeline stages: 5→6 (new Profit Escalation stage). Day 3 checklist: profit escalation + multi-epoch. |
+| `impact-spec-template.md` | Profit Escalation Protocol section after Integration Checklist. |
+| `multi-step-attacks-template.md` | Multi-Epoch Attack Modeling section with epoch model, protocol feature mapping, specification approach. |
+| `categorizing-properties.md` | Multi-Epoch Required field in Impact Property Template. Profit Escalation Categories table (bounded/unbounded/compounding/amplified/cross-protocol). |
+| `readme.md` | Mission box v3.2. What's New in v3.2 section. Changelog updated. |
+| `version-history.md` | New v3.2 entry. |
 
 ---
 

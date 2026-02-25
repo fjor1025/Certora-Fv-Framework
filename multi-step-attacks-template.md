@@ -1,6 +1,6 @@
 # Multi-Step Attack Patterns Template
 
-> **Framework Version:** v3.1 (Adversarial Verification Loop)  
+> **Framework Version:** v3.2 (Optimization Pressure + Multi-Epoch Modeling)  
 > **Purpose:** Model stateful attackers across transaction boundaries  
 > **Usage:** Copy patterns for flash loan, sandwich, and staged attacks
 
@@ -710,6 +710,43 @@ Multi-step attack rules can TIMEOUT because of $O(N^k)$ method combinations wher
 > **Rule of thumb:** Use parametric `method f` for depth ≤ 2. For depth ≥ 3, 
 > pin at least one step to a specific function call. For depth ≥ 4, pin ALL 
 > steps to specific functions based on your Phase 0 attack surface analysis.
+
+---
+
+## Multi-Epoch Attack Modeling (v3.2)
+
+Many real-world exploits span multiple transactions or blocks. Single-TX analysis misses them.
+
+### Epoch Model
+
+| Epoch | Purpose | What Attacker Does |
+|-------|---------|-------------------|
+| **0 — Setup** | Accumulate positions | Deposit, approve, acquire governance tokens |
+| **1 — Distortion** | Manipulate state | Skew oracle price, inflate shares, alter ratios |
+| **2 — Extraction** | Realize profit | Withdraw, liquidate, redeem inflated shares |
+| **3 — Exit** | Externalize gains | Return flash loan, transfer profits, reset state |
+
+### When Multi-Epoch Patterns Apply
+
+| Protocol Feature | Attack Pattern |
+|------------------|----------------|
+| Time-delayed withdrawals | Setup → wait → extract after time lock |
+| Governance voting | Accumulate votes over epochs → execute at quorum |
+| Interest accrual | Small distortion compounds over periods |
+| Oracle price feeds | Distort in block N → exploit in block N+1 |
+| Liquidity pools | Front-run large trades across blocks |
+
+### Specification Approach
+
+Use `persistent ghost` variables that survive across function calls:
+- Track cumulative attacker value across epochs
+- Model inter-epoch state transitions explicitly
+- Treat delayed profit realization as valid impact
+
+> Restricting analysis to single-transaction models systematically excludes the most damaging
+> business-logic vulnerabilities.
+
+**Reference:** `certora-master-guide.md` Section 7.6
 
 ---
 

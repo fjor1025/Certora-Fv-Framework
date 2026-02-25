@@ -1,6 +1,6 @@
 # CERTORA BEST PRACTICES & TECHNIQUES
 
-> **Version:** 1.1 (Framework v3.1 — Adversarial Verification Loop)  
+> **Version:** 1.2 (Framework v3.2 — Optimization Pressure + Temporal Depth + Design Hostility)  
 > **Extracted from official Certora Tutorials**  
 > **Integrated with your framework phases**
 
@@ -89,8 +89,11 @@ rule withdraw_correctness(uint amount) {
 │                     ▼                                                    │
 │                                                                          │
 │   Phase 7 ⇄ 8: Adversarial Verification Loop                           │
+│   ├── Adversarial design interrogation (§8.4) — MANDATORY            │
 │   ├── Minimal defensive hypothesis + offensive spec                     │
 │   ├── Feedback loop: SAT→refine, UNSAT→weaken                         │
+│   ├── Profit escalation: establish SAT→UNSAT boundary (§9.5.10)       │
+│   ├── Multi-epoch patterns where applicable (§7.6)                     │
 │   └── Final defensive proof (LAST)                                      │
 │                                                                          │
 │                     ▼                                                    │
@@ -913,13 +916,29 @@ Offensive property discovery asks: **"Can an attacker extract profit?"**
 3. **Track attacker vs. protocol separately:** Use distinct ghost variables for attacker-controlled and protocol-controlled value flows
 4. **Start with `satisfy`, graduate to `assert`:** Find the attack first, then prove it's impossible after mitigation
 
-## 7.3 Cross-References
+## 7.3 Profit Escalation Techniques (v3.2)
+
+Existence-only proofs detect *vulnerabilities*. Optimization-driven proofs detect *dominant exploits*.
+
+1. **Parametric thresholds:** Run `satisfy attacker_profit >= X` with escalating X values
+2. **Binary search:** If 10^6 is SAT and 10^9 is UNSAT, narrow the boundary
+3. **Unbounded detection:** If ALL thresholds are SAT, the vulnerability is unbounded (CRITICAL)
+4. **Record the SAT→UNSAT boundary** — this is the maximum extractable value in the causal model
+
+> **Rule:** No offensive verification is complete until the profit boundary is established.
+
+**Reference:** `certora-master-guide.md` Section 9.5.10
+
+## 7.4 Cross-References
 
 - **Anti-invariant rule templates:** `impact-spec-template.md`
 - **Multi-step attack sequences:** `multi-step-attacks-template.md`
 - **CE-to-PoC conversion:** `poc-template-foundry.md` (Section: Converting Anti-Invariant CEs)
 - **CI/CD pipeline & CE triage:** `offensive-pipeline.md`
 - **CLI strategies for offensive rules:** `advanced-cli-reference.md` Section 9
+- **Multi-epoch attack patterns:** `certora-master-guide.md` Section 7.6 ← NEW v3.2
+- **Adversarial design interrogation:** `certora-master-guide.md` Section 8.4 ← NEW v3.2
+- **Profit escalation protocol:** `certora-master-guide.md` Section 9.5.10 ← NEW v3.2
 
 ---
 

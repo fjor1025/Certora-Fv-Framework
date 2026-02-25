@@ -1,11 +1,11 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 3.1 (Adversarial Verification Loop)
+> **Version:** 3.2 (Optimization Pressure + Temporal Depth + Design Hostility)
 
 ---
 
-## Framework Mission (v3.1)
+## Framework Mission (v3.2)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -15,9 +15,9 @@
 │   OLD (v2.x):                                                               │
 │   "Prove the code matches the spec."                                        │
 │                                                                              │
-│   NEW (v3.0):                                                               │
+│   NEW (v3.0+):                                                              │
 │   "Assume the design is hostile.                                            │
-│    Search for economically profitable counterexamples.                      │
+│    Question who benefits. Search for maximum extractable value.             │
 │    Prove safety only AFTER failing to break it."                            │
 │                                                                              │
 │   This framework operates in two modes:                                     │
@@ -34,6 +34,17 @@
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## What's New in v3.2
+
+**Three missing pieces that complete the adversarial model:**
+
+- **§8.4 Adversarial Design Interrogation** — Mandatory pre-spec checkpoint: question who benefits from the design, what invariant users assume but isn't enforced, whether optimal behavior is malicious
+- **§9.5.10 Attacker Optimization & Profit Escalation** — Don't stop at existence; find the maximum extractable value via iterative threshold escalation (SAT→UNSAT boundary)
+- **§7.6 Multi-Epoch Attack Modeling** — First-class support for attacks spanning multiple transactions/blocks (setup → distortion → extraction → exit)
+- **Tightened o/d validity** — A defensive proof is valid only if offensive specs fail without artificial assumptions, profit boundary is established, and multi-epoch attacks are accounted for
 
 ---
 
@@ -330,11 +341,13 @@ When working with an AI assistant, use these prompts:
 
 ## Version
 
-**Version:** 3.1 (Adversarial Verification Loop)  
+**Version:** 3.2 (Adversarial Verification Loop + Optimization Pressure + Temporal Depth + Design Hostility)  
 **Last Updated:** February 25, 2026
 
 ### Changelog
-- **v3.0:** Adversarial Verification Loop — bidirectional offensive ⇄ defensive feedback loop replaces linear/parallel framing; canonical loop diagram (Section 1.4); final defensive proof always last
+- **v3.2:** Attacker Optimization & Profit Escalation (§9.5.10), Multi-Epoch Attack Modeling (§7.6), Adversarial Design Interrogation (§8.4), tightened defensive proof validity criteria
+- **v3.1:** Bidirectional offensive ⇄ defensive feedback loop replaces linear/parallel framing; canonical loop diagram (Section 1.4); final defensive proof always last
+- **v3.0:** Adversarial Verification Loop — offensive verification mode, anti-invariants, multi-step attacks, CE→exploit conversion
 - **v1.9:** Red Team Hardening — Failure-path reachability (`satisfy lastReverted`), custom summary accuracy protocol (Exact/Over/Under), invariant dependency DAG (`@dev Level: N`), cycle detection, satisfy liveness annotation
 - **v1.8:** Reachability Validation — `satisfy` rules as mandatory validation step, Phase 0.5, validation execution order
 - **v1.7.1:** Quick Start Chat Prompts updated for v1.6/v1.7 features

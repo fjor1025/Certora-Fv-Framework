@@ -1,6 +1,6 @@
 # Offensive Verification Pipeline
 
-> **Framework Version:** v3.1 (Adversarial Verification Loop)  
+> **Framework Version:** v3.2 (Optimization Pressure + Temporal Depth + Design Hostility)  
 > **Purpose:** CI/CD integration, sample configuration, counterexample triage, attack prioritization  
 > **Prerequisite:** Read [impact-spec-template.md](impact-spec-template.md) and [multi-step-attacks-template.md](multi-step-attacks-template.md) before using this pipeline
 
@@ -125,12 +125,13 @@ Save as `run-offensive-pipeline.sh` in your project root.
 # ================================================================
 # Usage: ./run-offensive-pipeline.sh [--spec-dir certora/specs] [--conf-dir certora/confs]
 #
-# Pipeline order (Phase 8 of Certora-Fv-Framework v3.1):
-#   1. Hook Liveness Gate   — verify hooks actually capture value flows
-#   2. Single-TX Attacks    — find single-call profit paths
-#   3. Multi-Step Attacks   — flash loan, sandwich, staged
-#   4. Defensive Invariants — prove safety only after attacks exhausted
-#   5. Report               — triage and classify results
+# Pipeline order (Phase 8 of Certora-Fv-Framework v3.2):
+#   1. Hook Liveness Gate      — verify hooks actually capture value flows
+#   2. Single-TX Attacks       — find single-call profit paths
+#   3. Profit Escalation       — establish SAT→UNSAT boundary (max extractable value) ← NEW v3.2
+#   4. Multi-Step Attacks      — flash loan, sandwich, staged, multi-epoch
+#   5. Defensive Invariants    — prove safety only after attacks exhausted
+#   6. Report                  — triage and classify results
 # ================================================================
 
 set -euo pipefail
@@ -689,7 +690,15 @@ When starting offensive verification on a new protocol:
 - [ ] Run `find_profitable_inputs` — check for satisfy witnesses
 - [ ] Begin iterative threshold protocol if profits found
 
-### Day 3: Multi-Step + PoC (4-6 hours)
+### Day 3: Profit Escalation + Multi-Step + PoC (4-6 hours)
+- [ ] Run profit escalation protocol on any SAT anti-invariants:
+  - Escalate thresholds: ≥ 10^3, ≥ 10^6, ≥ 10^9, ≥ 10^12, ≥ 10^18
+  - Record SAT→UNSAT boundary (maximum extractable value)
+  - If ALL thresholds SAT → flag as UNBOUNDED (CRITICAL)
+- [ ] Check multi-epoch attack vectors:
+  - Time-delayed operations (setup in block N, extract in block N+k)
+  - Interest/reward accrual manipulation
+  - Oracle price feed distortion across blocks
 - [ ] Copy relevant multi-step patterns (flash loan, sandwich, staged)
 - [ ] Adapt to protocol-specific function calls
 - [ ] Add `filtered` clauses to bound search space

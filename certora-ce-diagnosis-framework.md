@@ -1,6 +1,6 @@
 # Certora Counterexample Diagnosis Framework
 
-> **Version:** 3.1 (Adversarial Verification Loop + CE→Exploit Conversion)  
+> **Version:** 3.2 (Optimization Pressure + CE→Exploit Conversion)  
 > **Purpose:** Determine whether a Certora counterexample represents a REAL BUG or a SPEC BUG  
 > **Philosophy:** A counterexample is not evidence until execution AND causal closure are verified.  
 > **Source:** Enhanced with Certora Tutorial Lesson 02 investigation workflow

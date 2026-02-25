@@ -1,6 +1,6 @@
 # Economic Impact Tracking Specification Template
 
-> **Framework Version:** v3.1 (Adversarial Verification Loop)  
+> **Framework Version:** v3.2 (Optimization Pressure + Temporal Depth + Design Hostility)  
 > **Purpose:** First-class primitives for tracking attacker profit, value extraction, and system impact  
 > **Usage:** Import or copy into every audit specification
 
@@ -638,4 +638,19 @@ When a rule fails, extract from the CE:
 - [ ] Ran `system_value_conserved` rule
 - [ ] Ran `find_profitable_inputs` satisfy rule
 - [ ] Ran `find_max_profit_threshold` with iterative tightening ← **NEW**
+- [ ] Profit escalation protocol completed — SAT→UNSAT boundary established ← **NEW v3.2**
 - [ ] Converted any CEs to Foundry PoCs
+
+### Profit Escalation Protocol (v3.2)
+
+For every SAT anti-invariant result:
+
+1. Record the CE profit value at the initial threshold
+2. Escalate: `satisfy attacker_profit >= 10^3`, then `10^6`, `10^9`, `10^12`, `10^15`, `10^18`
+3. The first UNSAT threshold establishes the **maximum extractable value boundary**
+4. If ALL thresholds are SAT → **UNBOUNDED vulnerability** — report as CRITICAL
+5. Document the boundary in `spec_authoring/profit_escalation.md`
+
+> Existence-only proofs detect *vulnerabilities*. Optimization-driven proofs detect *dominant exploits*.
+
+**Reference:** `certora-master-guide.md` Section 9.5.10

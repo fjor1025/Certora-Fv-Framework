@@ -1,8 +1,8 @@
 # Certora Specification Workflow — Complete Guide
 
-> **Version:** 3.0 (Offensive Verification)  
+> **Version:** 3.1 (Adversarial Verification Loop)  
 > **Purpose:** Step-by-step workflow for writing correct Certora specifications  
-> **Philosophy:** Understand completely → Model correctly → Validate reachability → Write once → Attack search → Debug systematically
+> **Philosophy:** Understand completely → Model correctly → Validate reachability → Attack ⇄ Defend (feedback loop) → Prove last
 
 ---
 
@@ -12,7 +12,7 @@ This workflow integrates **five** core documents:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CERTORA SPECIFICATION WORKFLOW v3.0                       │
+│                    CERTORA SPECIFICATION WORKFLOW v3.1                       │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌───────────────────────┐    ┌───────────────────────┐    ┌─────────────┐ │
@@ -59,27 +59,30 @@ graph TD
     L --> M{All checks pass?}
     M -->|No| N[Fix gaps]
     N --> L
-    M -->|Yes| O[Phase 7: Write CVL<br/>Use SPEC_FRAMEWORK.md]
-    M -->|Yes| W[Phase 8: Attack Synthesis<br/>Use impact-spec-template.md]
-    O --> P[Run Certora Prover]
+    M -->|Yes| CM[Shared Causal Model<br/>Established]
+    CM --> DH[Minimal Defensive<br/>Hypothesis]
+    CM --> OE[Offensive Existential<br/>Spec]
+    DH --> FL{Feedback Loop}
+    OE --> FL
+    FL -->|SAT offensive| EX{Meaningful<br/>exploit?}
+    EX -->|Yes| Z[CE→Exploit Conversion<br/>poc-template-foundry.md]
+    Z --> AA[🎯 Exploit Found → Fix]
+    AA --> FL
+    EX -->|No| UD[Update defensive<br/>hypothesis]
+    UD --> FL
+    FL -->|UNSAT offensive| WA{Assumptions<br/>too strong?}
+    WA -->|Yes| WK[Weaken assumptions<br/>or expand model]
+    WK --> FL
+    WA -->|No| CV[Loop Converged]
+    CV --> FP[Final Defensive<br/>Verification — ALWAYS LAST]
+    FP --> P[Run Certora Prover]
     P --> Q{Counterexamples?}
     Q -->|Yes| R[Use CE_DIAGNOSIS_FRAMEWORK.md]
     R --> S{SPEC BUG?}
     S -->|Yes| T[Fix spec per diagnosis]
     T --> P
     S -->|No - REAL BUG| U[Report to developers]
-    Q -->|No| V[✅ Defensive Verification Complete]
-    W --> X[Run Anti-Invariants +<br/>Hook Liveness Checks]
-    X --> Y{Anti-invariant fails?}
-    Y -->|Yes| Z[CE→Exploit Conversion<br/>poc-template-foundry.md]
-    Z --> AA[🎯 Exploit Found]
-    Y -->|No| AB[✅ Offensive Verification Complete]
-    V --> AC{Offensive also complete?}
-    AB --> AD{Defensive also complete?}
-    AC -->|Yes| AE[✅ Full Verification Complete]
-    AD -->|Yes| AE
-    AC -->|No| AE
-    AD -->|No| AE
+    Q -->|No| AE[✅ Full Verification Complete]
 ```
 
 ---

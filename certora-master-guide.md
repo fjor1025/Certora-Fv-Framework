@@ -1,7 +1,7 @@
 # CERTORA VERIFICATION MASTER GUIDE
 
 > **The Complete Framework for Formal Verification of Smart Contracts**  
-> **Version:** 3.0 (Offensive Verification + Red Team Hardening + Validation Evidence Gate)  
+> **Version:** 3.1 (Adversarial Verification Loop + Offensive Verification + Red Team Hardening)  
 > **Use this guide to verify ANY Solidity contract from scratch**
 
 ---
@@ -9,6 +9,7 @@
 ## TABLE OF CONTENTS
 
 1. [Framework Overview](#1-framework-overview)
+   1.4. [Adversarial Verification Model](#14-adversarial-verification-model) ← **NEW v3.0**
 2. [Project Setup](#2-project-setup)
 3. [Phase 0: Contract Analysis](#3-phase-0-contract-analysis)
 4. [Phase -1: Execution Closure](#4-phase--1-execution-closure)
@@ -51,11 +52,18 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                  │
-│   UNDERSTAND → ENUMERATE → VALIDATE → WRITE → DEBUG              │
+│   UNDERSTAND → ENUMERATE → VALIDATE → ATTACK ⇄ DEFEND → PROVE   │
 │                                                                  │
 │   ❌ Never write CVL before completing phases 0 through 3.5     │
 │   ❌ Never skip causal validation                                │
 │   ❌ Never assume external contracts are "standard"              │
+│   ❌ Never write a full defensive spec before an offensive       │
+│      spec exists — they evolve together from the causal model   │
+│   ❌ Never trust an offensive spec without a stated design intent│
+│                                                                  │
+│   "Causal validation defines reality. Defensive spec states     │
+│    intent. Offensive spec attacks intent. The loop refines       │
+│    both. Proof comes last."                                     │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -111,27 +119,108 @@
 │               │                         │                            │
 │               └─────────────────────────┤                            │
 │                                         ▼                            │
-│                                ┌─────────────┐                       │
-│                                │  PHASE 7    │                       │
-│                                │  Write CVL  │                       │
-│                                └─────────────┘                       │
-│                                         │                            │
-│                                         ▼                            │
-│                                    RUN PROVER                        │
-│                                certoraRun {Contract}.conf            │
-│                                         │                            │
-│                              ┌──────────┴──────────┐                 │
-│                              │                     │                 │
-│                         ❌ FAIL              ✅ PASS                 │
-│                              │                     │                 │
-│                              ▼                     ▼                 │
-│                    ┌──────────────┐         ┌──────────┐            │
-│                    │ CE DIAGNOSIS │         │  DONE!   │            │
-│                    │ FRAMEWORK    │         │          │            │
-│                    └──────────────┘         └──────────┘            │
+│                              ┌─────────────────┐                     │
+│                              │ SHARED CAUSAL    │                    │
+│                              │ MODEL            │                    │
+│                              └────────┬────────┘                     │
+│                         ┌─────────────┴─────────────┐                │
+│                         ▼                           ▼                │
+│                ┌──────────────┐            ┌──────────────┐          │
+│                │  DEFENSIVE   │◄──────────►│  OFFENSIVE   │          │
+│                │  Hypothesis  │  FEEDBACK  │  Existential │          │
+│                │  (minimal)   │    LOOP    │  Spec        │          │
+│                └──────────────┘            └──────────────┘          │
+│                         │                           │                │
+│                         └─────────────┬─────────────┘                │
+│                                       ▼                              │
+│                            ┌────────────────┐                        │
+│                            │ FINAL DEFENSIVE│                        │
+│                            │ PROOF          │                        │
+│                            │ (always last)  │                        │
+│                            │   ✅ DONE      │                        │
+│                            └────────────────┘                        │
 │                                                                       │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+## 1.4 Adversarial Verification Model
+
+> **Memorize this.** The framework is NOT linear (Causal → Defensive → Offensive).
+> The framework is a **bidirectional feedback loop** where offensive and defensive
+> specs evolve together on a shared causal model, and final defensive proof comes LAST.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ADVERSARIAL VERIFICATION FRAMEWORK                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│                     ┌──────────────────────┐                                │
+│                     │   CAUSAL VALIDATION   │                               │
+│                     │   (Phases 0–6)        │                               │
+│                     └──────────┬───────────┘                                │
+│                                │                                             │
+│                  Defines reachable state space                               │
+│                                │                                             │
+│                                ▼                                             │
+│                     ┌──────────────────────┐                                │
+│                     │   SHARED CAUSAL       │                               │
+│                     │   MODEL               │ ← Neither spec is truth.      │
+│                     └──────────┬───────────┘   The causal model is truth.   │
+│                                │                                             │
+│                ┌───────────────┴───────────────┐                            │
+│                │                               │                            │
+│                ▼                               ▼                            │
+│   ┌────────────────────────┐     ┌────────────────────────┐                │
+│   │  DEFENSIVE HYPOTHESIS  │     │  OFFENSIVE EXISTENTIAL │                │
+│   │  (minimal intent)      │     │  SPEC (profit search)  │                │
+│   │                        │     │                        │                │
+│   │  "What must never      │     │  "Can an attacker      │                │
+│   │   happen by design?"   │     │   extract profit?"     │                │
+│   └────────────┬───────────┘     └────────────┬───────────┘                │
+│                │                               │                            │
+│                └───────────┬───────────────────┘                            │
+│                            │                                                 │
+│                            ▼                                                 │
+│               ┌─────────────────────────┐                                   │
+│               │   FEEDBACK LOOP         │                                   │
+│               │                         │                                   │
+│               │  SAT offensive →        │                                   │
+│               │    exploit OR update    │                                   │
+│               │    defensive hypothesis │                                   │
+│               │                         │                                   │
+│               │  UNSAT offensive →      │                                   │
+│               │    weaken assumptions   │                                   │
+│               │    OR expand causal     │                                   │
+│               │    model                │                                   │
+│               └─────────┬───────────────┘                                   │
+│                         │                                                    │
+│                    Loop until convergence                                    │
+│                         │                                                    │
+│                         ▼                                                    │
+│               ┌─────────────────────────┐                                   │
+│               │   FINAL DEFENSIVE       │                                   │
+│               │   VERIFICATION          │                                   │
+│               │   (ALWAYS LAST)         │                                   │
+│               └─────────────────────────┘                                   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### The Canonical Loop
+
+1. **Causal Validation** (Phases 0–6) establishes the reachable state space
+2. **Minimal Defensive Hypothesis**: State the design intent — what must never happen
+3. **Offensive Existential Spec**: Search for economically profitable counterexamples
+4. **Bidirectional Feedback**:
+   - SAT offensive result → either a true exploit, or the defensive hypothesis needs updating
+   - UNSAT offensive result → either the attack is impossible, or offensive assumptions need weakening
+5. **Loop** until both specs converge on the shared causal model
+6. **Final Defensive Verification** — prove safety only after exhausting the attack surface
+
+### Vulnerability Definition
+
+> A **vulnerability** is economically harmful behavior that is **allowed by design**
+> (the spec permits it) or **reachable despite intended rules** (the spec is incomplete).
 
 ---
 
@@ -1465,7 +1554,9 @@ For each property marked "Aggregate/History Required?: Yes":
 
 # 9. PHASE 7: WRITE CVL
 
-> **You may only enter this phase after Phase 6 sanity gate PASSES**
+> **You may only enter this phase after Phase 6 sanity gate PASSES**  
+> **Begin with a MINIMAL defensive hypothesis — the full spec is written LAST,**  
+> **after the adversarial verification loop (Section 1.4 / 9.5) converges.**
 
 ## 9.0 Transition from Validation Spec to Real Spec
 
@@ -1960,37 +2051,59 @@ definition MAX_UINT128() returns uint256 = 0xffffffffffffffffffffffffffffffff;
 
 # 9.5. PHASE 8: ATTACK SYNTHESIS (OFFENSIVE)
 
-> **v3.0 — Offensive Verification Mode**  
-> This phase runs AFTER Phase 6 sanity gate passes (modeling validated).  
-> Can run IN PARALLEL with Phase 7 — both share the same ghosts, hooks, and methods block.  
-> Purpose: Actively search for profitable attack paths before attackers do.
+> **v3.1 — Adversarial Verification Loop**  
+> After Phase 6 sanity gate passes, the **shared causal model** is established.  
+> From this model, offensive and defensive specs evolve together in a  
+> **bidirectional feedback loop** — not in parallel, not in sequence.  
+> Final defensive proof comes LAST, after the attack surface is exhausted.
 
-## 9.5.1 Philosophy Shift
+## 9.5.1 The Adversarial Verification Loop
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       DEFENSIVE vs OFFENSIVE VERIFICATION                   │
+│                       ADVERSARIAL VERIFICATION LOOP                         │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│   DEFENSIVE (Phases 0-7):                                                   │
-│   "Prove the code matches the spec."                                        │
-│   - Write properties describing correct behavior                            │
-│   - Run prover to confirm properties hold                                   │
-│   - If PASS → spec satisfied                                                │
+│   After causal validation establishes the reachable state space,            │
+│   the engineer formulates BOTH:                                             │
 │                                                                              │
-│   OFFENSIVE (Phase 8):                                                      │
-│   "Assume the design is hostile. Discover profitable counterexamples."      │
-│   - Write anti-invariants (rules expected to FAIL)                          │
-│   - Run prover searching for attacks                                        │
-│   - If FAIL → EXPLOIT FOUND (counterexample = attack parameters)            │
-│   - If PASS → No attack path found (or model incomplete)                    │
+│     1. A MINIMAL DEFENSIVE HYPOTHESIS                                       │
+│        What the design claims must never occur.                             │
+│        (Intent, not full spec — just enough to state the claim.)            │
 │                                                                              │
-│   The order matters: START OFFENSIVE, END DEFENSIVE.                        │
-│   Run Phase 8 in PARALLEL with Phase 7 after Phase 6 passes.               │
-│   Prove safety only AFTER failing to break it.                              │
+│     2. AN OFFENSIVE EXISTENTIAL SPECIFICATION                               │
+│        Whether economically meaningful extraction is possible.              │
+│        (Profit search, anti-invariants, attack patterns.)                   │
+│                                                                              │
+│   These specifications are refined in a FEEDBACK LOOP:                      │
+│                                                                              │
+│     ┌──────────────────────────────────────────────────────────────────┐    │
+│     │                                                                  │    │
+│     │  SAT offensive spec →                                            │    │
+│     │    • If economically meaningful: EXPLOIT FOUND → fix code        │    │
+│     │    • If not meaningful: defensive hypothesis was too weak →      │    │
+│     │      UPDATE defensive hypothesis and loop                       │    │
+│     │                                                                  │    │
+│     │  UNSAT offensive spec →                                          │    │
+│     │    • Attack is impossible under current model → good, BUT:      │    │
+│     │    • Are offensive assumptions too strong? → WEAKEN and re-run  │    │
+│     │    • Is the causal model incomplete? → EXPAND and re-validate   │    │
+│     │                                                                  │    │
+│     └──────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│   Only after offensive attack synthesis is EXHAUSTED is full                │
+│   defensive correctness proven. Safety proofs come LAST, always last.       │
+│                                                                              │
+│   NEITHER SPEC IS TRUTH. THE CAUSAL MODEL IS TRUTH.                        │
+│   Both specs are hypotheses tested against the shared causal model.         │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> **Key Insight:** The old model said "prove correctness, then check for attacks" (linear)
+> or "prove correctness while checking for attacks" (parallel). Both are wrong.
+> The correct model: **offensive findings refine the defensive hypothesis, and
+> defensive intent constrains the offensive search.** They are coupled, not independent.
 
 ## 9.5.2 Economic Impact Baseline
 
@@ -2252,33 +2365,52 @@ function test_exploit() public {
 ```
 ```
 
-## 9.5.8 Integration with Defensive Verification
+## 9.5.8 Integration: The Bidirectional Loop in Practice
 
-Offensive verification (Phase 8) integrates with defensive verification (Phases 0-7):
+Offensive and defensive verification evolve together from the shared causal model.
+This is NOT a parallel execution — it is a **feedback loop** where each informs the other.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         COMPLETE VERIFICATION WORKFLOW                       │
+│                    BIDIRECTIONAL VERIFICATION LOOP                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│   Phases 0-6: Analysis & Modeling                                           │
-│   ├── Map execution surface                                                 │
-│   ├── Discover properties                                                   │
-│   └── Validate causal closure                                               │
+│   Phases 0-6: Analysis & Modeling → SHARED CAUSAL MODEL                     │
 │                                                                              │
-│   ┌────────────────────────────── PARALLEL ─────────────────────────────┐   │
-│   │                                                                          │   │
-│   │  Phase 7: Defensive Verification          Phase 8: Offensive Verification│   │
-│   │  ├── Write correctness invariants      ├── Import impact ghosts             │   │
-│   │  ├── Prove properties hold             ├── Write anti-invariants            │   │
-│   │  └── Debug any violations              ├── Run profit search rules          │   │
-│   │                                        ├── Run multi-step attacks           │   │
-│   │                                        ├── Convert CEs to PoCs              │   │
-│   │                                        └── Fix exploits & re-verify         │   │
-│   │                                                                          │   │
-│   └───────────────────────────────────────────────────────────────────────┘   │
+│   From the shared causal model, formulate BOTH:                             │
 │                                                                              │
-│   Complete: Both defensive AND offensive verification pass                  │
+│   ┌────────────────────────────┐     ┌─────────────────────────────────┐    │
+│   │  MINIMAL DEFENSIVE         │     │  OFFENSIVE EXISTENTIAL          │    │
+│   │  HYPOTHESIS                │     │  SPECIFICATION                  │    │
+│   │  ├── State design intent   │     │  ├── Import impact ghosts       │    │
+│   │  ├── What must never happen│     │  ├── Write anti-invariants      │    │
+│   │  └── Minimal, not full spec│     │  ├── Run profit search rules    │    │
+│   └─────────────┬──────────────┘     │  ├── Run multi-step attacks     │    │
+│                 │                     │  └── Check hook liveness first  │    │
+│                 │                     └──────────────┬──────────────────┘    │
+│                 │                                    │                       │
+│                 └──────────────┬──────────────────────┘                      │
+│                                │                                             │
+│                                ▼                                             │
+│                     ┌──────────────────┐                                    │
+│                     │  FEEDBACK LOOP:  │                                    │
+│                     │  SAT → exploit   │                                    │
+│                     │    or update     │                                    │
+│                     │    hypothesis    │                                    │
+│                     │  UNSAT → weaken  │                                    │
+│                     │    assumptions   │                                    │
+│                     └────────┬─────────┘                                    │
+│                              │                                               │
+│                         Converged?                                           │
+│                              │                                               │
+│                              ▼                                               │
+│                     ┌──────────────────┐                                    │
+│                     │ FINAL DEFENSIVE  │                                    │
+│                     │ VERIFICATION     │ ← Full spec now, not before        │
+│                     │ (ALWAYS LAST)    │                                    │
+│                     └──────────────────┘                                    │
+│                                                                              │
+│   Complete: Attack surface exhausted AND defensive proof holds              │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -2402,16 +2534,15 @@ Before considering verification complete:
 □ Phase 3.5: Validation Evidence Review completed — witnesses non-degenerate  
 □ Phase 3.5: Advanced sanity run (rule_sanity: advanced) — no failures  
 □ Phase 6: Sanity gate ALL CHECKED
-□ Phase 7: CVL spec written
-□ Prover: All rules PASS
-□ Review: No hidden trust assumptions
-□ Documentation: Decisions logged in spec_authoring.md
-□ Revert Coverage: Every state-changing function has @withrevert verification  ← NEW v1.6
-□ Liveness Assertions: Use <=> (biconditional) not just => (implication)    ← NEW v1.6
-□ No Silent Revert Pruning: No rule relies on default revert-ignore behavior ← NEW v1.6
 
 □ ════════════════════════════════════════════════════════════════════════════
-□ PHASE 8: OFFENSIVE VERIFICATION (NEW v3.0) — Runs in parallel with Phase 7
+□ SHARED CAUSAL MODEL ESTABLISHED
+□ ════════════════════════════════════════════════════════════════════════════
+□ Minimal defensive hypothesis stated (design intent — what must never happen)
+□ Offensive existential spec written (impact ghosts, anti-invariants, profit search)
+
+□ ════════════════════════════════════════════════════════════════════════════
+□ OFFENSIVE ATTACK SYNTHESIS — exhausted BEFORE final defensive proof
 □ ════════════════════════════════════════════════════════════════════════════
 □ Phase 8: Economic impact baseline documented (assets, values, entry/exit)  ← NEW v3.0
 □ Phase 8: Impact ghosts created (actor_value, total_system_value) — ALL persistent  ← UPDATED
@@ -2423,6 +2554,18 @@ Before considering verification complete:
 □ Phase 8: Multi-step attacks tested (flash loan, sandwich, staged, cross-contract) ← UPDATED
 □ Phase 8: Any failing anti-invariant → CE converted to Foundry PoC          ← NEW v3.0
 □ Phase 8: All anti-invariants PASS (no profitable attack found)             ← NEW v3.0
+□ Phase 8: Feedback loop converged — offensive SAT/UNSAT results reviewed
+
+□ ════════════════════════════════════════════════════════════════════════════
+□ FINAL DEFENSIVE VERIFICATION — ALWAYS LAST
+□ ════════════════════════════════════════════════════════════════════════════
+□ Phase 7: Full CVL spec written (only after feedback loop converges)
+□ Prover: All defensive rules PASS
+□ Review: No hidden trust assumptions
+□ Documentation: Decisions logged in spec_authoring.md
+□ Revert Coverage: Every state-changing function has @withrevert verification  ← NEW v1.6
+□ Liveness Assertions: Use <=> (biconditional) not just => (implication)    ← NEW v1.6
+□ No Silent Revert Pruning: No rule relies on default revert-ignore behavior ← NEW v1.6
 ```
 
 ---
@@ -2430,7 +2573,12 @@ Before considering verification complete:
 # 13. QUICK START CHAT PROMPTS
 
 > **Use this section when starting or continuing verification with an AI assistant.**  
-> **Copy the appropriate prompt below and paste it into your chat.**
+> **Copy the appropriate prompt below and paste it into your chat.**  
+>  
+> **Conceptual Model (Section 1.4):** These prompts encode the **Adversarial Verification  
+> Loop** — after causal validation, offensive and defensive specs evolve together on a  
+> shared causal model. Offensive attack synthesis is exhausted BEFORE final defensive  
+> proof. Neither spec is truth; the causal model is truth.
 
 ## 13.1 For a Brand New Verification Project
 
@@ -2463,7 +2611,7 @@ Please help me follow the certora-master-guide.md workflow:
 
 The framework documents are already in my project root.
 
-**Key references to use throughout (v3.0):**
+**Key references to use throughout (v3.1):**
 - cvl-language-deep-dive.md — Complete CVL language reference (types, ghosts, hooks, operators, builtin rules §19.1)
 - verification-playbooks.md — Worked examples for ERC-20, WETH, ERC-721 + Phase 0 builtin scan
 - best-practices-from-certora.md — Sections 7-9 (vacuity defense, requireInvariant lifecycle, edge cases)
@@ -2565,7 +2713,7 @@ Please help me discover properties using the DUAL MINDSET approach:
 **3. Categorize all properties:**
    - Economic Impact / Valid States / State Transitions / System-Level / Threat-Driven / Revert Behavior
 
-**4. Economic Impact Discovery (v3.0):**
+**4. Economic Impact Discovery (v3.1):**
    - For each asset: Can an attacker extract value? Cause insolvency? Dilute shares?
    - Use categorizing-properties.md §0 Attacker Objective Checklist
    - Document findings in candidate_properties.md under new "Impact" category
@@ -2680,10 +2828,11 @@ Reference:
 - cvl-language-deep-dive.md §19 (Invariant Sanity Checks — rule_not_vacuous)
 ```
 
-## 13.5 For Phase 7 (Validation PASSED → Write Real Spec)
+## 13.5 For Phase 7 (Validation PASSED → Minimal Defensive Hypothesis + Offensive Spec)
 
 ```markdown
-My validation spec PASSED for [ContractName]. Ready to write the real spec.
+My validation spec PASSED for [ContractName]. Ready to begin the adversarial
+verification loop (see Section 1.4 — Adversarial Verification Model).
 
 **Target:** [path/to/ContractName.sol]
 **Token Standard (if any):** [ERC-20 / ERC-721 / WETH / None]
@@ -2691,33 +2840,49 @@ My validation spec PASSED for [ContractName]. Ready to write the real spec.
 **Validation Evidence Review:** COMPLETED ✅  ← NEW v2.0
 **Candidate Properties:** spec_authoring/{target}_candidate_properties.md
 
-Please help me create the real spec:
+**⚠️ IMPORTANT: This is NOT "write full defensive spec, then check for attacks."**
+**This is a BIDIRECTIONAL FEEDBACK LOOP — offensive and defensive evolve together.**
+
+Please help me set up BOTH specs from the shared causal model:
+
+**A. Minimal Defensive Hypothesis (intent, not full spec):**
 1. Copy infrastructure from validation spec (methods, ghosts, hooks)
 2. DELETE all validation_* rules
-3. ADD real invariants and rules from candidate_properties.md
-4. Use the Liveness/Effect/No-Side-Effect pattern for each function rule
-5. Add standard `definition` blocks (nonpayable, nonzerosender, balanceLimited)
-6. Use `requireInvariant` (not raw `require`) for proven invariant preconditions
-7. For EVERY state-changing function, write @withrevert rules  ← NEW v1.6
-   using Pattern B (Complete with biconditional <=>) as the PREFERRED pattern
-8. Add `use builtin rule uncheckedOverflow;` and/or `safeCasting;`  ← NEW v1.7
-   if the contract uses unchecked{} blocks or type-narrowing casts
-9. **Annotate every invariant with `@dev Level: N | Dependencies: ...`**  ← NEW v1.9
-   and prove in level order (Level 1 first, then Level 2, etc.)
-10. **For each custom summary, add accuracy annotation (Exact/Over/Under)**  ← NEW v1.9
-11. Create certora/specs/{Contract}.spec
-12. Create certora/confs/{Contract}.conf
-13. **Begin Phase 8 (Attack Synthesis) in parallel** — set up impact ghosts  ← NEW v3.0
-    and anti-invariants in a separate impact spec file while defensive spec runs
+3. State the MINIMAL design intent — what the protocol claims must never happen
+4. Write only the core safety invariants from candidate_properties.md
+5. Use `requireInvariant` (not raw `require`) for proven invariant preconditions
+6. **Do NOT write the full spec yet** — it will be refined by offensive findings
+
+**B. Offensive Existential Spec (attack search):**
+7. Set up impact ghosts in a separate impact spec file (actor_value, total_system_value)
+8. Write anti-invariants: rules expected to FAIL if exploit exists
+9. Run hook liveness checks FIRST (dead hooks = vacuous results)
+10. Run profit search rules (satisfy profit > 0)
+
+**C. The Feedback Loop — iterate until convergence:**
+11. If offensive SAT (exploit found) → fix code OR update defensive hypothesis → re-run
+12. If offensive UNSAT → weaken offensive assumptions OR expand causal model → re-run
+13. Loop until both specs converge on the shared causal model
+
+**D. Final Defensive Verification (ALWAYS LAST):**
+14. Only after offensive attack surface is EXHAUSTED:
+15. Complete the full CVL spec with all invariants, rules, and @withrevert patterns
+16. Add standard `definition` blocks (nonpayable, nonzerosender, balanceLimited)
+17. For EVERY state-changing function, write @withrevert rules (Pattern B: biconditional <=>)
+18. Add `use builtin rule uncheckedOverflow;` and/or `safeCasting;` if applicable
+19. **Annotate every invariant with `@dev Level: N | Dependencies: ...`**  ← NEW v1.9
+20. **For each custom summary, add accuracy annotation (Exact/Over/Under)**  ← NEW v1.9
+21. Create final certora/specs/{Contract}.spec and certora/confs/{Contract}.conf
 
 Reference:
+- certora-master-guide.md Section 1.4 (Adversarial Verification Model — the canonical loop)
 - certora-master-guide.md section 9.0 (Transition from Validation to Real Spec)
+- certora-master-guide.md section 9.5 (Phase 8: Attack Synthesis)
 - cvl-language-deep-dive.md (complete CVL reference — types, operators, ghosts, hooks, definitions)
 - cvl-language-deep-dive.md §19.1 (builtin rules — uncheckedOverflow, safeCasting)  ← NEW v1.7
 - verification-playbooks.md (if ERC-20/721/WETH — follow the complete worked example)
 - certora-spec-framework.md (CVL syntax patterns + Revert/Failure-Path Checklist)  ← updated v1.6
-- certora-spec-framework.md Pattern B: Complete with @withrevert (PREFERRED)  ← NEW v1.6
-- certora-spec-framework.md Invariant DAG protocol & custom summary accuracy  ← NEW v1.9
+- impact-spec-template.md (economic impact tracking — persistent ghosts, anti-invariants)  ← NEW v3.0
 - best-practices-from-certora.md Sections 3, 7-9 (invariant patterns, vacuity defense, lifecycle, edge cases)
 - best-practices-from-certora.md §8.4 (circular dependency detection)  ← NEW v1.9
 - quick-reference-v1.3.md (keep open for syntax lookup)
@@ -2821,28 +2986,39 @@ Please help me resolve using loop handling strategies:
 Reference: best-practices-from-certora.md Section 5 (Loop Handling from Tutorial Lesson 11)
 ```
 
-## 13.7 For Phase 8 (Attack Synthesis / Offensive Verification) ← NEW v3.0
+## 13.7 For Phase 8 (Offensive Attack Synthesis — Bidirectional Loop) ← NEW v3.0
 
 ```markdown
-Phase 6 sanity gate PASSED for [ContractName]. I'm starting Phase 8 offensive
-verification IN PARALLEL with Phase 7 defensive spec writing.
+Phase 6 sanity gate PASSED for [ContractName]. The shared causal model is
+established. I'm entering the adversarial verification loop (Section 1.4).
 
 **Target:** [path/to/ContractName.sol]
 **Phase 6 Sanity Gate:** PASSED ✅
-**Phase:** 8 (Attack Synthesis) — runs parallel with Phase 7
+**Phase:** Adversarial Verification Loop (offensive ⇄ defensive feedback)
+**Minimal Defensive Hypothesis:** [stated / not yet stated]
 **Protocol Type:** [AMM / Lending / Staking / Governance / Vault / Other]
 **Assets at Risk:** [ETH, ERC-20 tokens, shares, LP tokens, etc.]
 **External Integrations:** [oracles, other protocols, flash loan providers, etc.]
 
-Please help me set up Phase 8 offensive verification:
+**⚠️ This is NOT a parallel run. This is a FEEDBACK LOOP.**
+**Offensive findings refine the defensive hypothesis.**
+**Defensive intent constrains the offensive search.**
+**Final defensive proof comes LAST, after the loop converges.**
 
-1. **Economic Impact Assessment:**
+Please help me run the adversarial verification loop:
+
+1. **State the Minimal Defensive Hypothesis:**
+   - What does the design claim must never happen?
+   - Write ONLY the core safety invariants (not the full spec)
+   - This hypothesis will be refined by offensive findings
+
+2. **Economic Impact Assessment:**
    - What assets are at risk? (ETH, tokens, shares, etc.)
    - What is the total value at stake?
    - What would a successful exploit look like?
    - Complete the Phase 0 Asset Flow Trace cross-reference
 
-2. **Create Attack Search Spec (impact.spec):**
+3. **Create Attack Search Spec (impact.spec):**
    - Copy ghosts from impact-spec-template.md
    - ⚠️ ALL ghosts MUST be `persistent` (survives HAVOC from external calls)
    - Set up `actor_value` persistent ghost to track value per address
@@ -2851,20 +3027,20 @@ Please help me set up Phase 8 offensive verification:
    - Complete the **Value Flow Completeness Checklist** — cross-reference every
      asset from Phase 0 against hooks (ERC-20, ETH, shares, LP, rebasing, fees)
 
-3. **Run Hook Liveness Checks FIRST:**
+4. **Run Hook Liveness Checks FIRST:**
    - Run `impact_hook_liveness` for every state-changing function
    - Run `system_value_hook_liveness` for value-moving functions
    - If any `satisfy` is VIOLATED → hooks are blind to that function's effects
    - Fix hooks BEFORE trusting any anti-invariant result
    - A passing anti-invariant with dead hooks proves NOTHING
 
-4. **Write Anti-Invariants:**
+5. **Write Anti-Invariants:**
    - `attacker_cannot_profit` — fails if caller can profit
    - `system_value_conserved` — fails if value leaks
    - `zero_sum_transfers` — fails if value created from nothing
    - Use `satisfy` with `find_profitable_inputs` for active attack search
 
-5. **Run Iterative Threshold Protocol (find maximum exploit size):**
+6. **Run Iterative Threshold Protocol (find maximum exploit size):**
    - `satisfy profit > 0` → SAT? Continue
    - `satisfy profit > 10^6` → SAT? Continue
    - `satisfy profit > 10^9` → SAT? Continue
@@ -2872,7 +3048,7 @@ Please help me set up Phase 8 offensive verification:
    - Certora's SMT solver finds ANY witness, not the maximum — this iterative
      tightening protocol provides the workaround
 
-6. **Multi-Step Attack Patterns (choose by protocol type):**
+7. **Multi-Step Attack Patterns (choose by protocol type):**
    - Flash loan attack search (if protocol holds value)
    - Sandwich attack search (if protocol has price-sensitive operations)
    - Staged attack accumulation (if protocol has time-dependent state)
@@ -2881,13 +3057,26 @@ Please help me set up Phase 8 offensive verification:
    - Use `filtered` clauses for multi-step rules to avoid TIMEOUT
    - See combinatorial explosion guidance in multi-step-attacks-template.md
 
-7. **CE → Exploit Conversion:**
-   - If anti-invariant fails, extract attack parameters from CE
+8. **Feedback Loop — iterate until convergence:**
+   - SAT offensive result → true exploit? Fix code. Not meaningful? Update
+     defensive hypothesis and loop.
+   - UNSAT offensive result → are assumptions too strong? Weaken and re-run.
+     Is causal model incomplete? Expand and re-validate.
+   - Loop until BOTH specs converge on the shared causal model.
+
+9. **CE → Exploit Conversion (when offensive SAT is meaningful):**
+   - Extract attack parameters from CE
    - Convert to Foundry PoC using poc-template-foundry.md
    - Validate exploit on mainnet fork
-   - If exploit confirmed → fix code → re-run both defensive AND offensive specs
+   - If exploit confirmed → fix code → re-run BOTH specs from the loop
+
+10. **Final Defensive Verification (LAST — only after loop converges):**
+    - Now write the FULL defensive spec (refined by all offensive findings)
+    - Prove all safety invariants hold
+    - This is the terminal step — proof comes last.
 
 References:
+- certora-master-guide.md Section 1.4 (Adversarial Verification Model — the canonical loop)
 - certora-master-guide.md Section 9.5 (Phase 8: Attack Synthesis)
 - impact-spec-template.md (value tracking infrastructure + hook liveness + completeness checklist)
 - multi-step-attacks-template.md (attack pattern library + cross-contract + depth guidance)
@@ -2908,7 +3097,7 @@ When starting any verification conversation, always include:
 | **Target contract** | `contracts/core/Vault.sol` |
 | **Contract name** | `Vault` (as declared in Solidity) |
 | **Dependencies** | `imports Token.sol, Oracle.sol, Utils.sol` |
-| **Current phase** | Phase 0 / -1 / 2 / 2.5 / 3.5 / 7 / 7+8 parallel / 8 (Offensive) |
+| **Current phase** | Phase 0 / -1 / 2 / 2.5 / 3.5 / Adversarial Loop (offense ⇄ defense) / Final Proof |
 | **Token standard** | ERC-20 / ERC-721 / WETH / None |
 | **Protocol type** | AMM / Lending / Staking / Governance / Vault / Other ← NEW v3.0 |
 | **Prover version** | v8.8.0+ / older ← NEW v1.7 |
@@ -2934,5 +3123,6 @@ When starting any verification conversation, always include:
 ---
 
 > **Remember:** A passing spec means nothing if the modeling is wrong.  
-> **Enumerate reality first. Prove safety second.**
+> **Causal validation defines reality. Defensive spec states intent. Offensive spec attacks intent.**  
+> **The loop refines both. Proof comes last.**
 

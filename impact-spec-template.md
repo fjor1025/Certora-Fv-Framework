@@ -1,6 +1,6 @@
 # Economic Impact Tracking Specification Template
 
-> **Framework Version:** v3.0 (Offensive Verification)  
+> **Framework Version:** v3.1 (Adversarial Verification Loop)  
 > **Purpose:** First-class primitives for tracking attacker profit, value extraction, and system impact  
 > **Usage:** Import or copy into every audit specification
 

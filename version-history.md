@@ -1,7 +1,50 @@
 # Framework Version History
 
-> **Current Version:** 3.0 (Offensive Verification + Red Team Hardening)  
+> **Current Version:** 3.1 (Adversarial Verification Loop)  
 > **Last Updated:** February 2026
+
+---
+
+## Version 3.1 (Adversarial Verification Loop) - February 2026
+
+### Rationale
+
+v3.0 added offensive verification but implicitly encoded a **linear mindset**: 
+Causal Validation → Defensive → Offensive (or "parallel"). A principal engineer 
+review identified that this is exactly the failure mode the framework was designed 
+to prevent. The correct model is a **bidirectional feedback loop** where offensive 
+and defensive specifications evolve together on a shared causal model.
+
+### Key Conceptual Change
+
+The framework no longer says "run Phase 7 and Phase 8 in parallel." It says:
+
+1. After causal validation establishes the reachable state space, the engineer 
+   formulates **both** a minimal defensive hypothesis AND an offensive existential 
+   specification.
+2. These specifications are refined in a **feedback loop**: a satisfied offensive 
+   spec either exposes a vulnerability or invalidates the defensive hypothesis; 
+   an unsatisfied offensive spec requires weakening assumptions or expanding the 
+   causal model.
+3. Only after offensive attack synthesis is **exhausted** is full defensive 
+   correctness proven.
+
+**One-sentence summary:** Causal validation defines reality. Defensive spec states 
+intent. Offensive spec attacks intent. The loop refines both. Proof comes last.
+
+### Changes by Document
+
+| Document | Changes |
+|----------|---------|
+| `certora-master-guide.md` | New §1.4 (Adversarial Verification Model — canonical loop diagram + vulnerability definition). Golden Rule updated: ATTACK ⇄ DEFEND → PROVE. Workflow diagram shows bidirectional loop, not linear. §9.5.1 rewritten as "Adversarial Verification Loop" (replaces "Philosophy Shift/Defensive vs Offensive"). §9.5.8 rewritten as "Bidirectional Loop in Practice" (replaces "PARALLEL" framing). Final Checklist reordered: offensive BEFORE final defensive. §13 preamble added. §13.5 rewritten for feedback loop. §13.7 rewritten for bidirectional model. §13.8 phase list updated. Closing line updated. |
+| `certora-workflow.md` | Philosophy line updated. Mermaid diagram rewritten with feedback loop nodes, convergence check, and "Final Defensive Verification — ALWAYS LAST." |
+| `certora-quickstart-template.md` | Phase 8 description updated. Workflow summary box: Phase 7/8 merged into "Adversarial Verification Loop" + "Final Defensive Proof (always last)." |
+| `readme.md` | Mission box: "OFFENSIVE ⇄ DEFENSIVE FEEDBACK LOOP. PROOF COMES LAST." Golden Rule updated. Phase summary updated. Chat prompt table updated. Version footer updated to v3.0→3.1. |
+| `spec-authoring-certora.md` | Phase 7 header: adds "minimal defensive hypothesis" note. Phase 8 header: "bidirectional feedback loop," not "IN PARALLEL." Closing line: canonical one-sentence summary. |
+| `version-history.md` | New v3.1 entry. v3.0 §9.5.1 description updated. Key Concept box rewritten as "Adversarial Verification Loop." Migration step 3 updated. |
+| `index.md` | Phases 7/8 merged into "Adversarial Verification Loop" with combined checklist. Final Verification Checklist updated. Version footer updated. |
+| `best-practices-from-certora.md` | Phase mapping table: "Phase 7 ⇄ 8 (Loop)" replaces separate rows. Workflow box: "Adversarial Verification Loop" replaces "Phase 7: Write CVL." |
+| `offensive-pipeline.md` | Day 4 heading: "Final Defensive Proof + Report." Steps reflect loop convergence before final proof. |
 
 ---
 
@@ -34,7 +77,7 @@ v3.0 adds **offensive verification mode** that actively searches for economicall
 │    Search for economically profitable counterexamples.                   │
 │    Prove safety only AFTER failing to break it."                         │
 │                                                                          │
-│   START OFFENSIVE. SWITCH TO DEFENSIVE ONLY AFTER EXHAUSTING ATTACKS.   │
+│   OFFENSIVE ⇄ DEFENSIVE FEEDBACK LOOP. PROOF COMES LAST, ALWAYS LAST.   │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -49,11 +92,11 @@ v3.0 adds **offensive verification mode** that actively searches for economicall
 
 ### New Section: 9.5 Phase 8: Attack Synthesis
 
-Runs in parallel with Phase 7 (after Phase 6 sanity gate passes):
+Evolves with Phase 7 in a bidirectional feedback loop (after Phase 6 sanity gate passes):
 
 | Subsection | Content |
 |-----------|---------|
-| **9.5.1 Philosophy Shift** | Defensive vs Offensive verification comparison |
+| **9.5.1 Philosophy Shift** | Adversarial Verification Loop (bidirectional feedback) |
 | **9.5.2 Economic Impact Baseline** | Asset enumeration template |
 | **9.5.3 Attacker Objective Definition** | CVL patterns for profit tracking |
 | **9.5.4 Anti-Invariant Construction** | Rules expected to FAIL (CE = exploit) |
@@ -114,31 +157,36 @@ rule find_profitable_inputs(env e, method f) {
 
 1. **Add impact-spec-template.md** to your verification workflow
 2. **Add multi-step-attacks-template.md** for DeFi protocols
-3. **After Phase 6 sanity gate passes**, run Phase 8 offensive verification IN PARALLEL with Phase 7
+3. **After Phase 6 sanity gate passes**, run Phase 8 offensive verification in a **feedback loop** with Phase 7 defensive hypothesis
 4. **Run anti-invariants** expecting them to fail
 5. **Run hook liveness checks** before trusting anti-invariant results
 6. **Convert any CEs** to Foundry PoCs for validation
 
-### Key Concept: Offensive-First Verification (v3.0)
+### Key Concept: Adversarial Verification Loop (v3.0)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    OFFENSIVE-FIRST VERIFICATION                          │
+│                    ADVERSARIAL VERIFICATION LOOP                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │   Phases 0-6: Analysis & Modeling                                        │
 │      Map execution surface → Discover properties → Validate closure      │
 │                                                                          │
-│   After Phase 6 sanity gate passes, run IN PARALLEL:                     │
+│   After Phase 6 sanity gate passes → SHARED CAUSAL MODEL established:   │
 │                                                                          │
-│   DEFENSIVE (Phase 7):              OFFENSIVE (Phase 8):                 │
-│   Write correctness invariants      Write anti-invariants (expect FAIL)  │
-│   Prove properties hold             Run profit search + liveness checks  │
-│   Debug violations                  Run multi-step attack patterns       │
-│                                     If FAIL → EXPLOIT FOUND              │
-│                                     If PASS → No attack (or incomplete)  │
+│   DEFENSIVE HYPOTHESIS:             OFFENSIVE EXISTENTIAL SPEC:          │
+│   State design intent               Write anti-invariants (expect FAIL)  │
+│   Minimal — not full spec yet        Run profit search + liveness checks │
+│   "What must never happen?"          Run multi-step attack patterns      │
 │                                                                          │
-│   COMPLETE: Both defensive AND offensive verification pass               │
+│              ◄──── BIDIRECTIONAL FEEDBACK LOOP ────►                    │
+│                                                                          │
+│   SAT offensive → exploit OR update defensive hypothesis                │
+│   UNSAT offensive → weaken assumptions OR expand causal model           │
+│   Loop until convergence                                                 │
+│                                                                          │
+│   FINAL DEFENSIVE PROOF — ALWAYS LAST                                   │
+│   Neither spec is truth. The causal model is truth.                     │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
 ```

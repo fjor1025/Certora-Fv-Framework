@@ -1,6 +1,6 @@
 # ADVANCED CLI OPTIONS & PERFORMANCE OPTIMIZATION
 
-> **Version:** 1.1 (Framework v3.0 — Offensive Verification + Red Team Hardening)  
+> **Version:** 1.1 (Framework v3.1 — Adversarial Verification Loop)  
 > **Purpose:** Advanced CLI flags, timeout mitigation, performance optimization, and offensive verification strategies  
 > **Audience:** Users experiencing timeouts, complex projects, or seeking advanced debugging  
 > **Updated:** February 16, 2026 (based on Certora Documentation latest updates)

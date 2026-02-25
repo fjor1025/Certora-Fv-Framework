@@ -1,6 +1,6 @@
 # CERTORA BEST PRACTICES & TECHNIQUES
 
-> **Version:** 1.1 (Framework v3.0 — Offensive Verification + Red Team Hardening)  
+> **Version:** 1.1 (Framework v3.1 — Adversarial Verification Loop)  
 > **Extracted from official Certora Tutorials**  
 > **Integrated with your framework phases**
 
@@ -88,10 +88,10 @@ rule withdraw_correctness(uint amount) {
 │                                                                          │
 │                     ▼                                                    │
 │                                                                          │
-│   Phase 7: Write CVL                                                    │
-│   ├── Formalize properties                                              │
-│   ├── Run verifications                                                 │
-│   └── Get violations or passes                                          │
+│   Phase 7 ⇄ 8: Adversarial Verification Loop                           │
+│   ├── Minimal defensive hypothesis + offensive spec                     │
+│   ├── Feedback loop: SAT→refine, UNSAT→weaken                         │
+│   └── Final defensive proof (LAST)                                      │
 │                                                                          │
 │                     ▼                                                    │
 │                                                                          │
@@ -837,8 +837,8 @@ require e.msg.sender != currentContract;  // Modeling constraint, not revert con
 |-----------------|------------------------|
 | **Phase 2** | Sections 1.1, 1.2, 1.3 (Property Discovery, Prioritization) |
 | **Phase 3.5** | Section 3.1, 3.2 (Invariant Patterns) |
-| **Phase 7** | Section 3.3, 6.2, 7, 8, 9 (Preserved Blocks, Vacuity, Lifecycle, Edge Cases) |
-| **Phase 8 (Offensive)** | Section 7 (Offensive Property Discovery — v3.0) |
+| **Phase 7 ⇄ 8 (Loop)** | Sections 3.3, 6.2, 7, 8, 9 (Preserved Blocks, Vacuity, Lifecycle, Edge Cases, Offensive) |
+| **Offensive Spec** | Section 7 (Offensive Property Discovery — v3.0) |
 | **CE Debugging** | Section 2 (CE Investigation Process) |
 | **Harness Design** | Section 4 (Harness Best Practices) |
 | **Loop Handling** | Section 5 (Loop Configuration) |

@@ -1,11 +1,11 @@
 # Certora Formal Verification Framework
 
 > **A complete, reusable framework for formal verification of Solidity smart contracts using Certora Prover**  
-> **Version:** 3.0 (Offensive Verification + Red Team Hardening)
+> **Version:** 3.1 (Adversarial Verification Loop)
 
 ---
 
-## Framework Mission (v3.0)
+## Framework Mission (v3.1)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -30,7 +30,7 @@
 │   | DEFENSIVE   | Prove discovered attacks fixed   | Standard invariants,  | │
 │   |             |                                  | assert rules          | │
 │                                                                              │
-│   START OFFENSIVE. SWITCH TO DEFENSIVE ONLY AFTER EXHAUSTING ATTACK SURFACE.│
+│   OFFENSIVE ⇄ DEFENSIVE FEEDBACK LOOP. PROOF COMES LAST, ALWAYS LAST.      │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -43,7 +43,7 @@
 
 The framework previously focused on proving correctness of known designs. v3.0 adds **offensive verification mode** that actively searches for economically impactful exploits.
 
-- **Phase 8: Attack Synthesis** — Runs in parallel with Phase 7 after Phase 6 sanity gate passes
+- **Phase 8: Attack Synthesis** — Evolves with Phase 7 in a bidirectional feedback loop after Phase 6 sanity gate passes
 - **Impact Tracking Ghosts** — First-class primitives for attacker profit, system value, value extraction
 - **Anti-Invariants** — Rules expected to FAIL; counterexamples = exploit parameters
 - **Multi-Step Attack Patterns** — Flash loan, sandwich, staged, and governance attack templates
@@ -168,7 +168,10 @@ Phase 3.5 → Causal Validation ← RUN VALIDATION SPEC FIRST
             └── satisfy reachability rules (anti-vacuity) ← v1.8
             └── Mutation path + ghost sync validation
 Phase 4-6 → Modeling & Sanity Gate
-Phase 7   → Write Real CVL Spec
+Phase 7⇄8 → Adversarial Verification Loop (offensive ⇄ defensive feedback)
+            └── Minimal defensive hypothesis + offensive existential spec
+            └── Feedback loop: SAT→refine, UNSAT→weaken
+            └── Final defensive proof (ALWAYS LAST)
             └── @withrevert + biconditional <=> for every function ← v1.6
 ```
 
@@ -276,8 +279,9 @@ When working with an AI assistant, use these prompts:
 | Phase 0/-1 | 13.2 |
 | Phase 2 (Properties) | 13.3 |
 | Phase 3.5 (Validation) | 13.4 |
-| Phase 7 (Real Spec) | 13.5 |
+| Adversarial Loop (offense ⇄ defense) | 13.5 |
 | Debug CEs | 13.6 |
+| Attack Synthesis (bidirectional loop) | 13.7 |
 
 ---
 
@@ -286,14 +290,17 @@ When working with an AI assistant, use these prompts:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                  │
-│   UNDERSTAND → ENUMERATE → VALIDATE → WRITE → DEBUG              │
+│   UNDERSTAND → ENUMERATE → VALIDATE → ATTACK ⇄ DEFEND → PROVE   │
 │                                                                  │
 │   ❌ Never write CVL before completing phases 0 through 3.5     │
 │   ❌ Never skip causal validation                                │
 │   ❌ Never assume external contracts are "standard"              │
+│   ❌ Never write a full defensive spec before an offensive       │
+│      spec exists — they evolve together from the causal model   │
 │                                                                  │
-│   A passing spec means nothing if the modeling is wrong.        │
-│   Enumerate reality first. Prove safety second.                 │
+│   Causal validation defines reality. Defensive spec states      │
+│   intent. Offensive spec attacks intent. The loop refines       │
+│   both. Proof comes last.                                       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -323,10 +330,11 @@ When working with an AI assistant, use these prompts:
 
 ## Version
 
-**Version:** 1.9 (Red Team Hardening)  
-**Last Updated:** February 16, 2026
+**Version:** 3.1 (Adversarial Verification Loop)  
+**Last Updated:** February 25, 2026
 
 ### Changelog
+- **v3.0:** Adversarial Verification Loop — bidirectional offensive ⇄ defensive feedback loop replaces linear/parallel framing; canonical loop diagram (Section 1.4); final defensive proof always last
 - **v1.9:** Red Team Hardening — Failure-path reachability (`satisfy lastReverted`), custom summary accuracy protocol (Exact/Over/Under), invariant dependency DAG (`@dev Level: N`), cycle detection, satisfy liveness annotation
 - **v1.8:** Reachability Validation — `satisfy` rules as mandatory validation step, Phase 0.5, validation execution order
 - **v1.7.1:** Quick Start Chat Prompts updated for v1.6/v1.7 features

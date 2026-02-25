@@ -1,6 +1,6 @@
 # Verification Playbooks — Complete Worked Examples
 
-> **Framework Version:** v3.0 (Offensive Verification + Red Team Hardening)
+> **Framework Version:** v3.1 (Adversarial Verification Loop)
 > **Source:** Derived from the RareSkills Certora Book capstone projects and OpenZeppelin verification methodology
 > **Purpose:** Provide complete, battle-tested specification templates for ERC-20, WETH, and ERC-721 tokens — ready to adapt for any project.
 

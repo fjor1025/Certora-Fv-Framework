@@ -1,6 +1,6 @@
 # CVL Language Deep Dive — Complete Reference
 
-> **Framework Version:** v3.0 (Offensive Verification + Red Team Hardening)
+> **Framework Version:** v3.1 (Adversarial Verification Loop)
 > **Source:** Extracted from the RareSkills Certora Book (60,000+ words, 35 chapters, official Certora collaboration)
 > **Purpose:** Fill every CVL language gap — from foundational semantics to advanced patterns used in production OpenZeppelin/Solmate/Solady specifications.
 

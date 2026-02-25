@@ -1,6 +1,6 @@
 # Multi-Step Attack Patterns Template
 
-> **Framework Version:** v3.0 (Offensive Verification)  
+> **Framework Version:** v3.1 (Adversarial Verification Loop)  
 > **Purpose:** Model stateful attackers across transaction boundaries  
 > **Usage:** Copy patterns for flash loan, sandwich, and staged attacks
 

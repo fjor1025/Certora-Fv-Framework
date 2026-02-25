@@ -2,7 +2,7 @@
 
 *(Pre-Spec, Syntax-Free Phase)*
 
-> **Version:** 3.0 (Offensive Verification + Impact-First Framing)
+> **Version:** 3.1 (Adversarial Verification Loop + Impact-First Framing)
 
 ## Purpose
 

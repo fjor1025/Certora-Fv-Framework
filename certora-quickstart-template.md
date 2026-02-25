@@ -2,7 +2,7 @@
 
 > **Use this template to apply the Certora workflow to ANY contract**  
 > **Copy this file and fill in the blanks for each new verification project**  
-> **Version:** 3.0 (Offensive Verification + Red Team Hardening)
+> **Version:** 3.1 (Adversarial Verification Loop)
 
 ---
 
@@ -670,7 +670,7 @@ touch certora/confs/{Contract}.conf
 
 ## 8. PHASE 8: OFFENSIVE VERIFICATION (v3.0)
 
-> **New in v3.0:** After defensive specs pass, write offensive specs that prove the *absence* of profitable attack paths.
+> **New in v3.0:** After the shared causal model is established, offensive and defensive specs evolve together in a **bidirectional feedback loop**. Final defensive proof comes LAST, after the attack surface is exhausted. See `certora-master-guide.md` Section 1.4.
 
 ### Step 8.1: Identify Value Flows
 
@@ -879,16 +879,15 @@ solc --version
 │  6. SANITY GATE (Phase 6)                                       │
 │     └─► Complete checklist in spec_authoring.md                 │
 │                                                                  │
-│  7. WRITE CVL (Phase 7)                                         │
-│     └─► NOW write {Contract}.spec                               │
-│     └─► RUN: certoraRun real config                             │
+│  7. ADVERSARIAL VERIFICATION LOOP (Phase 7 ⇄ 8) ← v3.0         │
+│     └─► State MINIMAL defensive hypothesis (design intent)      │
+│     └─► Write offensive spec (anti-invariants, profit search)   │
+│     └─► Run feedback loop: SAT→refine, UNSAT→weaken            │
+│     └─► Loop until offensive + defensive converge               │
 │                                                                  │
-│  8. OFFENSIVE VERIFICATION (Phase 8) ← NEW v3.0                  │
-│     └─► Write anti-invariant rules (impact-spec-template.md)    │
-│     └─► Write multi-step attack rules (multi-step-attacks.md)   │
-│     └─► Create offensive .conf (offensive-pipeline.md)           │
-│     └─► RUN: certoraRun offensive config                        │
-│     └─► Triage CEs: SATISFIED = real attack, convert to PoC     │
+│  8. FINAL DEFENSIVE PROOF (always last)                          │
+│     └─► NOW write full {Contract}.spec                          │
+│     └─► RUN: certoraRun real config                             │
 │                                                                  │
 │  9. DEBUG (if needed)                                           │
 │     └─► Use CE_DIAGNOSIS_FRAMEWORK.md                           │

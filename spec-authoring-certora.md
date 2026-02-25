@@ -679,7 +679,9 @@ Before CVL is written:
 
 # PHASE 7 — CVL SPECIFICATION WRITING
 
-> **Only enter this phase after Phase 6 sanity gate passes.**
+> **Only enter this phase after Phase 6 sanity gate passes.**  
+> **This begins as a MINIMAL defensive hypothesis, not a full spec.**  
+> **The full defensive spec is written LAST, after the adversarial verification loop converges.**
 
 **Use** `certora-spec-framework.md` **for:**
 - Methods block structure
@@ -702,15 +704,18 @@ Before CVL is written:
 
 # PHASE 8 — ATTACK SYNTHESIS (OFFENSIVE) ← NEW v3.0
 
-> **Enter after Phase 6 sanity gate passes (modeling validated).**  
-> **Can run IN PARALLEL with Phase 7 — they share the same infrastructure.**  
-> **Purpose:** Actively search for profitable attack paths before attackers do.
+> **Enter after Phase 6 sanity gate passes (shared causal model established).**  
+> **Offensive and defensive specs evolve together in a BIDIRECTIONAL FEEDBACK LOOP.**  
+> **Final defensive proof comes LAST, after the attack surface is exhausted.**  
+> **See `certora-master-guide.md` Section 1.4 for the Adversarial Verification Model.**
 
-**Philosophy Shift:**
+**Adversarial Verification Loop:**
 ```
 ─────────────────────────────────────────────────────────────────────
-DEFENSIVE (Phases 0-7): "Prove the code matches the spec."
-OFFENSIVE (Phase 8):    "Search for inputs that profit the attacker."
+DEFENSIVE HYPOTHESIS:  "What must the design never allow?"
+OFFENSIVE EXISTENTIAL: "Can an attacker extract profit?"
+FEEDBACK LOOP:         SAT → exploit or refine. UNSAT → weaken or expand.
+FINAL PROOF:           Defensive verification — ALWAYS LAST.
 ─────────────────────────────────────────────────────────────────────
 ```
 
@@ -770,5 +775,6 @@ SPEC AUTHORING → Pass Phase 6 → SPEC FRAMEWORK (write CVL) → Run Prover �
 
 ---
 
-> **If execution reality is wrong, the proof is meaningless.
-> Enumerate reality first — then prove safety.**
+> **If execution reality is wrong, the proof is meaningless.**
+> **Causal validation defines reality. Defensive spec states intent.**
+> **Offensive spec attacks intent. The loop refines both. Proof comes last.**

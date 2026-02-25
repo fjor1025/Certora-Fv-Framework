@@ -1,6 +1,6 @@
 # Framework Index & Navigation Guide
 
-> **Quick navigation for the Certora Formal Verification Framework v3.0**
+> **Quick navigation for the Certora Formal Verification Framework v3.1**
 
 ---
 
@@ -105,20 +105,22 @@
 **Patterns:** [best-practices-from-certora.md](best-practices-from-certora.md) Section 3 & 4  
 **Checklist:** Sanity gate all checked
 
-### Phase 7: Write CVL
-**Primary:** [certora-spec-framework.md](certora-spec-framework.md)  
+### Adversarial Verification Loop (Phases 7 ⇄ 8) ⭐ NEW v3.0
+
+> After Phase 6, offensive and defensive specs evolve together in a **bidirectional
+> feedback loop** on the shared causal model. Final defensive proof comes LAST.
+> See [certora-master-guide.md](certora-master-guide.md) Section 1.4.
+
+**Defensive Hypothesis:** [certora-spec-framework.md](certora-spec-framework.md)  
 **CVL Reference:** [cvl-language-deep-dive.md](cvl-language-deep-dive.md) ⭐ **NEW v1.5**  
 **Worked Examples:** [verification-playbooks.md](verification-playbooks.md) ⭐ **NEW v1.5**  
-**Guide:** [certora-master-guide.md](certora-master-guide.md) Section 9  
-**Patterns:** [best-practices-from-certora.md](best-practices-from-certora.md) Sections 3-5  
-**Checklist:** Pre-verification checklist in QUICK_REFERENCE
-
-### Phase 8: Attack Synthesis (Offensive) ⭐ NEW v3.0
-**Primary:** [impact-spec-template.md](impact-spec-template.md)  
+**Offensive Spec:** [impact-spec-template.md](impact-spec-template.md)  
 **Attack Patterns:** [multi-step-attacks-template.md](multi-step-attacks-template.md)  
 **Pipeline & Tooling:** [offensive-pipeline.md](offensive-pipeline.md)  
-**Guide:** [certora-master-guide.md](certora-master-guide.md) Section 9.5  
+**Guide:** [certora-master-guide.md](certora-master-guide.md) Sections 9 & 9.5  
+**Patterns:** [best-practices-from-certora.md](best-practices-from-certora.md) Sections 3-5, 7  
 **Checklist:**
+- [ ] State minimal defensive hypothesis (design intent)
 - [ ] Create `offensive.conf` (sample in [offensive-pipeline.md](offensive-pipeline.md))
 - [ ] Import impact tracking ghosts (all `persistent`)
 - [ ] Run hook liveness gate first
@@ -127,6 +129,8 @@
 - [ ] Run multi-step attack patterns
 - [ ] Triage CEs using severity matrix (see [offensive-pipeline.md](offensive-pipeline.md))
 - [ ] Convert any CEs to Foundry PoCs (see [poc-template-foundry.md](poc-template-foundry.md))
+- [ ] Feedback loop converged — SAT/UNSAT results reviewed
+- [ ] Final defensive proof written and passing (LAST step)
 
 ### Debugging: Counterexamples
 **Primary:** [certora-ce-diagnosis-framework.md](certora-ce-diagnosis-framework.md)  
@@ -214,8 +218,8 @@ The framework integrates techniques from:
 - [ ] **Phase 3.5** - Reachability (`satisfy`) PASSED (MASTER_GUIDE Section 7) ← v1.8
 - [ ] **Phase 3.5** - Validation spec PASSED (MASTER_GUIDE Section 7)
 - [ ] **Phase 4-6** - Modeling complete, sanity checks passed (MASTER_GUIDE Section 8)
-- [ ] **Phase 7** - Real spec written (MASTER_GUIDE Section 9)
-- [ ] **Run** - Prover executed (MASTER_GUIDE Section 10)
+- [ ] **Adversarial Loop** - Offensive ⇄ defensive feedback loop converged (MASTER_GUIDE §1.4, §9.5)
+- [ ] **Final Proof** - Full defensive spec written and passing (MASTER_GUIDE Section 9) — LAST
 - [ ] **Debug** - Counterexamples investigated (CE_DIAGNOSIS_FRAMEWORK)
 - [ ] **Done** - All properties verified ✅
 
@@ -328,8 +332,8 @@ Total: **19 documents** (v1.5)
 
 ---
 
-**Framework Version:** 1.9 (Red Team Hardening)  
+**Framework Version:** 3.1 (Adversarial Verification Loop)  
 **Status:** Production-Ready  
-**Last Updated:** February 16, 2026
+**Last Updated:** February 25, 2026
 
 **Start Your Verification Journey:** [certora-master-guide.md](certora-master-guide.md)

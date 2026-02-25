@@ -1,6 +1,6 @@
 # Offensive Verification Pipeline
 
-> **Framework Version:** v3.0 (Offensive Verification)  
+> **Framework Version:** v3.1 (Adversarial Verification Loop)  
 > **Purpose:** CI/CD integration, sample configuration, counterexample triage, attack prioritization  
 > **Prerequisite:** Read [impact-spec-template.md](impact-spec-template.md) and [multi-step-attacks-template.md](multi-step-attacks-template.md) before using this pipeline
 
@@ -125,7 +125,7 @@ Save as `run-offensive-pipeline.sh` in your project root.
 # ================================================================
 # Usage: ./run-offensive-pipeline.sh [--spec-dir certora/specs] [--conf-dir certora/confs]
 #
-# Pipeline order (Phase 8 of Certora-Fv-Framework v3.0):
+# Pipeline order (Phase 8 of Certora-Fv-Framework v3.1):
 #   1. Hook Liveness Gate   — verify hooks actually capture value flows
 #   2. Single-TX Attacks    — find single-call profit paths
 #   3. Multi-Step Attacks   — flash loan, sandwich, staged
@@ -697,9 +697,10 @@ When starting offensive verification on a new protocol:
 - [ ] Convert any CEs to Foundry PoCs (use `poc-template-foundry.md`)
 - [ ] Measure gas cost and confirm economic viability
 
-### Day 4: Defensive + Report (2-4 hours)
-- [ ] Run defensive invariants (now in parallel with offensive)
-- [ ] Cross-reference offensive and defensive results
+### Day 4: Final Defensive Proof + Report (2-4 hours)
+- [ ] Review feedback loop convergence (SAT/UNSAT results for all offensive specs)
+- [ ] Write full defensive spec (refined by offensive findings)
+- [ ] Run final defensive proof (ALWAYS LAST)
 - [ ] Classify all CEs using severity matrix
 - [ ] Write security findings using `vulnerability-report-template.md`
 - [ ] Document attack surfaces that were proven safe

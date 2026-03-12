@@ -53,6 +53,7 @@ Before categorizing properties by *type*, first categorize by *economic impact*.
 **Attacker Goal:** [What the attacker wants to achieve]
 **Impact Category:** [Value Extraction / Insolvency / Share Dilution / etc.]
 **Estimated Impact:** [$X loss potential / Percentage of TVL]
+**Profit Boundary (Profit Escalation Category):** [Bounded / Unbounded / Compounding / Amplified / Cross-Protocol]
 **Irreversible?:** [Yes — funds gone / No — admin can fix]
 
 **Attack Scenario:**
@@ -135,6 +136,8 @@ For EACH candidate property, document:
 ### [ID]. [Short Name]
 **Plain English:** [One sentence describing the law]
 **Impact if Violated:** [Theft / Insolvency / Privilege Escalation / Griefing / Protocol Corruption]
+**Impact Category (from §0):** [Value Extraction / Insolvency / Share Dilution / Debt Socialization / Liquidity Freeze / Governance Capture / Front-Running / Griefing]
+**Profit Boundary (from §0 Profit Escalation Categories):** [Bounded / Unbounded / Compounding / Amplified / Cross-Protocol]
 **Category:** [Valid State / State Transition / System-Level / Threat-Driven]
 **Variables Involved:** [List storage variables and their owners]
 **External Truths Needed:** [List any external contract state this depends on]
@@ -341,7 +344,8 @@ The output is a **plain-English list of candidate laws**, each with:
 * A short name
 * A one-sentence description
 * The category (Valid State / State Transition / System-Level / Threat-Driven)
-* The impact if violated
+* The impact if violated **and its Impact Category (from §0)**
+* The profit boundary classification (bounded / unbounded / compounding / amplified / cross-protocol)
 * Variables involved and their owners
 * External truths needed (if any)
 * Whether aggregation/history tracking is needed
@@ -356,6 +360,8 @@ The output is a **plain-English list of candidate laws**, each with:
 ### A1. ETH Solvency
 **Plain English:** The ETH balance of the contract must always be >= total claimable ETH owed to users.
 **Impact if Violated:** Insolvency - users cannot withdraw
+**Impact Category:** Insolvency
+**Profit Boundary:** Unbounded (until ETH balance is exhausted)
 **Category:** Valid State
 **Variables Involved:** 
   - `address(this).balance` (owned by EVM)
@@ -366,6 +372,8 @@ The output is a **plain-English list of candidate laws**, each with:
 ### C1. Total Equals Sum
 **Plain English:** Total locked shares must equal sum of all individual user locked shares.
 **Impact if Violated:** Accounting corruption
+**Impact Category:** Value Extraction (leak via accounting mismatch)
+**Profit Boundary:** Bounded (by total locked shares)
 **Category:** System-Level
 **Variables Involved:**
   - `_accounting.stETHTotals.lockedShares` (owned by this contract)
@@ -450,7 +458,8 @@ Before leaving this phase:
 
 - [ ] Every property has a unique ID
 - [ ] Every property has one-sentence plain English description
-- [ ] Every property has impact assessment
+- [ ] Every property has impact assessment **and Impact Category (from §0)**
+- [ ] Every property has a **Profit Boundary** classification (bounded / unbounded / compounding / amplified / cross-protocol)
 - [ ] Every property is categorized (Valid State / Transition / System-Level / Threat)
 - [ ] Every property lists variables involved with owners
 - [ ] External dependencies are flagged

@@ -2866,8 +2866,7 @@ Continue Certora verification for [ContractName]:
 **Current Phase:** 2 (Property Discovery)
 
 Based on the Phase 0/-1 analysis, help me discover security properties using categorizing-properties.md:
-- **Economic Impact Categories** — categorizing-properties.md §0 (Value Extraction, Insolvency,  ← NEW v3.0
-  Share Dilution, Debt Socialization, Liquidity Freeze, Governance Capture, Front-Running, Griefing)
+- **Economic Impact Categories** — categorizing-properties.md §0 (Value Extraction, Insolvency, Share Dilution, Debt Socialization, Liquidity Freeze, Governance Capture, Front-Running, Griefing)  ← NEW v3.0
 - Valid States (range constraints)
 - State Transitions (function effects)
 - System-Level (aggregates, sums)
@@ -2876,14 +2875,15 @@ Based on the Phase 0/-1 analysis, help me discover security properties using cat
 
 **Apply these techniques:**
 - **Attacker Objective Checklist** — categorizing-properties.md §0 (what can an attacker profit from?)  ← NEW v3.0
+- **Impact + Profit Boundary Tagging** — record the **Impact Category** AND the **Profit Escalation category** (bounded / unbounded / compounding / amplified / cross-protocol) from categorizing-properties.md §0 for every property  ← NEW v3.2
 - Property prioritization (HIGH/MEDIUM/LOW) - categorizing-properties.md Section 7
 - Dual mindset (Should Always / Should Never) - Section 5
 - Test mining (extract from existing tests) - Section 6
-- Avoid the 4 fatal mistakes - BEST_PRACTICES Section 1
+- Avoid the 4 fatal mistakes - best-practices-from-certora.md Section 1
 
 **For each function, consider the Liveness/Effect/No-Side-Effect triple:**
-- Liveness: `assert success <=> (preconditions)` — use biconditional, not implication
-- Effect: `assert success => (state_changes)`
+- Liveness: `assert !lastReverted <=> (preconditions)` — use biconditional, not implication
+- Effect: `assert !lastReverted => (state_changes)`
 - No Side Effect: `assert uninvolved_state unchanged`
 See verification-playbooks.md Section 4 and cvl-language-deep-dive.md Section 15.
 
@@ -2922,11 +2922,12 @@ Please help me discover properties using the DUAL MINDSET approach:
 
 **3. Categorize all properties:**
    - Economic Impact / Valid States / State Transitions / System-Level / Threat-Driven / Revert Behavior
+   - Tag both **Impact Category** and **Profit Boundary** (bounded / unbounded / compounding / amplified / cross-protocol) from categorizing-properties.md §0
 
 **4. Economic Impact Discovery (v3.2):**
-   - For each asset: Can an attacker extract value? Cause insolvency? Dilute shares?
-   - Use categorizing-properties.md §0 Attacker Objective Checklist
-   - Document findings in candidate_properties.md under new "Impact" category
+    - For each asset: Can an attacker extract value? Cause insolvency? Dilute shares?
+    - Use categorizing-properties.md §0 Attacker Objective Checklist
+    - Document findings in candidate_properties.md under new "Impact" category and record the profit boundary classification
 
 Reference:
 - categorizing-properties.md sections 5 and 6 (Dual Checklist & Test Mining)
@@ -3372,4 +3373,3 @@ When starting any verification conversation, always include:
 > **Remember:** A passing spec means nothing if the modeling is wrong.  
 > **Causal validation defines reality. Defensive spec states intent. Offensive spec attacks intent.**  
 > **The loop refines both. Proof comes last.**
-

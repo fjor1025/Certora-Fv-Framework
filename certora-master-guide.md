@@ -2407,7 +2407,7 @@ Offensive specifications SHOULD:
 ### Rationale
 
 A specification that proves `profit ≥ 1` while missing `profit ≥ 100` is **not sufficient**
-for real-world security conclusions or competitive CTF performance.
+for real-world security conclusions — whether in internal security reviews, private audits, bug bounties, or production deployments.
 
 * Existence-only proofs detect *vulnerabilities*
 * Optimization-driven proofs detect *dominant exploits*

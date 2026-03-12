@@ -1,28 +1,28 @@
 # Writing Vulnerability Reports That Win
 
-> **Purpose:** Teach auditors how to write reports that judges validate in 60 seconds — and that survive the escalation process afterward.
-> **Audience:** Experienced security researchers submitting to bug bounties and audit contests.
-> **Core Principle:** A report is an argument, not a form. Every sentence must advance the judge toward "yes, this is valid."
-> **Defense Principle:** A winning report doesn't just persuade — it preempts every objection the judge, sponsor, or rival warden will raise. 
+> **Purpose:** Teach security researchers and auditors how to write reports that reviewers accept in 60 seconds — and that survive the scrutiny process afterward.
+> **Audience:** Security researchers and auditors documenting vulnerabilities in any context — internal reviews, pre-deployment audits, private engagements, bug bounties, and competitive audit contests.
+> **Core Principle:** A report is an argument, not a form. Every sentence must advance the reviewer toward "yes, this is valid."
+> **Defense Principle:** A winning report doesn't just persuade — it preempts every objection the reviewer or sponsor will raise. 
 
 ---
 
 ## The Problem With Most Reports
 
-Most rejected reports are technically correct but poorly communicated. They read like a checklist someone filled out rather than a story someone told. The judge opens your report, sees a wall of tables, brackets, and "TBD" placeholders, and their first instinct is to skim.
+Most rejected reports are technically correct but poorly communicated. They read like a checklist someone filled out rather than a story someone told. The reviewer opens your report, sees a wall of tables, brackets, and "TBD" placeholders, and their first instinct is to skim.
 
 **Reports that win do three things:**
 1. They tell a story with a beginning (what's broken), middle (why it matters), and end (how to fix it)
-2. They make the judge feel confident without requiring them to think hard
-3. They answer every objection before the judge raises it
+2. They make the reviewer feel confident without requiring them to think hard
+3. They answer every objection before the reviewer raises it
 
 **Reports that lose do three things:**
 1. They describe a code pattern without explaining why it's dangerous
-2. They leave the judge to "figure it out" from the PoC
+2. They leave the reviewer to "figure it out" from the PoC
 3. They hedge with "could," "might," or "potentially" instead of proving
 
 **Reports that get invalidated after acceptance do one more thing:** 
-4. They omit constraints, preconditions, or known-issue context that the sponsor or a rival warden discovers during escalation
+4. They omit constraints, preconditions, or known-issue context that the reviewer or sponsor discovers during review
 
 ---
 
@@ -38,22 +38,22 @@ If the answer to any of these requires reading the PoC first, you've failed. The
 
 ---
 
-## Pre-Submission Defense Gate
+## Pre-Submission / Pre-Delivery Defense Gate
 
-> **Most rejected reports are not rejected for bad writing. They're rejected because the researcher didn't check what the judge already knows.**
+> **Most rejected reports are not rejected for bad writing. They're rejected because the researcher didn't check what the reviewer already knows.**
 
 Before writing a single word, run this defense gate. If any item fails, your report is dead on arrival regardless of quality:
 
 ### 1. Known Issues & Previous Audits
 
-- [ ] **Read the contest README / known issues list.** Every Sherlock and Code4rena contest publishes known issues. If your finding appears there, it's auto-invalid.
-- [ ] **Read all linked previous audit reports.** Most contests link prior audits (Trail of Bits, OpenZeppelin, Spearbit, etc.). If your finding was already reported and acknowledged, it's a known issue.
+- [ ] **Read the project scope / known issues list.** Most engagements (private audits, bug bounty programs, and contest platforms) publish known issues or accepted risks. If your finding appears there, it is likely invalid.
+- [ ] **Read all linked previous audit reports.** Most engagements link prior audits (Trail of Bits, OpenZeppelin, Spearbit, etc.). If your finding was already reported and acknowledged, it's a known issue.
 - [ ] **Search the protocol's GitHub issues and discussions.** Developers often discuss edge cases in issues. If you find a comment like "we accept this risk because...", your finding needs to explicitly argue why their acceptance is wrong.
-- [ ] **Check deployed contract state.** For Immunefi/live bounties, verify the vulnerability exists on the deployed code, not just the repo version.
+- [ ] **Check the target contract state.** Verify the vulnerability exists in the actual target code being reviewed, not just an unreleased or modified version.
 
 ### 2. Scope Verification
 
-- [ ] **Confirm the contract/function is in scope.** Contest scoping documents are precise. A perfect finding on an out-of-scope contract is worth zero.
+- [ ] **Confirm the contract/function is in scope.** Engagement scope is precise — whether defined by a private audit agreement, a bug bounty program, or a contest brief. A perfect finding on an out-of-scope contract is worth zero.
 - [ ] **Confirm the attack vector uses in-scope entry points.** If your exploit requires calling a function on a contract that's out of scope, articulate why the in-scope contract is still the root cause.
 
 ### 3. Duplicate Differentiation
@@ -68,7 +68,7 @@ If your finding touches a common pattern (reentrancy, oracle manipulation, round
 
 ## Report Structure: The Guided Tour
 
-Think of your report as a guided tour of a crime scene. You're the detective walking the judge through what happened. You don't hand them a stack of evidence bags and say "figure it out." You point at each thing, explain what it means, and connect it to the next thing.
+Think of your report as a guided tour of a crime scene. You're the detective walking the reviewer through what happened. You don't hand them a stack of evidence bags and say "figure it out." You point at each thing, explain what it means, and connect it to the next thing.
 
 ### 1. Title — The Headline
 
@@ -88,7 +88,7 @@ The title is a news headline. It must communicate severity, location, and conseq
 
 ### 2. The Kill Shot — First Paragraph
 
-The first paragraph decides whether the judge keeps reading or skips to the next report. You have three sentences. Use them.
+The first paragraph decides whether the reviewer keeps reading or skips to the next report. You have three sentences. Use them.
 
 **Structure:** `{root cause} will cause {impact} for {affected party} because {actor} can {attack path}.`
 
@@ -103,18 +103,18 @@ Eliminate weasel words (`could`, `might`, `potentially`). But **keep constraint 
 
 > The `withdraw()` function in `Vault.sol:L187` does not verify that `shares <= balanceOf[msg.sender]` **when the vault has active deposits** (TVL > 0). An unprivileged attacker can call `withdraw(totalSupply)` and receive the entire vault balance in a single transaction. This drains all depositor funds. **The attack does not work when the vault is empty or when the contract is paused** (the pause guard at L12 blocks all external calls).
 
-The constraint envelope shows the judge you've done thorough analysis, not just the happy-path attack. Judges discover omitted constraints during review and treat them as dishonesty, which downgrades or invalidates findings. State what works, state what doesn't, and argue why the working conditions are realistic.
+The constraint envelope shows the reviewer you've done thorough analysis, not just the happy-path attack. Reviewers who discover omitted constraints will treat them as incomplete analysis, which downgrades or invalidates findings. State what works, state what doesn't, and argue why the working conditions are realistic.
 
 ### 3. Vulnerability Details — The Crime Scene
 
-Now walk the judge through exactly what's broken and where.
+Now walk the reviewer through exactly what's broken and where.
 
-**What judges need:**
+**What reviewers need:**
 - The exact file, function, and line number
 - What the code does vs. what it should do
 - Why the difference matters
 
-**What judges don't need:**
+**What reviewers don't need:**
 - A description of how Solidity works
 - An explanation of what ERC-20 tokens are
 - Background on what a vault is
@@ -133,7 +133,7 @@ function withdraw(uint256 shares) external {
 
 The developer assumed `_burn` would revert if `shares > balanceOf[msg.sender]`. This is true for the burn itself — but the asset calculation on L188 already computed a value based on `totalSupply()` which includes all shares, not just the caller's. The attacker passes `shares = totalSupply()` and receives `totalAssets()` worth of tokens. The burn then reduces the attacker's balance (which may be small or zero), but the transfer has already been calculated on the full supply.
 
-**Key insight:** Show the judge the *reasoning gap* — the distance between what the developer assumed and what actually happens. This is more persuasive than just saying "missing check."
+**Key insight:** Show the reviewer the *reasoning gap* — the distance between what the developer assumed and what actually happens. This is more persuasive than just saying "missing check."
 
 ### 4. Impact — The Damage Report
 
@@ -153,7 +153,7 @@ Impact is not a severity label. Impact is a concrete statement about who loses w
 
 ### 5. Proof of Concept — The Evidence
 
-The PoC is not your report. The PoC is evidence that supports your report. A judge should be able to understand your finding entirely from the report text and only use the PoC to verify that you're not lying.
+The PoC is not your report. The PoC is evidence that supports your report. A reviewer should be able to understand your finding entirely from the report text and only use the PoC to verify that you're not lying.
 
 **PoC rules:**
 1. It must run. If it doesn't compile and pass, you've lost all credibility.
@@ -263,7 +263,7 @@ If the fix is non-trivial, explain the tradeoffs:
 
 ## Semantic Phase Integration
 
-Every finding should identify which semantic phase the bug lives in. This tells the judge (and yourself) exactly where in the execution flow the invariant breaks:
+Every finding should identify which semantic phase the bug lives in. This tells the reviewer (and yourself) exactly where in the execution flow the invariant breaks:
 
 | Phase | The Bug Is Here When... |
 |-------|------------------------|
@@ -294,7 +294,7 @@ Before submitting, verify these five checks. If any fails, your finding needs mo
 
 **Execution Closure** — Have you modeled all external interactions?
 - Does your exploit account for callbacks, reentrancy guards, flash loan fees, IBC acknowledgements?
-- If you ignored an external call, the judge will find it.
+- If you ignored an external call, the reviewer will find it.
 
 **Economic Realism** — Is the attack profitable or meaningful?
 - What does the attacker spend? What do they gain?
@@ -312,9 +312,26 @@ State these checks as assertions in your report, not as a filled-out table:
 
 ---
 
-## Platform-Specific Severity Guidance
+## Severity Classification
 
-Different platforms define severity differently. Match your impact statement to the platform you're submitting to:
+Severity communicates the risk profile of the finding to the reviewer. Regardless of context, a severity rating must be grounded in three factors: **impact** (what can be lost), **likelihood** (how easily the conditions are met), and **exploitability** (what the attacker needs to do).
+
+### General Severity Framework
+
+Use this framework when a specific platform or engagement has no defined criteria:
+
+| Severity | Criteria |
+|----------|----------|
+| **Critical** | Direct theft or permanent freeze of user funds; protocol insolvency; no special conditions required |
+| **High** | Direct or indirect loss of significant funds; major protocol functionality broken; conditions are realistic |
+| **Medium** | Partial loss of funds, restricted functionality, or material yield loss under viable conditions |
+| **Low / Informational** | Edge-case behavior, best-practice violation, negligible monetary impact, or hardening recommendation |
+
+**Always state the constraint envelope:** explain when the attack works AND when it doesn't. "Any non-zero TVL with a public, unpaused contract" is a constraint. "Requires admin key compromise and a 48-hour governance delay" is also a constraint. Both belong in your report.
+
+### For Bug Bounties and Competitive Audit Platforms
+
+Different platforms define severity differently. If submitting to a specific platform, match your impact statement to its criteria:
 
 **Immunefi:**
 - Critical = Direct theft of funds or permanent freeze (>$1M in scope)
@@ -334,7 +351,7 @@ Different platforms define severity differently. Match your impact statement to 
 - Critical = Direct loss or manipulation of funds without special conditions
 - High = Conditional loss of funds or protocol stability impact
 
-Adjust your language to match. A Sherlock "High" requires "definite loss without limitations" — if your exploit requires a flash loan, governance proposal, or specific oracle state, say so and argue why those conditions are easily met.
+Adjust your language to match the platform. A Sherlock "High" requires "definite loss without limitations" — if your exploit requires a flash loan, governance proposal, or specific oracle state, say so and argue why those conditions are easily met.
 
 ---
 
@@ -373,13 +390,13 @@ When auditing non-Solidity smart contracts, adapt the report structure:
 Not a finding unless you explain what happens when X is unchecked. Missing a check is a code pattern. Draining funds is a vulnerability.
 
 **2. "An attacker could potentially..."**
-Remove weasel words (`could`, `might`, `potentially`, `if conditions align`) from your vocabulary. Either they can or they can't. If you're unsure, do the work to find out before submitting. **However:** keep constraint words (`when`, `requires`, `given that`) — omitting valid preconditions is overclaiming, which judges treat as dishonesty. See the Constraint Envelope section above.
+Remove weasel words (`could`, `might`, `potentially`, `if conditions align`) from your vocabulary. Either they can or they can't. If you're unsure, do the work to find out before submitting. **However:** keep constraint words (`when`, `requires`, `given that`) — omitting valid preconditions is overclaiming, which reviewers treat as incomplete analysis. See the Constraint Envelope section above.
 
 **3. Submitting a PoC without a report**
 "See the test" is not a report. The test proves the exploit works. The report explains why it matters and how to fix it.
 
 **4. Copy-pasting the code and saying "this is wrong"**
-The judge can read code too. Tell them something they can't see by reading: the semantic gap between intent and implementation.
+The reviewer can read code too. Tell them something they can't see by reading: the semantic gap between intent and implementation.
 
 **5. Wrong severity**
 A missing event emission is not High severity. A gas optimization is not Medium. Overclaiming severity destroys your credibility for the findings that actually matter.
@@ -390,8 +407,8 @@ If there's an obvious counterargument ("but the admin can pause"), address it: "
 **7. Vague recommendations**
 "Add proper validation" teaches nobody anything. Show the exact `require` statement, the exact line to add it, and explain why that location prevents the bug without breaking legitimate use.
 
-**8. Submitting a known issue** 
-You didn't read the contest README, the previous audit reports, or the protocol's GitHub issues. The finding was already reported, acknowledged, and accepted. This is the #1 rejection vector on Sherlock and Code4rena. Always run the Pre-Submission Defense Gate.
+**8. Reporting a known issue** 
+You didn't read the project scope document, the previous audit reports, or the protocol's GitHub issues. The finding was already reported, acknowledged, and accepted. This is the top rejection vector across all audit contexts. Always run the Pre-Submission / Pre-Delivery Defense Gate.
 
 **9. Splitting findings from the same root cause** 
 If `transfer()`, `transferFrom()`, and `burn()` all have the same missing balance check, that's ONE finding with three instances — not three findings. Splitting inflates your count but gets you marked as a duplicator. See Multi-Finding Strategy below.
@@ -416,7 +433,11 @@ If two bugs happen to affect the same function but stem from different logical e
 
 > "This finding addresses the oracle staleness check in `liquidate()` at L55. It is distinct from [Finding #X] which addresses the collateral ratio calculation at L62 — different semantic phase (SNAPSHOT vs ACCOUNTING), different root cause, and different fix."
 
-### Platform Rules
+### Engagement-Specific Rules
+
+For **private audits and internal reviews**, follow your engagement terms for how to group findings. When in doubt, use "Same Root Cause = One Report" as the default.
+
+For **bug bounty platforms and competitive audits**, follow platform-specific policies:
 
 | Platform | Same Root Cause Policy | Split Penalty |
 |----------|----------------------|---------------|
@@ -427,11 +448,11 @@ If two bugs happen to affect the same function but stem from different logical e
 
 ---
 
-## Judge Objection Taxonomy
+## Reviewer Objection Taxonomy
 
-Judges and sponsors use a predictable set of objection patterns to invalidate findings. Know them in advance and address each one that applies **in your report**, before you submit.
+Reviewers and sponsors use a predictable set of objection patterns to invalidate or downgrade findings. Know them in advance and address each one that applies **in your report**, before you deliver it.
 
-| Objection | What the Judge Says | How to Preempt It |
+| Objection | What the Reviewer Says | How to Preempt It |
 |-----------|-------------------|-------------------|
 | **Trusted Role** | "This requires admin action" | "The attack requires no privileged access. The function at L187 is `external` with no modifier." Or, if admin IS required: argue why admin compromise is in scope per platform rules. |
 | **By Design** | "See comment at line X" | "The NatSpec at L185 says 'proportional assets,' but the implementation allows disproportionate extraction. The design intent is violated, not followed." |
@@ -448,11 +469,15 @@ Judges and sponsors use a predictable set of objection patterns to invalidate fi
 
 ---
 
-## Escalation & Post-Submission Defense
+## Post-Delivery Defense & Escalation
 
-Your report's life doesn't end at submission. On every major platform, there's a dispute phase where sponsors, judges, and rival wardens challenge your findings. **30-40% of contest outcomes are determined during escalation, not during initial submission.**
+Your report's life doesn't end at delivery. In any review context — private audit, bug bounty triage, or competitive audit — there's a feedback or challenge phase where reviewers or sponsors may question your findings.
 
-### Platform Dispute Mechanisms
+### Review & Dispute Mechanisms
+
+**For private audits and internal reviews:** Address reviewer feedback directly through your agreed-upon communication channel (email, shared report platform, call). Provide additional code references, PoCs, or documentation as needed.
+
+**For bug bounties and competitive audit platforms:**
 
 | Platform | Process | Your Window |
 |----------|---------|-------------|
@@ -461,31 +486,33 @@ Your report's life doesn't end at submission. On every major platform, there's a
 | **Immunefi** | Multi-round triage with program team | You may get 2-3 rounds of questions before accept/reject |
 | **Hats Finance** | Community review period | Other auditors can challenge |
 
-### How to Respond to Sponsor Pushback
+In competitive audit contests, 30-40% of outcomes are determined during escalation, not during initial submission.
 
-When a sponsor says "this is by design" or "this doesn't apply":
+### How to Respond to Sponsor or Reviewer Pushback
+
+When a sponsor or reviewer says "this is by design" or "this doesn't apply":
 
 1. **Don't argue emotion.** Respond with code references and on-chain evidence.
 2. **Quote their own code against them.** NatSpec comments, README descriptions, and test names that contradict the sponsor's claim are powerful.
-3. **Provide additional PoC if needed.** If the sponsor says "the attacker can't do X" and they can, write a second targeted test proving it.
-4. **Reference platform rules, not opinions.** "Per Sherlock judging criteria Section IV: 'Issues that cause loss of funds without external conditions are High severity.' This finding meets that criteria because..."
+3. **Provide additional PoC if needed.** If the reviewer says "the attacker can't do X" and they can, write a second targeted test proving it.
+4. **Reference the engagement criteria, not opinions.** "Per the engagement's severity rubric: 'Issues that cause loss of funds without external conditions are High severity.' This finding meets that criteria because..."
 
-### When to Escalate vs. Accept
+### When to Defend vs. Accept
 
-- **Escalate** when you have concrete evidence the judge missed: a code reference, a PoC, a platform rule citation.
-- **Accept a downgrade** when the judge identifies a constraint you genuinely missed. Fighting valid downgrades damages your reputation.
-- **Never escalate on vibes.** "I feel this is High" is not an argument. "Per platform rules, unconditioned fund loss is High; here's why the conditions are met" is.
+- **Defend** when you have concrete evidence the reviewer missed: a code reference, a PoC, a scope document citation.
+- **Accept a downgrade** when the reviewer identifies a constraint you genuinely missed. Fighting valid downgrades damages your reputation.
+- **Never defend on vibes.** "I feel this is High" is not an argument. "Per the engagement criteria, unconditioned fund loss is High; here's why the conditions are met" is.
 
-### Writing an Escalation Comment
+### Writing a Defense Response
 
-**Bad escalation:**
+**Weak response:**
 > "I disagree with the invalidation. This is clearly a High severity issue."
 
-**Good escalation:**
-> "I'm escalating this finding based on three points:
+**Strong response:**
+> "I'm challenging this finding's invalidation based on three points:
 > 1. The sponsor states 'admin can pause before exploit.' However, the pause function at L205 requires a 48-hour timelock (see `TimelockController.sol:L89`). The attack completes in one block.
-> 2. The judge grouped this with Finding #42, but the root causes differ: #42 is a missing access control check (VALIDATION phase); this finding is a stale price read (SNAPSHOT phase). They require different fixes.
-> 3. Per [platform] judging criteria: 'Loss of funds without realistic external conditions is High.' The only condition is TVL > 0, which has held since deployment (verified on-chain)."
+> 2. This was grouped with Finding #42, but the root causes differ: #42 is a missing access control check (VALIDATION phase); this finding is a stale price read (SNAPSHOT phase). They require different fixes.
+> 3. Per the engagement criteria: 'Loss of funds without realistic external conditions is High.' The only condition is TVL > 0, which has held since deployment (verified on-chain)."
 
 ---
 
@@ -502,11 +529,11 @@ Read your final report and verify:
 - [ ] **Root cause** — single sentence explaining the bug, not a code walkthrough
 - [ ] **Not a design choice** — evidence the developer intended different behavior
 - [ ] **Recommendation** — diff-style fix at the exact location
-- [ ] **No jargon without explanation** — if you use a technical term, the judge knows what you mean in context
+- [ ] **No jargon without explanation** — if you use a technical term, the reviewer understands what you mean in context
 - [ ] **Validation checks** pass — Reachability, State Freshness, Execution Closure, Economic Realism, Detection & Response
 - [ ] **Constraint envelope** — attack conditions AND failure conditions both stated 
-- [ ] **Pre-submission defense** — known issues, previous audits, scope, and duplicates checked
-- [ ] **Objections preempted** — each applicable judge objection addressed in the report 
+- [ ] **Pre-delivery defense** — known issues, previous audits, scope, and duplicates checked
+- [ ] **Objections preempted** — each applicable reviewer objection addressed in the report 
 - [ ] **Multi-finding strategy** — same root cause = one report; different root cause = separate reports.
 
 ---
@@ -516,9 +543,9 @@ Read your final report and verify:
 **Compatible with:** All ecosystem frameworks (Solidity, Rust, Go, Cairo, Algorand)
 
 ### v2.1 Changelog (Red Team Hardening)
-- **Pre-Submission Defense Gate:** Known issues, previous audits, scope verification, duplicate differentiation
+- **Pre-Delivery Defense Gate:** Known issues, previous audits, scope verification, duplicate differentiation
 - **Constraint Envelope:** Distinction between hedging (bad) and constraint bounding (necessary)
-- **Judge Objection Taxonomy:** 10 objection patterns with preemptive defense strategies
+- **Reviewer Objection Taxonomy:** 10 objection patterns with preemptive defense strategies
 - **Escalation & Post-Submission Defense:** Platform dispute mechanisms, sponsor pushback responses, escalation writing
 - **Multi-Finding Strategy:** Same root cause vs. different root cause, platform-specific rules
 - **Detection & Response:** 5th methodology validation check for attack observability

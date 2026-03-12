@@ -11,7 +11,7 @@
 
 v3.1 correctly established the bidirectional offensive ⇄ defensive feedback loop, eliminating 
 linear/parallel bias. However, a red-team assessment identified **three missing pieces** that 
-limit effectiveness in real CTFs and production audits:
+limit effectiveness in production security audits and internal security reviews:
 
 1. **No optimization pressure** — Offensive specs proved existence of attacks but not the 
    *maximum extractable value*. Real attackers optimize for the dominant exploit, not any exploit.
@@ -797,9 +797,9 @@ Version 1.4 addresses the transition from "learning formal verification" to "pro
 This version is designed for:
 - Complex DeFi protocols with timeouts
 - Multi-contract systems with various compiler versions
-- Competitive audit environments (Code4rena, Immunefi)
-- Bug bounty hunters seeking formal verification edge
-- Production audits requiring comprehensive coverage
+- Any Solidity smart contract requiring formal security assurance
+- Internal security teams, independent auditors, and bug bounty researchers
+- Production security reviews and pre-deployment assessments
 
 ---
 

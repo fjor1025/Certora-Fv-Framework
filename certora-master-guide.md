@@ -2037,7 +2037,8 @@ persistent ghost mapping(address => mathint) actor_value {
 }
 
 // Track total system value
-ghost mathint total_system_value {
+// ⚠️ MUST be persistent — survives HAVOC from external calls
+persistent ghost mathint total_system_value {
     init_state axiom total_system_value == 0;
 }
 
@@ -3194,7 +3195,7 @@ Please help me resolve using loop handling strategies:
 Reference: best-practices-from-certora.md Section 5 (Loop Handling from Tutorial Lesson 11)
 ```
 
-## 13.7 For Phase 8 (Offensive Attack Synthesis — Bidirectional Loop) ← NEW v3.0
+## 13.7 For Phase 8 (Offensive Attack Synthesis — Bidirectional Loop) ← UPDATED v3.2
 
 ```markdown
 Phase 6 sanity gate PASSED for [ContractName]. The shared causal model is
@@ -3221,17 +3222,21 @@ Please help me run the adversarial verification loop:
    - Write ONLY the core safety invariants (not the full spec)
    - This hypothesis will be refined by offensive findings
 
-2. **Economic Impact Assessment:**
+2. **Economic Impact Assessment (§9.5.2):**
    - What assets are at risk? (ETH, tokens, shares, etc.)
    - What is the total value at stake?
    - What would a successful exploit look like?
-   - Complete the Phase 0 Asset Flow Trace cross-reference
+   - Complete the §9.5.2 Economic Impact Baseline table
+     (Asset / Total Value / Contract(s) Holding / Entry Points / Exit Points)
+     and cross-reference with Phase 0 Asset Flow Trace
 
 3. **Create Attack Search Spec (impact.spec):**
-   - Copy ghosts from impact-spec-template.md
+   - Copy ALL ghosts from impact-spec-template.md (Section 1–2):
+     - `actor_value` — per-address value tracking
+     - `total_system_value` — total protocol holdings
+     - `total_value_extracted` — cumulative extraction counter
+     - Impact category flags: `insolvent_state`, `dilution_factor`, `socialized_loss`, `liquidity_frozen`, `irreversible_loss_occurred`
    - ⚠️ ALL ghosts MUST be `persistent` (survives HAVOC from external calls)
-   - Set up `actor_value` persistent ghost to track value per address
-   - Set up `total_system_value` persistent ghost for protocol health
    - Hook on ALL value-bearing state changes (not just `_balances`)
    - Complete the **Value Flow Completeness Checklist** — cross-reference every
      asset from Phase 0 against hooks (ERC-20, ETH, shares, LP, rebasing, fees)
@@ -3243,13 +3248,17 @@ Please help me run the adversarial verification loop:
    - Fix hooks BEFORE trusting any anti-invariant result
    - A passing anti-invariant with dead hooks proves NOTHING
 
-5. **Write Anti-Invariants:**
-   - `attacker_cannot_profit` — fails if caller can profit
-   - `system_value_conserved` — fails if value leaks
-   - `zero_sum_transfers` — fails if value created from nothing
-   - Use `satisfy` with `find_profitable_inputs` for active attack search
+5. **Write Anti-Invariants and Attack Search Rules:**
+   - `attacker_cannot_profit` — assert-based rule; FAILS if caller can profit
+   - `system_value_conserved` — assert-based rule; FAILS if value leaks
+   - `zero_sum_transfers` — assert-based rule; FAILS if value created from nothing
+   - `find_profitable_inputs` — satisfy-based rule; finds inputs that create profit > 0
+   - `find_insolvency_path` — satisfy-based rule; finds inputs that trigger insolvency state
+   - Note: assert-based rules (anti-invariants) FAIL on a profitable execution;
+     satisfy-based rules PASS when a profitable execution is found — both discover exploits
 
 6. **Run Iterative Threshold Protocol (find maximum exploit size — §9.5.10):**
+   - Run the `find_max_profit_threshold` rule (from impact-spec-template.md), editing the active threshold each round:
    - `satisfy attacker_profit >= 1` → SAT? → Attack exists. Record witness. Continue.
    - `satisfy attacker_profit >= 10^3` → SAT? Continue
    - `satisfy attacker_profit >= 10^6` → SAT? Continue
@@ -3260,21 +3269,29 @@ Please help me run the adversarial verification loop:
    - Certora's SMT solver finds ANY witness, not the maximum — this iterative
      tightening protocol provides the workaround (see §9.5.10 for full protocol)
 
-7. **Multi-Step Attack Patterns (choose by protocol type):**
+7. **Multi-Step and Multi-Epoch Attack Patterns (choose by protocol type):**
    - Flash loan attack search (if protocol holds value)
    - Sandwich attack search (if protocol has price-sensitive operations)
    - Staged attack accumulation (if protocol has time-dependent state)
    - Governance attack patterns (if protocol has governance)
    - **Cross-contract attack search** (if protocol interacts with external contracts)
+   - **Multi-epoch attack modeling (§7.6)** — if protocol has time-delayed withdrawals,
+     oracle price feeds, interest accrual, or governance voting; model Setup → Distortion →
+     Extraction → Exit epochs using `persistent ghost` variables across function calls
    - Use `filtered` clauses for multi-step rules to avoid TIMEOUT
    - See combinatorial explosion guidance in multi-step-attacks-template.md
 
-8. **Feedback Loop — iterate until convergence:**
+8. **Feedback Loop — iterate until convergence (§9.5.1 Validity Criterion):**
    - SAT offensive result → true exploit? Fix code. Not meaningful? Update
      defensive hypothesis and loop.
    - UNSAT offensive result → are assumptions too strong? Weaken and re-run.
      Is causal model incomplete? Expand and re-validate.
    - Loop until BOTH specs converge on the shared causal model.
+   - **Convergence is reached when ALL four conditions hold (§9.5.1):**
+     1. Offensive specs fail without artificial assumptions
+     2. Profit escalation (§9.5.10) reaches an UNSAT boundary
+     3. Multi-epoch attack patterns (§7.6) are accounted for
+     4. Adversarial design interrogation (§8.4) is completed
 
 9. **CE → Exploit Conversion (when offensive SAT is meaningful):**
    - Extract attack parameters from CE
